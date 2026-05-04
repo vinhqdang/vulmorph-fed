@@ -1,98 +1,129 @@
 import torch
 import torch.nn as nn
-from torch_geometric.nn import global_mean_pool
+import torch.nn.functional as F
+from torch_geometric.nn import global_mean_pool, GATConv
 
-from data.morphology import MorphologyEmbedding, NUM_MORPHOLOGY_TYPES
+from data.morphology import MorphologyEmbedding
 from .vcsa import VCSA
 from .mgmp import MGMPLayer
+
 
 class VulMorph(nn.Module):
     """
     VulMorph-Fed Local Client Model.
-    Combines Morphology Embedding, VCSA, MGMP, and a binary classifier.
+
+    Integrates the three VulMorph-Fed innovations into one network:
+      1. MorphologyEmbedding — project-invariant node features
+      2. VCSA               — differentiable vulnerability-critical subgraph extraction
+      3. MGMPLayer          — prototype-injected message passing
+
+    Ablation flags allow each component to be disabled independently,
+    replicating all variants in Section 5.5 of the research plan.
     """
-    def __init__(self, vocab_size: int, embed_dim: int = 64, hidden_dim: int = 128, num_cwes: int = 5,
-                 use_vcsa: bool = True, use_mgmp: bool = True, use_morphology: bool = True):
+
+    def __init__(
+        self,
+        vocab_size: int,
+        embed_dim: int = 64,
+        hidden_dim: int = 128,
+        num_cwes: int = 5,
+        use_vcsa: bool = True,
+        use_mgmp: bool = True,
+        use_morphology: bool = True,
+        num_layers: int = 2,
+        dropout: float = 0.3,
+    ):
         super().__init__()
         self.use_vcsa = use_vcsa
         self.use_mgmp = use_mgmp
         self.use_morphology = use_morphology
-        
-        # We start with lexical token embeddings, though the framework relies heavily on morphology
+        self.num_layers = num_layers
+
+        # ── Node embeddings ──────────────────────────────────────────────
         self.lexical_embedding = nn.Embedding(vocab_size, embed_dim)
         self.morph_embedding = MorphologyEmbedding(embed_dim)
-        
-        # Node features are sum/concat of lexical and morphological. 
-        # For true structural transfer, we could drop lexical entirely, but we keep it for full representation.
-        self.node_dim = embed_dim * 2 if self.use_morphology else embed_dim
-        
-        # Component 1: Vulnerability-Critical Subgraph Abstraction
-        if self.use_vcsa:
+
+        morph_dim = embed_dim if use_morphology else 0
+        self.node_dim = embed_dim + morph_dim          # concat of lex + morph (or lex only)
+
+        # ── Component 1: VCSA ────────────────────────────────────────────
+        if use_vcsa:
             self.vcsa = VCSA(node_dim=self.node_dim, hidden_dim=hidden_dim)
-        
-        # Component 3: Morphology-Guided Message Passing
-        # We use two MGMP layers (or standard message passing if ablated)
-        if self.use_mgmp:
-            self.mgmp1 = MGMPLayer(in_channels=self.node_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim if self.use_morphology else 0)
-            self.mgmp2 = MGMPLayer(in_channels=hidden_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim if self.use_morphology else 0)
+
+        # ── Component 3: MGMP or GAT fallback ───────────────────────────
+        dims = [self.node_dim] + [hidden_dim] * num_layers
+        if use_mgmp:
+            self.gnn_layers = nn.ModuleList([
+                MGMPLayer(
+                    in_channels=dims[i],
+                    out_channels=dims[i + 1],
+                    num_cwes=num_cwes,
+                    morph_dim=morph_dim,
+                )
+                for i in range(num_layers)
+            ])
         else:
-            from torch_geometric.nn import GATConv
-            self.gat1 = GATConv(self.node_dim, hidden_dim)
-            self.gat2 = GATConv(hidden_dim, hidden_dim)
-        
-        # Classifier
+            self.gnn_layers = nn.ModuleList([
+                GATConv(dims[i], dims[i + 1])
+                for i in range(num_layers)
+            ])
+
+        # ── Classifier ───────────────────────────────────────────────────
         self.classifier = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Dropout(0.3),
-            nn.Linear(hidden_dim // 2, 1) # Binary classification (vuln or not)
+            nn.Dropout(dropout),
+            nn.Linear(hidden_dim // 2, 1),
         )
 
+    # ------------------------------------------------------------------
     def forward(self, data, prototypes: torch.Tensor = None):
         """
         Args:
-            data: PyG Data object containing x_lex, x_morph, edge_index, batch
-            prototypes: Global prototype bank P* of shape (num_cwes, hidden_dim)
+            data:       PyG Batch containing x_lex, x_morph, edge_index, batch.
+            prototypes: Global prototype bank P* (num_cwes, hidden_dim) or None.
+
         Returns:
-            logits: Binary classification logits
-            graph_embeddings: Used for L_SCL and prototype construction
-            edge_mask: Soft edge masks from VCSA
+            logits:           (B, 1)  raw scores for BCEWithLogits.
+            graph_embeddings: (B, hidden_dim)  used for L_SCL & prototype construction.
+            edge_mask:        (E,)  VCSA soft mask (or all-ones tensor when ablated).
         """
-        x_lex = self.lexical_embedding(data.x_lex)
+        # 1. Node features
+        x_lex = self.lexical_embedding(data.x_lex)            # (N, embed_dim)
+
         if self.use_morphology:
-            x_morph = self.morph_embedding(data.x_morph)
-            x = torch.cat([x_lex, x_morph], dim=-1)
+            x_morph = self.morph_embedding(data.x_morph)      # (N, embed_dim)
+            x = torch.cat([x_lex, x_morph], dim=-1)           # (N, 2·embed_dim)
         else:
             x_morph = None
             x = x_lex
-        
-        # 1. VCSA Edge Masking
-        # Get soft mask for edges
+
+        # 2. VCSA edge masking
         if self.use_vcsa:
-            edge_mask = self.vcsa(x, data.edge_index)
+            edge_mask = self.vcsa(x, data.edge_index)          # (E,)
         else:
-            edge_mask = torch.ones(data.edge_index.size(1), device=x.device)
-        
-        # Optional: apply threshold tau here to get G*, but we use soft mask as edge_weight for differentiability
-        
-        # 2. MGMP Layers or standard GAT
-        if self.use_mgmp:
-            # MGMP Layer handles missing x_morph if morph_dim=0, but we need to pass a dummy tensor if it's None
-            morph_input = x_morph if x_morph is not None else torch.empty((x.size(0), 0), device=x.device)
-            h = self.mgmp1(x, data.edge_index, edge_mask, prototypes, morph_input)
-            h = self.mgmp2(h, data.edge_index, edge_mask, prototypes, morph_input)
-        else:
-            h = self.gat1(x, data.edge_index)
-            import torch.nn.functional as F
-            h = F.relu(h)
-            h = self.gat2(h, data.edge_index)
-            h = F.relu(h)
-        
-        # 3. Graph Pooling
-        # Global mean pooling over nodes to get graph-level embeddings
-        graph_embeddings = global_mean_pool(h, data.batch)
-        
-        # 4. Classification
-        logits = self.classifier(graph_embeddings)
-        
+            edge_mask = torch.ones(
+                data.edge_index.size(1), dtype=x.dtype, device=x.device
+            )
+
+        # 3. Message passing
+        h = x
+        morph_input = (
+            x_morph
+            if (x_morph is not None and self.use_mgmp)
+            else torch.empty((x.size(0), 0), device=x.device)
+        )
+
+        for layer in self.gnn_layers:
+            if self.use_mgmp:
+                h = layer(h, data.edge_index, edge_mask, prototypes, morph_input)
+            else:
+                h = F.relu(layer(h, data.edge_index))
+
+        # 4. Graph pooling
+        graph_embeddings = global_mean_pool(h, data.batch)    # (B, hidden_dim)
+
+        # 5. Classify
+        logits = self.classifier(graph_embeddings)             # (B, 1)
+
         return logits, graph_embeddings, edge_mask
