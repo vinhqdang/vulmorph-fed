@@ -3,11 +3,12 @@ import torch.nn.functional as F
 from typing import List
 
 class VulMorphServer:
-    def __init__(self, num_cwes: int, hidden_dim: int, device: str = 'cpu'):
+    def __init__(self, num_cwes: int, hidden_dim: int, device: str = 'cpu', use_cwe_affinity: bool = True):
         self.num_cwes = num_cwes
         self.hidden_dim = hidden_dim
         self.device = torch.device(device)
         self.global_prototypes = None
+        self.use_cwe_affinity = use_cwe_affinity
 
     def aggregate_prototypes(self, client_prototypes_list: List[torch.Tensor]) -> torch.Tensor:
         """
@@ -49,6 +50,11 @@ class VulMorphServer:
             if num_active == 1:
                 # Only one client has data, just use their prototype
                 new_global_prototypes[c] = p_c[active_clients[0]]
+                continue
+                
+            if not self.use_cwe_affinity:
+                # Standard FedAvg style uniform averaging
+                new_global_prototypes[c] = p_c[active_clients].mean(dim=0)
                 continue
                 
             # Compute CWE-affinity matrix for active clients

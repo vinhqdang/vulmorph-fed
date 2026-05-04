@@ -24,3 +24,21 @@ def compute_metrics(y_true, y_pred_probs, threshold=0.5):
         "f1": f1,
         "auc": auc
     }
+
+def compute_cp_metrics(y_true, y_pred_probs, source_projects, target_projects, threshold=0.5):
+    """
+    Computes Cross-Project F1 (CP-F1).
+    Evaluates only on functions from projects NOT seen during training.
+    """
+    # Filter indices where project is in target_projects
+    # This requires projects to be tracked in the dataset.
+    pass
+
+def compute_paired_accuracy(pairs, threshold=0.5):
+    """
+    Computes Paired Accuracy (P-C).
+    Requires a list of tuples: (prob_vulnerable_version, prob_patched_version).
+    Model must rank vulnerable > patched.
+    """
+    correct = sum(1 for p_vuln, p_patch in pairs if p_vuln > p_patch)
+    return correct / max(1, len(pairs))

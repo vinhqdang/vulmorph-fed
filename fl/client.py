@@ -13,16 +13,17 @@ from data.dataset import MockCPGDataset
 class VulMorphClient:
     def __init__(self, client_id: int, dataset: MockCPGDataset, 
                  vocab_size: int, embed_dim: int, hidden_dim: int, num_cwes: int,
-                 device: str = 'cpu'):
+                 device: str = 'cpu', use_dp: bool = True, **model_kwargs):
         self.client_id = client_id
         self.dataset = dataset
         self.num_cwes = num_cwes
         self.device = torch.device(device)
         self.hidden_dim = hidden_dim
+        self.use_dp = use_dp
         
         # Initialize local model
         self.model = VulMorph(vocab_size=vocab_size, embed_dim=embed_dim, 
-                              hidden_dim=hidden_dim, num_cwes=num_cwes).to(self.device)
+                              hidden_dim=hidden_dim, num_cwes=num_cwes, **model_kwargs).to(self.device)
         
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
         self.bce_loss = nn.BCEWithLogitsLoss()
@@ -113,5 +114,8 @@ class VulMorphClient:
         Construct local prototypes and apply Laplace DP.
         """
         clean_prototypes = self.compute_local_prototypes()
+        if not self.use_dp:
+            return clean_prototypes
+            
         noisy_prototypes = add_laplace_noise(clean_prototypes, epsilon=epsilon, delta_f=delta_f)
         return noisy_prototypes

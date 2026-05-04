@@ -11,8 +11,12 @@ class VulMorph(nn.Module):
     VulMorph-Fed Local Client Model.
     Combines Morphology Embedding, VCSA, MGMP, and a binary classifier.
     """
-    def __init__(self, vocab_size: int, embed_dim: int = 64, hidden_dim: int = 128, num_cwes: int = 5):
+    def __init__(self, vocab_size: int, embed_dim: int = 64, hidden_dim: int = 128, num_cwes: int = 5,
+                 use_vcsa: bool = True, use_mgmp: bool = True, use_morphology: bool = True):
         super().__init__()
+        self.use_vcsa = use_vcsa
+        self.use_mgmp = use_mgmp
+        self.use_morphology = use_morphology
         
         # We start with lexical token embeddings, though the framework relies heavily on morphology
         self.lexical_embedding = nn.Embedding(vocab_size, embed_dim)
@@ -20,15 +24,21 @@ class VulMorph(nn.Module):
         
         # Node features are sum/concat of lexical and morphological. 
         # For true structural transfer, we could drop lexical entirely, but we keep it for full representation.
-        self.node_dim = embed_dim * 2
+        self.node_dim = embed_dim * 2 if self.use_morphology else embed_dim
         
         # Component 1: Vulnerability-Critical Subgraph Abstraction
-        self.vcsa = VCSA(node_dim=self.node_dim, hidden_dim=hidden_dim)
+        if self.use_vcsa:
+            self.vcsa = VCSA(node_dim=self.node_dim, hidden_dim=hidden_dim)
         
         # Component 3: Morphology-Guided Message Passing
-        # We use two MGMP layers
-        self.mgmp1 = MGMPLayer(in_channels=self.node_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim)
-        self.mgmp2 = MGMPLayer(in_channels=hidden_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim)
+        # We use two MGMP layers (or standard message passing if ablated)
+        if self.use_mgmp:
+            self.mgmp1 = MGMPLayer(in_channels=self.node_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim if self.use_morphology else 0)
+            self.mgmp2 = MGMPLayer(in_channels=hidden_dim, out_channels=hidden_dim, num_cwes=num_cwes, morph_dim=embed_dim if self.use_morphology else 0)
+        else:
+            from torch_geometric.nn import GATConv
+            self.gat1 = GATConv(self.node_dim, hidden_dim)
+            self.gat2 = GATConv(hidden_dim, hidden_dim)
         
         # Classifier
         self.classifier = nn.Sequential(
@@ -49,19 +59,34 @@ class VulMorph(nn.Module):
             edge_mask: Soft edge masks from VCSA
         """
         x_lex = self.lexical_embedding(data.x_lex)
-        x_morph = self.morph_embedding(data.x_morph)
-        
-        x = torch.cat([x_lex, x_morph], dim=-1)
+        if self.use_morphology:
+            x_morph = self.morph_embedding(data.x_morph)
+            x = torch.cat([x_lex, x_morph], dim=-1)
+        else:
+            x_morph = None
+            x = x_lex
         
         # 1. VCSA Edge Masking
         # Get soft mask for edges
-        edge_mask = self.vcsa(x, data.edge_index)
+        if self.use_vcsa:
+            edge_mask = self.vcsa(x, data.edge_index)
+        else:
+            edge_mask = torch.ones(data.edge_index.size(1), device=x.device)
         
         # Optional: apply threshold tau here to get G*, but we use soft mask as edge_weight for differentiability
         
-        # 2. MGMP Layers
-        h = self.mgmp1(x, data.edge_index, edge_mask, prototypes, x_morph)
-        h = self.mgmp2(h, data.edge_index, edge_mask, prototypes, x_morph)
+        # 2. MGMP Layers or standard GAT
+        if self.use_mgmp:
+            # MGMP Layer handles missing x_morph if morph_dim=0, but we need to pass a dummy tensor if it's None
+            morph_input = x_morph if x_morph is not None else torch.empty((x.size(0), 0), device=x.device)
+            h = self.mgmp1(x, data.edge_index, edge_mask, prototypes, morph_input)
+            h = self.mgmp2(h, data.edge_index, edge_mask, prototypes, morph_input)
+        else:
+            h = self.gat1(x, data.edge_index)
+            import torch.nn.functional as F
+            h = F.relu(h)
+            h = self.gat2(h, data.edge_index)
+            h = F.relu(h)
         
         # 3. Graph Pooling
         # Global mean pooling over nodes to get graph-level embeddings
