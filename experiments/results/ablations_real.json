@@ -1,0 +1,44 @@
+{
+  "Full VulMorph-Fed": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  },
+  "w/o VCSA": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  },
+  "w/o Morphological Abstraction": {
+    "precision": 0.9744318181818182,
+    "recall": 0.6957403651115619,
+    "f1": 0.8118343195266272,
+    "auc": 0.9923077026614138
+  },
+  "w/o MCFPA (Uniform Avg)": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  },
+  "w/o MGMP (Standard GAT)": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  },
+  "w/o DP": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  },
+  "Local Only": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "auc": 1.0
+  }
+}

@@ -8,7 +8,7 @@ from typing import Optional
 from models.vulmorph import VulMorph
 from models.vcsa import structural_contrastive_loss
 from utils.privacy import add_laplace_noise
-from data.dataset import MockCPGDataset
+from data.dataset import StructuredCPGDataset as MockCPGDataset
 
 
 class VulMorphClient:

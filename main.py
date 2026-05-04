@@ -7,88 +7,132 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from data.dataset import get_client_datasets
 from fl.client import VulMorphClient
 from fl.server import VulMorphServer
 from utils.metrics import compute_metrics
+from data.loaders.real_datasets import (
+    load_devign, load_primevul, load_bigvul, load_diversevul,
+    split_by_project, ListDataset,
+)
+from data.dataset import get_client_datasets
 
 
-# ───────────────────────────────────────────────────────────────────────────
-# Helpers
-# ───────────────────────────────────────────────────────────────────────────
+# ── Evaluation ───────────────────────────────────────────────────────────────
 
-def build_clients(args, datasets, model_kwargs):
-    return [
-        VulMorphClient(
-            client_id=i,
-            dataset=datasets[i],
-            vocab_size=args.vocab_size,
-            embed_dim=args.embed_dim,
-            hidden_dim=args.hidden_dim,
-            num_cwes=args.num_cwes,
-            device=args.device,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            use_dp=model_kwargs.pop('use_dp', True),
-            **model_kwargs,
-        )
-        for i in range(args.num_clients)
-    ]
-
-
-def evaluate(clients, global_prototypes):
-    """Evaluate all local models; return aggregated classification metrics."""
+def evaluate(clients, global_prototypes, test_dataset=None):
+    """
+    Evaluate all local models.
+    If test_dataset is provided, only evaluates on held-out cross-project samples.
+    Otherwise evaluates on the local training data (used for ablation quick checks).
+    """
     all_y_true, all_y_pred = [], []
 
-    for client in clients:
+    if test_dataset is not None:
+        from torch_geometric.loader import DataLoader as PyGDataLoader
+        loader = PyGDataLoader(test_dataset, batch_size=64, shuffle=False)
+        # Use the first client's model for evaluation (or ensemble — for now first)
+        client = clients[0]
         client.model.eval()
         proto = global_prototypes.to(client.device) if global_prototypes is not None else None
-
         with torch.no_grad():
-            for batch in client.train_loader:
+            for batch in loader:
                 batch = batch.to(client.device)
                 logits, _, _ = client.model(batch, prototypes=proto)
                 probs = torch.sigmoid(logits.squeeze(-1))
                 all_y_true.extend(batch.y.cpu().numpy())
                 all_y_pred.extend(probs.cpu().numpy())
+    else:
+        for client in clients:
+            client.model.eval()
+            proto = global_prototypes.to(client.device) if global_prototypes is not None else None
+            with torch.no_grad():
+                for batch in client.train_loader:
+                    batch = batch.to(client.device)
+                    logits, _, _ = client.model(batch, prototypes=proto)
+                    probs = torch.sigmoid(logits.squeeze(-1))
+                    all_y_true.extend(batch.y.cpu().numpy())
+                    all_y_pred.extend(probs.cpu().numpy())
 
+    if not all_y_true:
+        return {"f1": 0.0, "auc": 0.5, "precision": 0.0, "recall": 0.0}
     return compute_metrics(np.array(all_y_true), np.array(all_y_pred))
 
 
-# ───────────────────────────────────────────────────────────────────────────
-# Federated training loop
-# ───────────────────────────────────────────────────────────────────────────
+# ── Data loading ─────────────────────────────────────────────────────────────
+
+def load_real_data(args):
+    """
+    Load real datasets as specified in plan.md §4 and return
+    (client_datasets, test_dataset) with cross-project split.
+    """
+    data_list = []
+
+    if args.dataset == "devign":
+        data_list = load_devign(max_samples=args.max_samples)
+    elif args.dataset == "primevul":
+        data_list = load_primevul(split="train", max_samples=args.max_samples)
+    elif args.dataset == "bigvul":
+        data_list = load_bigvul(args.data_path, max_samples=args.max_samples)
+    elif args.dataset == "diversevul":
+        data_list = load_diversevul(args.data_path, max_samples=args.max_samples)
+
+    if not data_list:
+        print(f"Warning: could not load dataset '{args.dataset}'. "
+              "Falling back to structured synthetic data.")
+        return None, None
+
+    # Cross-project split: held-out test projects never seen during training
+    client_buckets, test_raw = split_by_project(
+        data_list,
+        num_clients=args.num_clients,
+        test_fraction=args.test_fraction,
+        seed=args.seed,
+    )
+
+    client_datasets = [ListDataset(bucket) for bucket in client_buckets]
+    test_dataset = ListDataset(test_raw)
+
+    return client_datasets, test_dataset
+
+
+# ── Federated training loop ──────────────────────────────────────────────────
 
 def run_fl(args, model_kwargs=None):
-    """
-    Main federated learning simulation loop.
-
-    Each round:
-      1. Clients train locally.
-      2. Upload DP-noised prototypes to the server.
-      3. Server aggregates via MCFPA.
-      4. Clients receive updated P*.
-
-    Returns final evaluation metrics dict.
-    """
     if model_kwargs is None:
         model_kwargs = {}
 
-    datasets = get_client_datasets(
-        total_graphs=args.total_graphs,
-        num_clients=args.num_clients,
-        num_cwes=args.num_cwes,
-    )
-
-    use_dp = model_kwargs.pop('use_dp', True)
+    use_dp           = model_kwargs.pop('use_dp', True)
     use_cwe_affinity = model_kwargs.pop('use_cwe_affinity', True)
-    federate = model_kwargs.pop('federate', True)
+    federate         = model_kwargs.pop('federate', True)
+
+    # ── Dataset ─────────────────────────────────────────────────────────
+    client_datasets = test_dataset = None
+
+    if getattr(args, 'dataset', 'synthetic') != 'synthetic':
+        client_datasets, test_dataset = load_real_data(args)
+
+    if client_datasets is None:
+        # Fall back to structured synthetic data
+        client_datasets = get_client_datasets(
+            total_graphs=args.total_graphs,
+            num_clients=args.num_clients,
+            num_cwes=args.num_cwes,
+        )
+
+    # Adjust num_clients to match actual number of non-empty splits
+    actual_num_clients = len(client_datasets)
+    if actual_num_clients != args.num_clients:
+        print(f"Adjusting num_clients: {args.num_clients} → {actual_num_clients}")
+        args = type(args)(**{**vars(args), 'num_clients': actual_num_clients})
+
+    # Infer vocab_size from data if possible
+    vocab_size = getattr(args, 'vocab_size', 10000)
 
     clients = [
         VulMorphClient(
             client_id=i,
-            dataset=datasets[i],
-            vocab_size=args.vocab_size,
+            dataset=client_datasets[i],
+            vocab_size=vocab_size,
             embed_dim=args.embed_dim,
             hidden_dim=args.hidden_dim,
             num_cwes=args.num_cwes,
@@ -112,8 +156,7 @@ def run_fl(args, model_kwargs=None):
 
     for r in range(args.rounds):
         client_protos = []
-
-        for client in tqdm(clients, desc=f"Round {r+1}/{args.rounds} – training", leave=False):
+        for client in tqdm(clients, desc=f"Round {r+1}/{args.rounds}", leave=False):
             client.train_local(
                 global_prototypes=server.global_prototypes,
                 epochs=args.local_epochs,
@@ -129,51 +172,60 @@ def run_fl(args, model_kwargs=None):
         if federate and client_protos:
             server.aggregate_prototypes(client_protos)
 
-        metrics = evaluate(clients, server.global_prototypes)
+        # Evaluate on held-out test projects (cross-project F1)
+        # or on local training data if no real dataset
+        metrics = evaluate(clients, server.global_prototypes, test_dataset)
         history.append(metrics)
+
+        split_name = "cross-project test" if test_dataset else "train (synthetic)"
         print(
-            f"  Round {r+1:>2} | F1={metrics['f1']:.4f} "
-            f"AUC={metrics['auc']:.4f} P={metrics['precision']:.4f} "
-            f"R={metrics['recall']:.4f}"
+            f"  Round {r+1:>2} [{split_name}] | "
+            f"F1={metrics['f1']:.4f} AUC={metrics['auc']:.4f} "
+            f"P={metrics['precision']:.4f} R={metrics['recall']:.4f}"
         )
 
     return history[-1] if history else {}
 
 
-# ───────────────────────────────────────────────────────────────────────────
-# CLI
-# ───────────────────────────────────────────────────────────────────────────
+# ── CLI ──────────────────────────────────────────────────────────────────────
 
 def parse_args(argv=None):
-    p = argparse.ArgumentParser(description="VulMorph-Fed Simulation")
+    p = argparse.ArgumentParser(description="VulMorph-Fed")
+
+    # Dataset selection (plan.md §4)
+    p.add_argument("--dataset", type=str, default="synthetic",
+                   choices=["synthetic", "devign", "primevul", "bigvul", "diversevul"],
+                   help="Dataset to use (plan.md §4)")
+    p.add_argument("--data_path",    type=str, default=None,
+                   help="Path to local CSV/JSONL for bigvul/diversevul")
+    p.add_argument("--max_samples",  type=int, default=10000)
+    p.add_argument("--test_fraction",type=float, default=0.2,
+                   help="Fraction of projects held out for cross-project evaluation")
 
     # Federated setup
-    p.add_argument("--num_clients",   type=int,   default=5)
-    p.add_argument("--rounds",        type=int,   default=10)
-    p.add_argument("--local_epochs",  type=int,   default=2)
-    p.add_argument("--total_graphs",  type=int,   default=1000)
+    p.add_argument("--num_clients",  type=int, default=5)
+    p.add_argument("--rounds",       type=int, default=10)
+    p.add_argument("--local_epochs", type=int, default=2)
+    p.add_argument("--total_graphs", type=int, default=5000,
+                   help="Total graphs for synthetic mode")
 
     # Model architecture
-    p.add_argument("--vocab_size",    type=int,   default=1000)
-    p.add_argument("--embed_dim",     type=int,   default=64)
-    p.add_argument("--hidden_dim",    type=int,   default=128)
-    p.add_argument("--num_cwes",      type=int,   default=10)
-    p.add_argument("--num_layers",    type=int,   default=2)
-    p.add_argument("--batch_size",    type=int,   default=32)
-    p.add_argument("--lr",            type=float, default=1e-3)
-    p.add_argument("--dropout",       type=float, default=0.3)
+    p.add_argument("--vocab_size",   type=int,   default=10000)
+    p.add_argument("--embed_dim",    type=int,   default=64)
+    p.add_argument("--hidden_dim",   type=int,   default=128)
+    p.add_argument("--num_cwes",     type=int,   default=150)
+    p.add_argument("--num_layers",   type=int,   default=2)
+    p.add_argument("--batch_size",   type=int,   default=64)
+    p.add_argument("--lr",           type=float, default=1e-3)
+    p.add_argument("--dropout",      type=float, default=0.3)
 
     # Loss weights
-    p.add_argument("--alpha",         type=float, default=0.1,
-                   help="Weight for L_SCL contrastive loss")
-    p.add_argument("--gamma",         type=float, default=0.01,
-                   help="Weight for L1 edge-sparsity loss")
+    p.add_argument("--alpha",        type=float, default=0.1)
+    p.add_argument("--gamma",        type=float, default=0.01)
 
     # Privacy
-    p.add_argument("--epsilon",       type=float, default=2.0,
-                   help="Laplace DP privacy budget ε")
-    p.add_argument("--delta_f",       type=float, default=0.1,
-                   help="Global L2-sensitivity Δf")
+    p.add_argument("--epsilon",      type=float, default=2.0)
+    p.add_argument("--delta_f",      type=float, default=0.1)
 
     # Ablation flags
     p.add_argument("--no_vcsa",       action="store_true")
@@ -181,47 +233,36 @@ def parse_args(argv=None):
     p.add_argument("--no_morphology", action="store_true")
     p.add_argument("--no_cwe_affinity", action="store_true")
     p.add_argument("--no_dp",         action="store_true")
-    p.add_argument("--local_only",    action="store_true",
-                   help="Each client trains in isolation (no federation)")
+    p.add_argument("--local_only",    action="store_true")
 
     # Misc
-    p.add_argument("--device",        type=str,   default="cpu")
-    p.add_argument("--seed",          type=int,   default=42)
-    p.add_argument("--output",        type=str,   default=None,
-                   help="JSON file to save final metrics")
+    p.add_argument("--device",       type=str,   default="cpu")
+    p.add_argument("--seed",         type=int,   default=42)
+    p.add_argument("--output",       type=str,   default=None)
 
     return p.parse_args(argv)
 
 
 def main(argv=None):
     args = parse_args(argv)
-
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
     print("=" * 60)
-    print("VulMorph-Fed Simulation")
-    print(f"  Clients={args.num_clients}  Rounds={args.rounds}  ε={args.epsilon}")
-    ablation_flags = []
-    if args.no_vcsa:         ablation_flags.append("w/o VCSA")
-    if args.no_mgmp:         ablation_flags.append("w/o MGMP")
-    if args.no_morphology:   ablation_flags.append("w/o Morphology")
-    if args.no_cwe_affinity: ablation_flags.append("w/o CWE-Affinity")
-    if args.no_dp:           ablation_flags.append("w/o DP")
-    if args.local_only:      ablation_flags.append("Local-Only")
-    if ablation_flags:
-        print(f"  Ablation: {', '.join(ablation_flags)}")
+    print("VulMorph-Fed")
+    print(f"  Dataset={args.dataset}  Clients={args.num_clients}  "
+          f"Rounds={args.rounds}  ε={args.epsilon}")
     print("=" * 60)
 
     model_kwargs = dict(
-        use_vcsa=not args.no_vcsa,
-        use_mgmp=not args.no_mgmp,
-        use_morphology=not args.no_morphology,
-        use_cwe_affinity=not args.no_cwe_affinity,
-        use_dp=not args.no_dp,
-        federate=not args.local_only,
-        num_layers=args.num_layers,
-        dropout=args.dropout,
+        use_vcsa         = not args.no_vcsa,
+        use_mgmp         = not args.no_mgmp,
+        use_morphology   = not args.no_morphology,
+        use_cwe_affinity = not args.no_cwe_affinity,
+        use_dp           = not args.no_dp,
+        federate         = not args.local_only,
+        num_layers       = args.num_layers,
+        dropout          = args.dropout,
     )
 
     metrics = run_fl(args, model_kwargs)
@@ -236,7 +277,7 @@ def main(argv=None):
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, 'w') as f:
             json.dump(metrics, f, indent=2)
-        print(f"\nMetrics saved → {args.output}")
+        print(f"Metrics saved → {args.output}")
 
 
 if __name__ == "__main__":
