@@ -8,6 +8,7 @@
 \centering
 \caption{RQ1: Cross-Project Vulnerability Detection (F1-Score). Best results per dataset in \textbf{bold}.}
 \label{tab:rq1_main}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrrrrrr}
 \toprule
 Model & Devign & BigVul & ReVeal & CVEfixes & DiverseVul & MegaVul & PrimeVul & VulGate \\
@@ -18,6 +19,7 @@ FedAvg+GAT & 0.4290 & 0.3717 & 0.3837 & 0.3269 & 0.3028 & 0.3555 & 0.1481 & 0.31
 VulMorph-Fed & \textbf{0.6764} & \textbf{0.5758} & \textbf{0.5668} & \textbf{0.5053} & \textbf{0.4793} & \textbf{0.5353} & \textbf{0.3597} & \textbf{0.5386} \\
 \bottomrule
 \end{tabular}
+}
 \end{table*}
 
 % --- RQ2 Ablation Study ---
@@ -25,6 +27,7 @@ VulMorph-Fed & \textbf{0.6764} & \textbf{0.5758} & \textbf{0.5668} & \textbf{0.5
 \centering
 \caption{RQ2: Ablation Study. Each row removes one VulMorph-Fed component. Best per column in \textbf{bold}.}
 \label{tab:rq2_ablation}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrr}
 \toprule
 Variant & F1 & AUC & Prec. & Rec. \\
@@ -39,6 +42,7 @@ w/o Differential Privacy & \textbf{0.5980} & \textbf{0.7550} & \textbf{0.6050} &
 Local only (no federation) & 0.3150 & 0.5300 & 0.3200 & 0.3100 \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 % --- RQ3 Privacy-Utility ---
@@ -46,6 +50,7 @@ Local only (no federation) & 0.3150 & 0.5300 & 0.3200 & 0.3100 \\
 \centering
 \caption{RQ3: Privacy-Utility Tradeoff across Laplace DP budgets $\varepsilon$.}
 \label{tab:rq3_privacy}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrr}
 \toprule
 $\varepsilon$ & F1 & AUC & Prec. & Rec. \\
@@ -58,6 +63,7 @@ $\varepsilon$ & F1 & AUC & Prec. & Rec. \\
 $\infty$ (no DP) & 0.5980 & 0.7550 & 0.0000 & 0.0000 \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 
 % --- RQ4 Scalability ---
@@ -65,6 +71,7 @@ $\infty$ (no DP) & 0.5980 & 0.7550 & 0.0000 & 0.0000 \\
 \centering
 \caption{RQ4: Scalability — performance and communication cost across $K$ federated clients.}
 \label{tab:rq4_scalability}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{rrrr}
 \toprule
 $K$ & F1 & AUC & CCR (KB/rnd) \\
@@ -76,5 +83,6 @@ $K$ & F1 & AUC & CCR (KB/rnd) \\
 50 & 0.5950 & 0.7520 & 260.0 \\
 \bottomrule
 \end{tabular}
+}
 \end{table}
 

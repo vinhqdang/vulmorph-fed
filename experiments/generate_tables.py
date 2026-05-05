@@ -72,6 +72,7 @@ def table_rq1():
     lines.append("\\centering")
     lines.append("\\caption{RQ1: Cross-Project Vulnerability Detection (F1-Score). Best results per dataset in \\textbf{bold}.}")
     lines.append("\\label{tab:rq1_main}")
+    lines.append("\\resizebox{\\linewidth}{!}{%")
     lines.append("\\begin{tabular}{l" + "r"*len(datasets) + "}")
     lines.append("\\toprule")
     lines.append("Model & " + " & ".join(datasets) + " \\\\")
@@ -95,6 +96,7 @@ def table_rq1():
 
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
+    lines.append("}")
     lines.append("\\end{table*}")
     return "\n".join(lines)
 
@@ -127,6 +129,7 @@ def table_rq2():
     lines.append("\\caption{RQ2: Ablation Study. Each row removes one VulMorph-Fed component. "
                  "Best per column in \\textbf{bold}.}")
     lines.append("\\label{tab:rq2_ablation}")
+    lines.append("\\resizebox{\\linewidth}{!}{%")
     lines.append("\\begin{tabular}{l" + "r"*len(cols) + "}")
     lines.append("\\toprule")
     lines.append("Variant & " + " & ".join(col_labels) + " \\\\")
@@ -148,6 +151,7 @@ def table_rq2():
 
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
+    lines.append("}")
     lines.append("\\end{table}")
     return "\n".join(lines)
 
@@ -172,6 +176,7 @@ def table_rq3():
     lines.append("\\centering")
     lines.append("\\caption{RQ3: Privacy-Utility Tradeoff across Laplace DP budgets $\\varepsilon$.}")
     lines.append("\\label{tab:rq3_privacy}")
+    lines.append("\\resizebox{\\linewidth}{!}{%")
     lines.append("\\begin{tabular}{l" + "r"*len(cols) + "}")
     lines.append("\\toprule")
     lines.append("$\\varepsilon$ & " + " & ".join(col_labels) + " \\\\")
@@ -184,6 +189,7 @@ def table_rq3():
 
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
+    lines.append("}")
     lines.append("\\end{table}")
     return "\n".join(lines)
 
@@ -205,6 +211,7 @@ def table_rq4():
     lines.append("\\caption{RQ4: Scalability — performance and communication cost "
                  "across $K$ federated clients.}")
     lines.append("\\label{tab:rq4_scalability}")
+    lines.append("\\resizebox{\\linewidth}{!}{%")
     lines.append("\\begin{tabular}{r" + "r"*len(cols) + "r}")
     lines.append("\\toprule")
     lines.append("$K$ & " + " & ".join(col_labels) + " & CCR (KB/rnd) \\\\")
@@ -217,6 +224,7 @@ def table_rq4():
 
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
+    lines.append("}")
     lines.append("\\end{table}")
     return "\n".join(lines)
 
