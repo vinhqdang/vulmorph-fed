@@ -59,57 +59,43 @@ def bold_best(values, metrics, higher_is_better=True):
 # ── Table 1: RQ1 Main Comparison ─────────────────────────────────────────────
 
 def table_rq1():
-    baseline_data = load_json("baselines.json")
-    vulmorph_data = load_json("devign_real.json")
-    ablation_data = load_json("ablations_real.json")
-
-    if not vulmorph_data:
-        print("Warning: devign_real.json not found, skipping Table 1.")
+    data = load_json("cross_project.json")
+    if not data:
+        print("Warning: cross_project.json not found, skipping Table 1.")
         return ""
 
-    rows = []
-    # Centralised baselines
-    if baseline_data:
-        rows.append(("Devign (centralised)", baseline_data.get("centralised_devign", {})))
-        rows.append(("GAT / CPVD-style (centralised)", baseline_data.get("centralised_gat", {})))
-        rows.append(("FedAvg + GAT", baseline_data.get("fedavg_gat", {})))
-    # Proposed
-    rows.append(("\\textbf{VulMorph-Fed (proposed)}", vulmorph_data))
-
-    cols = ["f1", "auc", "precision", "recall"]
-    col_labels = ["F1", "AUC", "Prec.", "Rec."]
+    datasets = ["Devign", "BigVul", "ReVeal", "CVEfixes", "DiverseVul", "MegaVul", "PrimeVul", "VulGate"]
+    models = ["Centralised GGNN", "Centralised GAT", "FedAvg+GAT", "VulMorph-Fed"]
 
     lines = []
-    lines.append("\\begin{table}[t]")
+    lines.append("\\begin{table*}[t]")
     lines.append("\\centering")
-    lines.append("\\caption{RQ1: Cross-Project Vulnerability Detection on Devign. "
-                 "Best results per column in \\textbf{bold}.}")
+    lines.append("\\caption{RQ1: Cross-Project Vulnerability Detection (F1-Score). Best results per dataset in \\textbf{bold}.}")
     lines.append("\\label{tab:rq1_main}")
-    lines.append("\\begin{tabular}{l" + "r"*len(cols) + "}")
+    lines.append("\\begin{tabular}{l" + "r"*len(datasets) + "}")
     lines.append("\\toprule")
-    lines.append("Method & " + " & ".join(col_labels) + " \\\\")
+    lines.append("Model & " + " & ".join(datasets) + " \\\\")
     lines.append("\\midrule")
 
-    # Find best per column
-    all_vals = [m for _, m in rows if m]
+    # Find best F1 per dataset
     best = {}
-    for c in cols:
-        vals = [m.get(c, 0) for m in all_vals]
-        best[c] = max(vals) if vals else 0
+    for d in datasets:
+        vals = [data[d][m].get("f1", 0) for m in models if d in data and m in data[d]]
+        best[d] = max(vals) if vals else 0
 
-    for name, m in rows:
-        if not m:
-            cells = " & ".join(["--"]*len(cols))
-        else:
-            cells = " & ".join(
-                fmt(m.get(c, 0), bold=(abs(m.get(c, 0) - best[c]) < 1e-4))
-                for c in cols
-            )
-        lines.append(f"{name} & {cells} \\\\")
+    for m in models:
+        row = [m]
+        for d in datasets:
+            if d in data and m in data[d]:
+                val = data[d][m].get("f1", 0)
+                row.append(fmt(val, bold=(abs(val - best[d]) < 1e-4)))
+            else:
+                row.append("--")
+        lines.append(" & ".join(row) + " \\\\")
 
     lines.append("\\bottomrule")
     lines.append("\\end{tabular}")
-    lines.append("\\end{table}")
+    lines.append("\\end{table*}")
     return "\n".join(lines)
 
 

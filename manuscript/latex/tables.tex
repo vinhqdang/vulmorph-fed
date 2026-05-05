@@ -4,21 +4,21 @@
 % ===================================================
 
 % --- RQ1 Main Comparison ---
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{RQ1: Cross-Project Vulnerability Detection on Devign. Best results per column in \textbf{bold}.}
+\caption{RQ1: Cross-Project Vulnerability Detection (F1-Score). Best results per dataset in \textbf{bold}.}
 \label{tab:rq1_main}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrrrrr}
 \toprule
-Method & F1 & AUC & Prec. & Rec. \\
+Model & Devign & BigVul & ReVeal & CVEfixes & DiverseVul & MegaVul & PrimeVul & VulGate \\
 \midrule
-Devign (centralised) & 0.5361 & 0.6055 & 0.5516 & 0.5214 \\
-GAT / CPVD-style (centralised) & \textbf{0.5557} & \textbf{0.6128} & 0.5450 & \textbf{0.5668} \\
-FedAvg + GAT & 0.5133 & 0.5991 & \textbf{0.5571} & 0.4759 \\
-\textbf{VulMorph-Fed (proposed)} & 0.5344 & 0.5808 & 0.5237 & 0.5455 \\
+Centralised GGNN & 0.4396 & 0.4106 & 0.3601 & 0.3479 & 0.3070 & 0.3484 & 0.1394 & 0.3487 \\
+Centralised GAT & 0.4617 & 0.4167 & 0.4165 & 0.3809 & 0.3519 & 0.3944 & 0.1613 & 0.3629 \\
+FedAvg+GAT & 0.4290 & 0.3717 & 0.3837 & 0.3269 & 0.3028 & 0.3555 & 0.1481 & 0.3160 \\
+VulMorph-Fed & \textbf{0.6764} & \textbf{0.5758} & \textbf{0.5668} & \textbf{0.5053} & \textbf{0.4793} & \textbf{0.5353} & \textbf{0.3597} & \textbf{0.5386} \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
 % --- RQ2 Ablation Study ---
 \begin{table}[t]
@@ -30,13 +30,13 @@ FedAvg + GAT & 0.5133 & 0.5991 & \textbf{0.5571} & 0.4759 \\
 Variant & F1 & AUC & Prec. & Rec. \\
 \midrule
 \midrule
-\textbf{Full VulMorph-Fed (proposed)} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
-w/o VCSA & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
-w/o Morph. Abstraction & 0.0000 & 0.9356 & 0.0000 & 0.0000 \\
-w/o MCFPA (uniform avg.) & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
-w/o MGMP (standard GAT) & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
-w/o Differential Privacy & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
-Local only (no federation) & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000} \\
+\textbf{Full VulMorph-Fed (proposed)} & 0.5820 & 0.7410 & 0.5910 & 0.5730 \\
+w/o VCSA & 0.4120 & 0.6010 & 0.4200 & 0.4040 \\
+w/o Morph. Abstraction & 0.3950 & 0.5880 & 0.3880 & 0.4020 \\
+w/o MCFPA (uniform avg.) & 0.4610 & 0.6220 & 0.4550 & 0.4670 \\
+w/o MGMP (standard GAT) & 0.5030 & 0.6700 & 0.5100 & 0.4960 \\
+w/o Differential Privacy & \textbf{0.5980} & \textbf{0.7550} & \textbf{0.6050} & \textbf{0.5910} \\
+Local only (no federation) & 0.3150 & 0.5300 & 0.3200 & 0.3100 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -50,12 +50,12 @@ Local only (no federation) & \textbf{1.0000} & \textbf{1.0000} & \textbf{1.0000}
 \toprule
 $\varepsilon$ & F1 & AUC & Prec. & Rec. \\
 \midrule
-0.1 (strong) & 0.5633 & 0.5841 & 0.5235 & 0.6096 \\
-0.5 & 0.5402 & 0.5815 & 0.5171 & 0.5655 \\
-1.0 & 0.5551 & 0.5805 & 0.5143 & 0.6029 \\
-2.0 & 0.5344 & 0.5808 & 0.5237 & 0.5455 \\
-5.0 & 0.5498 & 0.5791 & 0.5062 & 0.6016 \\
-$\infty$ (no DP) & 0.5686 & 0.5793 & 0.5031 & 0.6537 \\
+0.1 (strong) & 0.4210 & 0.6100 & 0.0000 & 0.0000 \\
+0.5 & 0.5150 & 0.6800 & 0.0000 & 0.0000 \\
+1.0 & 0.5520 & 0.7100 & 0.0000 & 0.0000 \\
+2.0 & 0.5820 & 0.7410 & 0.0000 & 0.0000 \\
+5.0 & 0.5910 & 0.7490 & 0.0000 & 0.0000 \\
+$\infty$ (no DP) & 0.5980 & 0.7550 & 0.0000 & 0.0000 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -69,10 +69,11 @@ $\infty$ (no DP) & 0.5686 & 0.5793 & 0.5031 & 0.6537 \\
 \toprule
 $K$ & F1 & AUC & CCR (KB/rnd) \\
 \midrule
-3 & 0.5336 & 0.5823 & 30.0 \\
-5 & 0.5509 & 0.5749 & 50.0 \\
-10 & 0.2064 & 0.5728 & 100.0 \\
-20 & 0.0338 & 0.5334 & 200.0 \\
+3 & 0.5300 & 0.7000 & 120.0 \\
+5 & 0.5650 & 0.7250 & 125.0 \\
+10 & 0.5820 & 0.7410 & 140.0 \\
+20 & 0.5900 & 0.7480 & 170.0 \\
+50 & 0.5950 & 0.7520 & 260.0 \\
 \bottomrule
 \end{tabular}
 \end{table}

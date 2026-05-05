@@ -1,65 +1,71 @@
-\section{VulMorph-Fed: Proposed Methodology}
+\section{Methodology}
 \label{sec:method}
 
-\subsection{Problem Formulation}
-Let $\mathcal{C} = \{C_1, C_2, \ldots, C_K\}$ be a set of $K$ software organisations participating as federated clients. Each client $C_k$ possesses a private local dataset $\mathcal{D}_k = \{(G_i^k, y_i^k)\}_{i=1}^{n_k}$, where $G_i^k = (V_i^k, E_i^k, X_i^k)$ represents the Code Property Graph (CPG) of a function extracted from $C_k$'s codebase, and $y_i^k \in \{0, 1\}$ is its binary vulnerability label. Raw source code and private datasets are strictly prohibited from leaving the local client.
-
-The objective is to collaboratively train a global vulnerability detection model $f_\theta : G \rightarrow [0, 1]$ that satisfies the following constraints:
-\begin{enumerate}
-    \item \textbf{Privacy Preservation}: No raw source tokens, CPG structures, or raw model gradients are transmitted between clients or to the central server.
-    \item \textbf{Cross-Project Generalisation}: The global model $f_\theta$ must achieve high detection accuracy on completely unseen software projects (cross-project split).
-    \item \textbf{Heterogeneity Robustness}: The federated learning process must remain robust even when local datasets are highly non-IID, characterized by diverse programming styles and distinct Common Weakness Enumeration (CWE) distributions.
-\end{enumerate}
-
-To achieve these goals, VulMorph-Fed operates on the core insight that while vulnerabilities manifest with significant lexical heterogeneity across projects, their underlying morphological structures remain invariant. The framework consists of three novel components: Vulnerability-Critical Subgraph Abstraction (VCSA), Morphology-Conditioned Federated Prototype Aggregation (MCFPA), and Morphology-Guided Message Passing (MGMP).
+To address the cross-project generalisation gap and the data-silo problem simultaneously, we propose \emph{VulMorph-Fed}. The framework replaces standard parameter-averaging with a privacy-preserving federated aggregation of semantic structural prototypes. The methodology consists of three core components: (1)~Vulnerability-Critical Subgraph Abstraction (VCSA), which extracts project-invariant structural morphologies; (2)~Morphology-Conditioned Federated Prototype Aggregation (MCFPA), which securely aggregates structural knowledge; and (3)~Morphology-Guided Message Passing (MGMP), which integrates global intelligence into local graph evaluation. Let $\mathcal{G}_k = \{G_i^{(k)}\}_{i=1}^{N_k}$ denote the local dataset of client $k \in \{1, \dots, K\}$, where each graph $G_i^{(k)} = (\mathcal{V}, \mathcal{E}, \mathbf{X})$ represents a function property graph with node features $\mathbf{X} \in \mathbb{R}^{|\mathcal{V}| \times d}$.
 
 \subsection{Vulnerability-Critical Subgraph Abstraction (VCSA)}
-A complete CPG of a function typically contains thousands of nodes and edges, the vast majority of which define benign program logic and contribute to the "generalisation gap" by entangling the model in project-specific lexical details. VCSA acts as an intelligent, differentiable filter that extracts the minimal structural footprint of a vulnerability.
+Raw Code Property Graphs (CPGs) contain thousands of project-specific API tokens, causing GNNs to overfit to local lexical distributions. VCSA performs a structural abstraction mapping $\Phi: \mathcal{G} \rightarrow \tilde{\mathcal{G}}$ that strips lexical noise while preserving vulnerability-critical data flow. 
 
-For a given CPG $G = (V, E, X)$, where $X \in \mathbb{R}^{|V| \times d}$ represents node features initialized by token embeddings, VCSA employs a lightweight two-layer Multi-Layer Perceptron (MLP) over edge embeddings to compute a differentiable edge importance mask $\boldsymbol{\varepsilon} \in [0,1]^{|E|}$. The vulnerability-critical subgraph $G^*$ is then defined as:
+We define a finite semantic taxonomy $\mathcal{T} = \{\tau_1, \dots, \tau_8\}$, comprising fundamental operation types (e.g., \texttt{MEMORY\_ALLOC}, \texttt{PTR\_DEREF}, \texttt{ARRAY\_INDEX}). The abstraction function maps each node $v \in \mathcal{V}$ to a semantic type:
 \begin{equation}
-    G^* = (V,\ E^* = \{e_i \in E : \varepsilon_i > \tau\},\ X^*)
+    \tilde{v} = \phi_{\text{type}}(v) \in \mathcal{T} \cup \{\texttt{UNKNOWN}\}
 \end{equation}
-where $\tau$ is a learned threshold. To enforce structural transferability, VCSA applies a \textbf{Morphological Abstraction} step. Node labels (which are originally project-specific tokens) are deterministically mapped to a fixed taxonomy of 8 abstract semantic types (e.g., \texttt{MEMORY\_ACCESS}, \texttt{CONTROL\_BRANCH}, \texttt{ARRAY\_INDEX}). The resulting abstracted node features $\hat{X}$ represent purely structural roles, stripping away the lexical vocabulary that causes overfitting.
-
-The edge mask $\boldsymbol{\varepsilon}$ is learned end-to-end via a Structural Contrastive Loss ($\mathcal{L}_{SCL}$):
+We extract the vulnerability-critical subgraph $\tilde{G} \subset G$ by executing a bidirectional reachability query over the data-dependence edges $\mathcal{E}_{DD}$ originating from any node $v$ where $\phi_{\text{type}}(v) \neq \texttt{UNKNOWN}$:
 \begin{equation}
-    \mathcal{L}_{SCL} = \sum_{(i,j) \in \mathcal{P}^+} \|h_{G^*_i} - h_{G^*_j}\|_2^2 + \sum_{(i,j) \in \mathcal{P}^-} \max(0,\ m - \|h_{G^*_i} - h_{G^*_j}\|_2^2) + \lambda_s \cdot \|\boldsymbol{\varepsilon}\|_1
+    \tilde{\mathcal{V}} = \{ u \in \mathcal{V} \mid \exists \text{ path } u \leftrightarrow v \text{ in } \mathcal{E}_{DD} \}
 \end{equation}
-where $h_{G^*}$ represents the graph-level embedding of the subgraph, $\mathcal{P}^+$ defines pairs of subgraphs belonging to the same CWE type, and $\mathcal{P}^-$ defines pairs of vulnerable and non-vulnerable subgraphs. The $L_1$ penalty term encourages the mask to be sparse, ensuring that $G^*$ isolates only the critical vulnerability morphology.
+The abstracted node features $\tilde{\mathbf{X}} \in \mathbb{R}^{|\tilde{\mathcal{V}}| \times |\mathcal{T}|}$ are initialized as one-hot encodings of their semantic types. The local GNN encoder $f_{\theta_k}: \tilde{\mathcal{G}} \rightarrow \mathbb{R}^{d}$ then computes the graph-level representation:
+\begin{equation}
+    \mathbf{h}_{\tilde{G}} = \text{READOUT} \left( \text{GNN}_{\theta_k}(\tilde{\mathbf{X}}, \tilde{\mathcal{E}}) \right)
+\end{equation}
+By operating strictly on $\tilde{G}$, $f_{\theta_k}$ is forced to learn the \emph{shape} of the data flow (the morphology) rather than memorizing project-specific token distributions.
 
 \subsection{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}
-Standard Federated Learning algorithms like FedAvg share model parameters $\theta$ across clients. In highly heterogeneous codebases, averaging the parameters of GNNs trained on disjoint structural spaces destroys local topological knowledge. VulMorph-Fed replaces parameter sharing with the sharing of \emph{semantic prototypes}.
+Standard Federated Learning algorithms, such as FedAvg \cite{mcmahan2017fedavg}, aggregate neural network parameters: $\theta_{t+1} = \sum_{k=1}^K \frac{N_k}{N} \theta_t^{(k)}$. This formulation assumes IID data distributions. However, vulnerability datasets exhibit extreme non-IID characteristics, with highly skewed Common Weakness Enumeration (CWE) class distributions across clients.
 
-During the local training phase, each client $C_k$ computes a prototype vector for each CWE type $c$ present in its local dataset. This prototype encapsulates the client's structural understanding of that specific vulnerability class:
+MCFPA circumvents parameter averaging by federating \emph{semantic prototypes}. Let $\mathcal{C}$ be the global set of CWE classes. For each class $c \in \mathcal{C}$, client $k$ computes a local prototype $\mathbf{p}_c^{(k)} \in \mathbb{R}^d$ as the empirical centroid of the embeddings of functions labeled with $c$:
 \begin{equation}
-    p_{c,k} = \frac{1}{|\mathcal{D}_{c,k}|} \sum_{(G^*, y) \in \mathcal{D}_{c,k},\ y=1,\ \text{CWE}=c} \text{GNN}_{enc}(G^*)
+    \mathbf{p}_c^{(k)} = \frac{1}{| \{ G \in \mathcal{G}_k \mid y_G = c \} |} \sum_{G \in \mathcal{G}_k, y_G = c} f_{\theta_k}(\tilde{G})
 \end{equation}
-where $\mathcal{D}_{c,k}$ is the subset of $C_k$'s data labelled with CWE type $c$.
-
-To satisfy strict privacy constraints, each prototype is obfuscated using Differential Privacy (DP) before transmission. We add calibrated Laplace noise:
+To preserve data privacy, we apply the Laplace mechanism. We bound the $L_2$ norm of $\mathbf{h}_{\tilde{G}}$ to $R$, yielding a global sensitivity of $\Delta f = 2R / N_{c,k}$. The perturbed local prototype is:
 \begin{equation}
-    \tilde{p}_{c,k} = p_{c,k} + \text{Lap}\left(0,\ \frac{\Delta f}{\varepsilon}\right)
+    \hat{\mathbf{p}}_c^{(k)} = \mathbf{p}_c^{(k)} + \text{Lap}\left(0, \frac{\Delta f}{\varepsilon}\right)
 \end{equation}
-where $\Delta f$ is the global sensitivity and $\varepsilon$ is the privacy budget. Crucially, because the prototypes are derived from the abstracted morphological space (8 abstract types) rather than the unbounded space of raw source tokens, $\Delta f$ is significantly reduced. This allows VulMorph-Fed to achieve a tighter privacy-utility trade-off compared to applying DP directly to model gradients.
-
-Upon receiving the noisy local prototypes $\{\tilde{p}_{c,k}\}$ from all clients, the central server performs a CWE-Affinity-Weighted aggregation. Instead of uniform averaging, the server computes a cosine similarity matrix $A_{jk,c} = \text{cosine}(\tilde{p}_{c,j}, \tilde{p}_{c,k})$ to determine the affinity between clients for each CWE type. The global prototype for CWE $c$ is computed as:
+The central server aggregates the perturbed prototypes weighted by the local class frequencies $w_c^{(k)}$, producing the global morphology bank $\mathcal{P}_{global} = \{ \mathbf{p}_c^{global} \}_{c \in \mathcal{C}}$:
 \begin{equation}
-    p^*_c = \frac{\sum_{k} A_{k,c} \cdot \tilde{p}_{c,k}}{\sum_{k} A_{k,c}}, \quad \text{where } A_{k,c} = \frac{1}{K-1}\sum_{j \neq k} A_{jk,c}
+    \mathbf{p}_c^{global} = \sum_{k=1}^K w_c^{(k)} \hat{\mathbf{p}}_c^{(k)}
 \end{equation}
-This semantic weighting ensures that clients with anomalous or poorly formed representations of a CWE type have diminished influence on the Global Vulnerability Prototype Bank $\mathcal{P}^* = \{p^*_c\}_{c \in \mathcal{C}}$, which is subsequently broadcast back to all clients.
 
 \subsection{Morphology-Guided Message Passing (MGMP)}
-To bridge the generalisation gap, a GNN evaluating a function in a new project must recognize structural patterns observed in different projects during training. Standard GNN message passing aggregates features exclusively from local graph neighbors, limiting its capacity for global structural transfer. MGMP overcomes this by injecting signals from the Global Prototype Bank directly into the node-level message passing step.
-
-Let $h_v^{(l)}$ be the embedding of node $v$ at layer $l$. The MGMP update is formulated as:
+During local training and inference, client $k$ retrieves $\mathcal{P}_{global}$ and integrates it into its local GNN via MGMP. Instead of updating local node representations solely based on immediate neighbors $\mathcal{N}(v)$, MGMP computes a global context vector $\mathbf{m}_{global}^{(v)}$ via an attention mechanism over the global prototypes:
 \begin{equation}
-    h_v^{(l+1)} = (1 - \lambda_k) \cdot \underbrace{\sigma\left(\sum_{u \in \mathcal{N}(v)} \alpha_{vu}^{(l)} \cdot W^{(l)} h_u^{(l)}\right)}_{\text{Local Neighborhood}} + \lambda_k \cdot \underbrace{\beta_v \cdot \text{ProtoAttn}(h_v^{(l)},\ \mathcal{P}^*)}_{\text{Global Prototype Signal}}
+    \alpha_{v, c} = \frac{\exp \left( \text{LeakyReLU}(\mathbf{a}^T [\mathbf{W} \mathbf{h}_v \Vert \mathbf{p}_c^{global}]) \right)}{\sum_{c' \in \mathcal{C}} \exp \left( \text{LeakyReLU}(\mathbf{a}^T [\mathbf{W} \mathbf{h}_v \Vert \mathbf{p}_{c'}^{global}]) \right)}
 \end{equation}
-
-The global signal is modulated by two gating mechanisms. First, a node-level gate $\beta_v = \sigma(W_\beta \cdot [h_v \| \hat{x}_v])$ determines the relevance of the prototype based on the node's abstract morphological type $\hat{x}_v$. Nodes representing critical operations (e.g., \texttt{MEMORY\_ACCESS}) are permitted stronger interaction with the global prototypes. Second, the attention mechanism matches the node's current state against the global prototype bank:
 \begin{equation}
-    \text{ProtoAttn}(h_v, \mathcal{P}^*) = \sum_{c} \text{softmax}\left(\frac{h_v \cdot p^*_c}{\sqrt{d}}\right) \cdot p^*_c
+    \mathbf{m}_{global}^{(v)} = \sum_{c \in \mathcal{C}} \alpha_{v, c} \mathbf{p}_c^{global}
 \end{equation}
+The final node representation at layer $l+1$ is then updated by fusing the local neighborhood aggregation with the global context:
+\begin{equation}
+    \mathbf{h}_v^{(l+1)} = \sigma \left( \mathbf{W}_{local} \sum_{u \in \mathcal{N}(v)} \mathbf{h}_u^{(l)} + \mathbf{W}_{global} \mathbf{m}_{global}^{(v)} \right)
+\end{equation}
+This mechanism ensures that even if client $k$ has never encountered a specific CWE class locally, its GNN can recognize the structural morphology of that vulnerability by attending to the corresponding global prototype during message passing.
 
-Finally, $\lambda_k$ is a learned, client-specific balancing parameter. Clients with abundant, high-quality local data for a particular CWE may rely more heavily on local graph structures ($\lambda_k \rightarrow 0$), whereas clients encountering unseen or sparse vulnerability structures adaptively increase their reliance on the global prototype knowledge base ($\lambda_k \rightarrow 1$).
+\begin{algorithm}[t]
+\caption{VulMorph-Fed Framework}
+\label{alg:vulmorph_fed}
+\begin{algorithmic}[1]
+\REQUIRE $K$ clients, Global rounds $T$, DP budget $\varepsilon$
+\STATE Server initializes global prototype bank $\mathcal{P}_{global}^{(0)} = \emptyset$
+\FOR{$t = 1, \dots, T$}
+    \FOR{each client $k \in \{1, \dots, K\}$ \textbf{in parallel}}
+        \STATE Retrieve $\mathcal{P}_{global}^{(t-1)}$ from server
+        \STATE Extract abstracted graphs $\tilde{\mathcal{G}}_k = \text{VCSA}(\mathcal{G}_k)$
+        \STATE Update local GNN $\theta_k$ using MGMP with $\mathcal{P}_{global}^{(t-1)}$ for $E$ epochs
+        \STATE Compute local prototypes $\mathbf{p}_c^{(k)} \leftarrow \frac{1}{N_{c,k}} \sum \text{GNN}_{\theta_k}(\tilde{G})$
+        \STATE Perturb: $\hat{\mathbf{p}}_c^{(k)} \leftarrow \mathbf{p}_c^{(k)} + \text{Lap}(0, \Delta f / \varepsilon)$
+        \STATE Transmit $\hat{\mathbf{p}}_c^{(k)}$ and $w_c^{(k)}$ to server
+    \ENDFOR
+    \STATE Server aggregates: $\mathbf{p}_c^{global, (t)} \leftarrow \sum_k w_c^{(k)} \hat{\mathbf{p}}_c^{(k)}$
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
