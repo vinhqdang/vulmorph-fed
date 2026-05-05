@@ -1,0 +1,8 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this paper, we presented VulMorph-Fed, a novel federated learning framework that addresses two of the most significant barriers in automated vulnerability detection: the cross-project generalisation gap and the data silo problem. By shifting the representation level from project-specific lexical tokens to project-invariant structural morphologies, VulMorph-Fed enables effective cross-organizational knowledge transfer without exposing raw source code. 
+
+The framework achieves this through three synergistic innovations: the Vulnerability-Critical Subgraph Abstraction (VCSA) isolates invariant vulnerability patterns; Morphology-Conditioned Federated Prototype Aggregation (MCFPA) federates semantic knowledge while maintaining strict Differential Privacy guarantees; and Morphology-Guided Message Passing (MGMP) seamlessly integrates global intelligence into local graph evaluations. 
+
+Our extensive evaluation on a realistic, cross-project federated split demonstrates that VulMorph-Fed significantly outperforms both state-of-the-art centralised models and standard federated learning baselines. Furthermore, the framework scales efficiently with minimal communication overhead and strong resilience to privacy constraints. We hope VulMorph-Fed will serve as a foundational blueprint for future collaborative, privacy-preserving cybersecurity systems.

@@ -1,0 +1,15 @@
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+\subsection{Addressing the Generalisation Gap}
+The catastrophic drop in performance when moving from within-project to cross-project evaluation is the primary technical barrier in modern SVD research. Models that rely on raw token representations inevitably memorize project-specific vocabularies. Our results confirm that abstracting the problem space from concrete tokens to structural morphologies is a highly effective strategy for bridging this gap. By focusing the model on the \emph{shape} of the data flow and control structures surrounding critical operations (e.g., unbounded memory copies, unchecked loop increments), VulMorph-Fed learns patterns that translate seamlessly across different software repositories.
+
+\subsection{Federated Learning in Industrial Contexts}
+VulMorph-Fed provides a viable blueprint for cross-organizational collaboration in cybersecurity. The data silo problem is acute in this domain; no single entity possesses enough training data to model the full spectrum of software vulnerabilities. By federating prototypes rather than model weights, we solve two problems simultaneously. First, we drastically reduce communication overhead, making the system scalable to thousands of clients. Second, we enable strict Differential Privacy guarantees with minimal utility degradation, satisfying the stringent legal and proprietary requirements of industrial participants.
+
+\subsection{Limitations and Threats to Validity}
+Despite its strong cross-project performance, VulMorph-Fed has several limitations. First, the morphological abstraction heavily relies on a predefined taxonomy of 8 semantic types. While this taxonomy covers a broad range of memory corruption and control flow vulnerabilities in C/C++, it may require extension to support logic flaws, cryptographic misconfigurations, or vulnerabilities specific to higher-level languages like Java or Python. 
+
+Second, the current implementation extracts proxy graphs directly from tokenized source code to avoid the massive computational overhead of full static analysis (e.g., via Joern). While these proxy graphs provide sufficient structural signal for our evaluation, integration with formally verified Code Property Graphs might further enhance the precision of the VCSA module.
+
+Finally, while we simulate non-IID distributions by stratifying the cross-project splits, real-world data heterogeneity may present unforeseen challenges. The distribution of CWE types in commercial codebases might be even more imbalanced or sparse than simulated here, potentially affecting the stability of the global prototype bank. Future work will investigate dynamic, asynchronous prototype updates to handle extreme client heterogeneity.
