@@ -12,10 +12,10 @@
     "auc": 1.0
   },
   "w/o Morphological Abstraction": {
-    "precision": 0.9744318181818182,
-    "recall": 0.6957403651115619,
-    "f1": 0.8118343195266272,
-    "auc": 0.9923077026614138
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "auc": 0.9356121082089812
   },
   "w/o MCFPA (Uniform Avg)": {
     "precision": 1.0,

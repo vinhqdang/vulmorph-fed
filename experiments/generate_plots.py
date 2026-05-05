@@ -63,9 +63,9 @@ def plot_rq1():
                     ha='center', va='bottom')
                     
     plt.grid(axis='y', linestyle='--', alpha=0.7)
-    plt.savefig(FIGURES_DIR / "rq1_performance.pdf", format='pdf', bbox_inches='tight')
+    plt.savefig(FIGURES_DIR / "rq1_performance.png", format='png', dpi=300, bbox_inches='tight')
     plt.close()
-    print("Saved rq1_performance.pdf")
+    print("Saved rq1_performance.png")
 
 def plot_rq3():
     data = load_json("rq3_privacy.json")
@@ -95,9 +95,9 @@ def plot_rq3():
         ax.annotate(f'{txt:.4f}', (eps_vals[i], f1_scores[i]), 
                     xytext=(0, 10), textcoords='offset points', ha='center')
                     
-    plt.savefig(FIGURES_DIR / "rq3_privacy.pdf", format='pdf', bbox_inches='tight')
+    plt.savefig(FIGURES_DIR / "rq3_privacy.png", format='png', dpi=300, bbox_inches='tight')
     plt.close()
-    print("Saved rq3_privacy.pdf")
+    print("Saved rq3_privacy.png")
 
 def plot_rq4():
     data = load_json("rq4_scalability.json")
@@ -138,9 +138,9 @@ def plot_rq4():
     plt.title('RQ4: Scalability and Communication Cost')
     ax1.grid(True, linestyle='--', alpha=0.7)
     
-    plt.savefig(FIGURES_DIR / "rq4_scalability.pdf", format='pdf', bbox_inches='tight')
+    plt.savefig(FIGURES_DIR / "rq4_scalability.png", format='png', dpi=300, bbox_inches='tight')
     plt.close()
-    print("Saved rq4_scalability.pdf")
+    print("Saved rq4_scalability.png")
 
 if __name__ == "__main__":
     print("Generating plots...")
