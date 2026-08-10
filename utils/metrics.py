@@ -25,6 +25,22 @@ def compute_metrics(y_true, y_pred_probs, threshold=0.5):
         "auc": auc
     }
 
+def best_f1_threshold(y_true, y_pred_probs):
+    """
+    Choose the decision threshold that maximises F1 on a *calibration* split
+    drawn from the training projects (never the test set). Scans the
+    precision-recall curve, so it is exact rather than grid-based.
+    """
+    from sklearn.metrics import precision_recall_curve
+    y_true = np.asarray(y_true)
+    if len(np.unique(y_true)) < 2:
+        return 0.5
+    prec, rec, thr = precision_recall_curve(y_true, y_pred_probs)
+    f1 = 2 * prec * rec / np.clip(prec + rec, 1e-12, None)
+    best = int(np.argmax(f1[:-1])) if len(thr) else 0
+    return float(thr[best]) if len(thr) else 0.5
+
+
 def compute_cp_metrics(y_true, y_pred_probs, source_projects, target_projects, threshold=0.5):
     """
     Computes Cross-Project F1 (CP-F1).

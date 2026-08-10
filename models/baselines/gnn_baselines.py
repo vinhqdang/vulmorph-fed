@@ -27,12 +27,16 @@ class _NodeInput(nn.Module):
         if input_mode == "lex":
             self.embedding = nn.Embedding(vocab_size, embed_dim)
         else:
+            from data.loaders.ast_graphs import NUM_AST_KINDS
             self.embedding = nn.Embedding(num_morph_types, embed_dim)
+            self.kind_embedding = nn.Embedding(NUM_AST_KINDS, embed_dim)
 
     def forward(self, data):
         if self.input_mode == "lex":
             return self.embedding(data.x_lex)
-        return self.embedding(data.x_morph)
+        # Same VCSA-abstracted representation VulMorph consumes:
+        # morphology type + AST grammar kind (both project-invariant).
+        return self.embedding(data.x_morph) + self.kind_embedding(data.x_kind)
 
 
 class DevignBaseline(nn.Module):

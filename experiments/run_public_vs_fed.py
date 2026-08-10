@@ -27,7 +27,9 @@ import random
 import numpy as np
 import torch
 
-from data.loaders.real_datasets import split_by_project, ListDataset, bucket_cwes
+from data.loaders.real_datasets import (split_by_project, ListDataset,
+                                        bucket_cwes, carve_calibration,
+                                        downsample_benign)
 from fl.client import VulMorphClient
 from fl.server import VulMorphServer
 from main import evaluate
@@ -35,7 +37,7 @@ from experiments.common import add_common_cli, parse_seeds, run_seeded, load_gra
 
 
 def _train_federation(client_datasets, test_dataset, args, use_dp=True,
-                      epsilon=2.0):
+                      epsilon=2.0, cal_dataset=None):
     model_kwargs = dict(use_vcsa=True, use_mgmp=True, use_morphology=True,
                         num_layers=2, dropout=0.3)
     clients = [
@@ -58,7 +60,8 @@ def _train_federation(client_datasets, test_dataset, args, use_dp=True,
                           epochs=args.local_epochs, alpha=0.1, gamma=0.01)
             protos.append(c.get_noisy_prototypes(epsilon=epsilon, delta_f=1.0))
         server.aggregate_prototypes(protos)
-        metrics = evaluate(clients, server.global_prototypes, test_dataset)
+    metrics = evaluate(clients, server.global_prototypes, test_dataset,
+                       cal_dataset)
     return metrics
 
 
@@ -71,8 +74,13 @@ def run_condition(seed, args, public_fraction=0.5):
     train_all = [d for b in client_buckets for d in b]
     rng.shuffle(train_all)
 
+    n_cal = max(1, int(0.1 * len(train_all)))
+    cal_raw, train_all = train_all[:n_cal], train_all[n_cal:]
+
     n_public = int(len(train_all) * public_fraction)
     public, private = train_all[:n_public], train_all[n_public:]
+    public = downsample_benign(public, 4.0, seed)
+    private = downsample_benign(private, 4.0, seed)
 
     n_private_clients = max(1, args.num_clients - 1)
     chunk = max(1, len(private) // n_private_clients)
@@ -81,18 +89,21 @@ def run_condition(seed, args, public_fraction=0.5):
     private_buckets[-1].extend(private[n_private_clients * chunk:])
 
     test_dataset = ListDataset(test_raw)
+    cal_dataset = ListDataset(cal_raw)
 
     # A: public-only centralised (single client, no DP needed — data is public)
     print("  Condition A: public-only centralised")
     m_public = _train_federation([ListDataset(public)], test_dataset, args,
-                                 use_dp=False, epsilon=float('inf'))
+                                 use_dp=False, epsilon=float('inf'),
+                                 cal_dataset=cal_dataset)
 
     # B: public client + private clients, DP prototype federation
     print("  Condition B: public + federated private clients")
     datasets = [ListDataset(public)] + [ListDataset(b) for b in private_buckets
                                         if b]
     m_fed = _train_federation(datasets, test_dataset, args,
-                              use_dp=True, epsilon=2.0)
+                              use_dp=True, epsilon=2.0,
+                              cal_dataset=cal_dataset)
 
     return {
         "public_only_f1": m_public["f1"], "public_only_auc": m_public["auc"],

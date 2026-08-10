@@ -35,10 +35,11 @@ import torch
 import torch.nn as nn
 from torch_geometric.loader import DataLoader as PyGDataLoader
 
-from data.loaders.real_datasets import split_by_project, ListDataset
+from data.loaders.real_datasets import (split_by_project, ListDataset,
+                                        carve_calibration)
 from models.baselines.gnn_baselines import DevignBaseline, GATBaseline
 from models.baselines.nlp_baselines import TransformerSeqBaseline
-from utils.metrics import compute_metrics
+from utils.metrics import compute_metrics, best_f1_threshold
 from experiments.common import (make_args, run_seeded, add_common_cli,
                                 parse_seeds, load_graphs)
 from main import run_fl
@@ -66,7 +67,7 @@ def _bce_for(dataset, device):
     return nn.BCEWithLogitsLoss(pos_weight=w)
 
 
-def evaluate_model(model, loader, device):
+def _model_probs(model, loader, device):
     model.eval()
     all_y_true, all_y_pred = [], []
     with torch.no_grad():
@@ -76,19 +77,34 @@ def evaluate_model(model, loader, device):
             probs = torch.sigmoid(logits.squeeze(-1))
             all_y_true.extend(batch.y.cpu().numpy())
             all_y_pred.extend(probs.cpu().numpy())
-    return compute_metrics(np.array(all_y_true), np.array(all_y_pred))
+    return np.array(all_y_true), np.array(all_y_pred)
+
+
+def evaluate_model(model, loader, device, cal_loader=None):
+    """Test metrics at a threshold calibrated on training-project samples."""
+    thr = 0.5
+    if cal_loader is not None:
+        yc, pc = _model_probs(model, cal_loader, device)
+        if len(yc):
+            thr = best_f1_threshold(yc, pc)
+    y, p = _model_probs(model, loader, device)
+    m = compute_metrics(y, p, threshold=thr)
+    m["threshold"] = thr
+    return m
 
 
 # ── Centralised training ──────────────────────────────────────────────────
 
 def run_centralised(model_name, train_data, test_data,
                     vocab_size, embed_dim, hidden_dim,
-                    epochs, batch_size, lr, device):
+                    epochs, batch_size, lr, device, cal_data=None):
     model = _make_model(model_name, vocab_size, embed_dim, hidden_dim, device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     bce = _bce_for(train_data, device)
     train_loader = PyGDataLoader(train_data, batch_size=batch_size, shuffle=True)
     test_loader = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
+    cal_loader = (PyGDataLoader(cal_data, batch_size=batch_size, shuffle=False)
+                  if cal_data is not None else None)
 
     for _ in range(epochs):
         model.train()
@@ -100,7 +116,7 @@ def run_centralised(model_name, train_data, test_data,
             loss.backward()
             opt.step()
 
-    metrics = evaluate_model(model, test_loader, device)
+    metrics = evaluate_model(model, test_loader, device, cal_loader)
     print(f"  Centralised {model_name} → F1={metrics['f1']:.4f} AUC={metrics['auc']:.4f}")
     return metrics
 
@@ -109,9 +125,11 @@ def run_centralised(model_name, train_data, test_data,
 
 def run_fedavg(model_name, client_datasets, test_data,
                vocab_size, embed_dim, hidden_dim,
-               rounds, local_epochs, batch_size, lr, device):
+               rounds, local_epochs, batch_size, lr, device, cal_data=None):
     global_model = _make_model(model_name, vocab_size, embed_dim, hidden_dim, device)
     test_loader = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
+    cal_loader = (PyGDataLoader(cal_data, batch_size=batch_size, shuffle=False)
+                  if cal_data is not None else None)
 
     sizes = [len(ds) for ds in client_datasets]
 
@@ -153,7 +171,7 @@ def run_fedavg(model_name, client_datasets, test_data,
             avg_w[key] = acc.to(client_weights[0][key].dtype)
         global_model.load_state_dict(avg_w)
 
-    final = evaluate_model(global_model, test_loader, device)
+    final = evaluate_model(global_model, test_loader, device, cal_loader)
     print(f"  FedAvg+{model_name} FINAL → F1={final['f1']:.4f} AUC={final['auc']:.4f}")
     return final
 
@@ -213,9 +231,11 @@ def main():
             data_list, num_clients=args.num_clients,
             test_fraction=args.test_fraction, seed=seed,
         )
+        client_buckets, cal_raw = carve_calibration(client_buckets, seed=seed)
         return ([ListDataset(b) for b in client_buckets],
                 ListDataset(test_raw),
-                ListDataset([d for b in client_buckets for d in b]))
+                ListDataset([d for b in client_buckets for d in b]),
+                ListDataset(cal_raw))
 
     for name, mode, model_name in BASELINES:
         if only and name not in only:
@@ -223,19 +243,20 @@ def main():
         print(f"\n{'='*55}\nBaseline: {name}\n{'='*55}")
 
         def run_one(seed, mode=mode, model_name=model_name):
-            client_datasets, test_dataset, all_train = load_split(seed)
+            client_datasets, test_dataset, all_train, cal_dataset = load_split(seed)
             if mode == "centralised":
                 return run_centralised(
                     model_name, all_train, test_dataset,
                     vocab_size=args.vocab_size, embed_dim=args.embed_dim,
                     hidden_dim=args.hidden_dim, epochs=args.epochs,
-                    batch_size=args.batch_size, lr=args.lr, device=args.device)
+                    batch_size=args.batch_size, lr=args.lr, device=args.device,
+                    cal_data=cal_dataset)
             return run_fedavg(
                 model_name, client_datasets, test_dataset,
                 vocab_size=args.vocab_size, embed_dim=args.embed_dim,
                 hidden_dim=args.hidden_dim, rounds=args.rounds,
                 local_epochs=args.local_epochs, batch_size=args.batch_size,
-                lr=args.lr, device=args.device)
+                lr=args.lr, device=args.device, cal_data=cal_dataset)
 
         results[name] = run_seeded(run_one, seeds)
 

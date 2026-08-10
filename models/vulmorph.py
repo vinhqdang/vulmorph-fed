@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.nn import global_mean_pool, GATConv
+from torch_geometric.nn import global_mean_pool, global_max_pool, GATConv
 
 from data.morphology import MorphologyEmbedding
 from .vcsa import VCSA
@@ -41,15 +41,19 @@ class VulMorph(nn.Module):
         self.num_layers = num_layers
 
         # ── Node embeddings ──────────────────────────────────────────────
-        # Morphological abstraction REPLACES lexical embeddings entirely:
-        # with use_morphology=True the model never sees project-specific
-        # tokens (the project-invariance property in Sec. 3.1 of the paper);
-        # the lexical embedding exists only for the w/o-morphology ablation.
+        # Structural abstraction REPLACES lexical embeddings entirely: with
+        # use_morphology=True the model sees only the AST grammar kind and
+        # the morphological operation type of each node — both are
+        # project-invariant vocabularies, and no project-specific token ever
+        # enters the network (Sec. 3.1/3.2 of the paper). The lexical
+        # embedding exists only for the w/o-morphology ablation.
+        from data.loaders.ast_graphs import NUM_AST_KINDS
         self.lexical_embedding = nn.Embedding(vocab_size, embed_dim)
         if num_morph_types is None:
             from data.morphology import NUM_MORPHOLOGY_TYPES
             num_morph_types = NUM_MORPHOLOGY_TYPES
         self.morph_embedding = MorphologyEmbedding(embed_dim, num_types=num_morph_types)
+        self.kind_embedding = nn.Embedding(NUM_AST_KINDS, embed_dim)
 
         morph_dim = embed_dim if use_morphology else 0
         self.node_dim = embed_dim                      # morph-only OR lex-only
@@ -76,9 +80,9 @@ class VulMorph(nn.Module):
                 for i in range(num_layers)
             ])
 
-        # ── Classifier ───────────────────────────────────────────────────
+        # ── Classifier (mean ⊕ max readout) ──────────────────────────────
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim * 2, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim // 2, 1),
@@ -96,11 +100,11 @@ class VulMorph(nn.Module):
             graph_embeddings: (B, hidden_dim)  used for L_SCL & prototype construction.
             edge_mask:        (E,)  VCSA soft mask (or all-ones tensor when ablated).
         """
-        # 1. Node features — abstract types only (project-invariant), or raw
-        #    lexical tokens for the w/o-morphology ablation.
+        # 1. Node features — project-invariant AST kind + morphology type,
+        #    or raw lexical tokens for the w/o-morphology ablation.
         if self.use_morphology:
             x_morph = self.morph_embedding(data.x_morph)      # (N, embed_dim)
-            x = x_morph
+            x = x_morph + self.kind_embedding(data.x_kind)    # (N, embed_dim)
         else:
             x_morph = None
             x = self.lexical_embedding(data.x_lex)            # (N, embed_dim)
@@ -127,10 +131,13 @@ class VulMorph(nn.Module):
             else:
                 h = F.relu(layer(h, data.edge_index))
 
-        # 4. Graph pooling
+        # 4. Graph pooling — mean readout feeds prototypes/L_SCL; the
+        #    classifier additionally sees the max readout.
         graph_embeddings = global_mean_pool(h, data.batch)    # (B, hidden_dim)
+        h_max = global_max_pool(h, data.batch)                 # (B, hidden_dim)
 
         # 5. Classify
-        logits = self.classifier(graph_embeddings)             # (B, 1)
+        logits = self.classifier(
+            torch.cat([graph_embeddings, h_max], dim=-1))      # (B, 1)
 
         return logits, graph_embeddings, edge_mask

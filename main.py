@@ -9,11 +9,12 @@ from tqdm import tqdm
 
 from fl.client import VulMorphClient
 from fl.server import VulMorphServer
-from utils.metrics import compute_metrics
+from utils.metrics import compute_metrics, best_f1_threshold
 from data.loaders.real_datasets import (
     load_devign, load_primevul, load_bigvul, load_diversevul,
     load_bigvul_hf, load_diversevul_hf, load_primevul_hf,
     split_by_project, ListDataset, abstraction_stats, bucket_cwes,
+    carve_calibration,
 )
 from data.morphology import get_taxonomy
 from data.dataset import get_client_datasets
@@ -38,7 +39,22 @@ def _client_probs(client, loader, global_prototypes):
     return np.array(y_true), np.array(y_prob)
 
 
-def evaluate(clients, global_prototypes, test_dataset=None):
+def ensemble_probs(clients, global_prototypes, dataset):
+    """Uniform-ensemble probabilities of the K client models over a dataset."""
+    from torch_geometric.loader import DataLoader as PyGDataLoader
+    loader = PyGDataLoader(dataset, batch_size=64, shuffle=False)
+    prob_sum, y_true, per_client = None, None, []
+    for client in clients:
+        yt, yp = _client_probs(client, loader, global_prototypes)
+        y_true = yt
+        prob_sum = yp if prob_sum is None else prob_sum + yp
+        per_client.append(yp)
+    if y_true is None:
+        return None, None, []
+    return y_true, prob_sum / len(clients), per_client
+
+
+def evaluate(clients, global_prototypes, test_dataset=None, cal_dataset=None):
     """
     Inference protocol (reported in the manuscript, Sec. Experimental Setup):
 
@@ -47,26 +63,26 @@ def evaluate(clients, global_prototypes, test_dataset=None):
     ensemble of the K client models, each conditioned on the same global
     prototype bank:  p(y|G) = (1/K) * sum_k sigmoid(f_k(G; P*)).
 
-    We report the ensemble metrics as the headline numbers and additionally
-    the per-client mean/std F1 to expose client-level variance.
+    The decision threshold is calibrated on `cal_dataset` (a held-out slice
+    of TRAINING-project samples at true prevalence) when provided; otherwise
+    the default 0.5 is used. The test set never influences the threshold.
     """
     if test_dataset is not None:
-        from torch_geometric.loader import DataLoader as PyGDataLoader
-        loader = PyGDataLoader(test_dataset, batch_size=64, shuffle=False)
-
-        per_client_metrics, prob_sum, y_true = [], None, None
-        for client in clients:
-            yt, yp = _client_probs(client, loader, global_prototypes)
-            y_true = yt
-            prob_sum = yp if prob_sum is None else prob_sum + yp
-            per_client_metrics.append(compute_metrics(yt, yp))
-
+        y_true, probs, per_client = ensemble_probs(
+            clients, global_prototypes, test_dataset)
         if y_true is None or len(y_true) == 0:
             return {"f1": 0.0, "auc": 0.5, "precision": 0.0, "recall": 0.0}
 
-        ensemble_probs = prob_sum / len(clients)
-        metrics = compute_metrics(y_true, ensemble_probs)
-        client_f1s = [m["f1"] for m in per_client_metrics]
+        thr = 0.5
+        if cal_dataset is not None and len(cal_dataset) > 0:
+            yc, pc, _ = ensemble_probs(clients, global_prototypes, cal_dataset)
+            thr = best_f1_threshold(yc, pc)
+
+        metrics = compute_metrics(y_true, probs, threshold=thr)
+        metrics["threshold"] = thr
+        client_f1s = [
+            compute_metrics(y_true, p, threshold=thr)["f1"] for p in per_client
+        ]
         metrics["client_f1_mean"] = float(np.mean(client_f1s))
         metrics["client_f1_std"] = float(np.std(client_f1s))
         return metrics
@@ -117,7 +133,7 @@ def load_real_data(args):
     if not data_list:
         print(f"Warning: could not load dataset '{args.dataset}'. "
               "Falling back to structured synthetic data.")
-        return None, None
+        return None, None, None
 
     # Map raw CWE ids to the fixed prototype vocabulary:
     # top (num_cwes - 1) most frequent CWEs + shared OTHER bucket.
@@ -138,10 +154,15 @@ def load_real_data(args):
         seed=args.seed,
     )
 
+    # Calibration slice (true prevalence, training projects only), then
+    # benign downsampling of the remaining training samples (4:1 cap).
+    client_buckets, cal_raw = carve_calibration(client_buckets, seed=args.seed)
+
     client_datasets = [ListDataset(bucket) for bucket in client_buckets]
     test_dataset = ListDataset(test_raw)
+    cal_dataset = ListDataset(cal_raw)
 
-    return client_datasets, test_dataset
+    return client_datasets, cal_dataset, test_dataset
 
 
 # ── Federated training loop ──────────────────────────────────────────────────
@@ -155,10 +176,10 @@ def run_fl(args, model_kwargs=None):
     federate         = model_kwargs.pop('federate', True)
 
     # ── Dataset ─────────────────────────────────────────────────────────
-    client_datasets = test_dataset = None
+    client_datasets = cal_dataset = test_dataset = None
 
     if getattr(args, 'dataset', 'synthetic') != 'synthetic':
-        client_datasets, test_dataset = load_real_data(args)
+        client_datasets, cal_dataset, test_dataset = load_real_data(args)
 
     if client_datasets is None:
         # Fall back to structured synthetic data
@@ -226,8 +247,7 @@ def run_fl(args, model_kwargs=None):
         if federate and client_protos:
             server.aggregate_prototypes(client_protos)
 
-        # Evaluate on held-out test projects (cross-project F1)
-        # or on local training data if no real dataset
+        # Per-round progress at the uncalibrated threshold (cheap)
         metrics = evaluate(clients, server.global_prototypes, test_dataset)
         history.append(metrics)
 
@@ -238,7 +258,16 @@ def run_fl(args, model_kwargs=None):
             f"P={metrics['precision']:.4f} R={metrics['recall']:.4f}"
         )
 
-    final = history[-1] if history else {}
+    # Final evaluation with the calibrated decision threshold (threshold
+    # chosen on training-project calibration samples, never the test set).
+    if test_dataset is not None:
+        final = evaluate(clients, server.global_prototypes,
+                         test_dataset, cal_dataset)
+        print(f"  FINAL (calibrated thr={final.get('threshold', 0.5):.3f}) | "
+              f"F1={final['f1']:.4f} AUC={final['auc']:.4f} "
+              f"P={final['precision']:.4f} R={final['recall']:.4f}")
+    else:
+        final = history[-1] if history else {}
     if final and use_dp and federate:
         # End-to-end privacy accounting under sequential composition:
         # each round consumes ε_round, so T rounds consume T · ε_round.

@@ -43,24 +43,10 @@ from data.morphology import get_taxonomy
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-CACHE_DIR = Path(".cache/datasets")
+CACHE_DIR = Path(".cache/datasets_v2")
 
 # API allow-lists for the fine-grained (|T|=32) classification.
-API_CLASSES = {
-    "MEMORY_ALLOC":   {"malloc", "calloc", "alloca", "valloc", "new"},
-    "MEMORY_REALLOC": {"realloc", "reallocarray"},
-    "MEMORY_FREE":    {"free", "cfree", "delete"},
-    "MEMORY_COPY":    {"memcpy", "memmove", "bcopy"},
-    "MEMORY_SET":     {"memset", "bzero", "explicit_bzero"},
-    "STRING_COPY":    {"strcpy", "strncpy", "strlcpy", "wcscpy", "strdup", "strndup"},
-    "STRING_CONCAT":  {"strcat", "strncat", "strlcat", "wcscat"},
-    "STRING_FORMAT":  {"sprintf", "snprintf", "vsprintf", "vsnprintf",
-                       "scanf", "sscanf", "fscanf", "printf", "fprintf", "vprintf"},
-    "STRING_LENGTH":  {"strlen", "strnlen", "wcslen"},
-    "IO_CALL":        {"read", "write", "pread", "pwrite", "fread", "fwrite",
-                       "recv", "recvfrom", "send", "sendto", "fgets", "gets",
-                       "fopen", "open", "close", "fclose"},
-}
+from data.loaders.api_classes import API_CLASSES
 
 TYPE_KEYWORDS = {
     "int", "char", "float", "double", "long", "short", "unsigned", "signed",
@@ -239,9 +225,24 @@ def _build_vocab(all_tokens: List[List[str]], max_vocab: int = 10000) -> Dict[st
     return vocab
 
 
-def _code_to_graph(code: str, vocab: Dict[str, int], max_tokens: int = 100,
+def _code_to_graph(code: str, vocab: Dict[str, int], max_tokens: int = 256,
                    taxonomy_size: int = 8) -> Optional[Data]:
-    """Convert a C/C++ function string to a lexical dependence graph."""
+    """
+    Convert a C/C++ function string to a PyG graph.
+
+    Primary path: a real tree-sitter AST graph (see ast_graphs.py) with
+    grammar-kind and morphology node features. Fallback (parse failure or
+    tree-sitter unavailable): the lexical dependence token graph below, whose
+    nodes carry the reserved FALLBACK kind id.
+    """
+    from data.loaders.ast_graphs import (code_to_ast_graph, TS_AVAILABLE,
+                                         FALLBACK_KIND)
+    if TS_AVAILABLE:
+        g = code_to_ast_graph(code, vocab, max_nodes=200,
+                              taxonomy_size=taxonomy_size)
+        if g is not None:
+            return g
+
     tokens = _tokenize(code, max_tokens)
     if len(tokens) < 3:
         return None
@@ -275,6 +276,7 @@ def _code_to_graph(code: str, vocab: Dict[str, int], max_tokens: int = 100,
 
     unknown_id = morph_map["UNKNOWN"]
     data = Data(x_lex=x_lex, x_morph=x_morph, edge_index=edge_index, num_nodes=n)
+    data.x_kind = torch.full((n,), FALLBACK_KIND, dtype=torch.long)
     data.morph_known = int((x_morph != unknown_id).sum())
     return data
 
@@ -616,6 +618,46 @@ def load_diversevul_hf(max_samples: int = 10000, taxonomy_size: int = 8,
         max_samples=max_samples, taxonomy_size=taxonomy_size,
         cache_tag="diversevul_hf", cache=cache,
     )
+
+
+def downsample_benign(bucket: List[Data], ratio: float = 4.0,
+                      seed: int = 0) -> List[Data]:
+    """
+    Cap the benign:vulnerable ratio of a TRAINING bucket at `ratio`
+    (ReVeal-style rebalancing). Test and calibration splits are never
+    downsampled, so all reported metrics reflect the true prevalence.
+    """
+    rng = random.Random(seed)
+    pos = [d for d in bucket if float(d.y[0]) == 1.0]
+    neg = [d for d in bucket if float(d.y[0]) != 1.0]
+    cap = int(len(pos) * ratio)
+    if pos and len(neg) > cap:
+        rng.shuffle(neg)
+        neg = neg[:cap]
+    out = pos + neg
+    rng.shuffle(out)
+    return out
+
+
+def carve_calibration(client_buckets: List[List[Data]], seed: int,
+                      cal_fraction: float = 0.1,
+                      downsample_ratio: float = 4.0):
+    """
+    Split off a calibration set (cal_fraction of each client's samples,
+    at true prevalence) BEFORE benign downsampling, then downsample the
+    remaining training samples. The calibration set is used only to choose
+    the decision threshold — it comes from training projects, never from
+    held-out test projects.
+    """
+    rng = random.Random(seed)
+    cal, new_buckets = [], []
+    for b in client_buckets:
+        b = b[:]
+        rng.shuffle(b)
+        n_cal = max(1, int(cal_fraction * len(b)))
+        cal.extend(b[:n_cal])
+        new_buckets.append(downsample_benign(b[n_cal:], downsample_ratio, seed))
+    return new_buckets, cal
 
 
 # ── Cross-Project Federated Split ─────────────────────────────────────────────
