@@ -23,16 +23,24 @@ DATASETS = ["devign", "bigvul", "diversevul", "primevul"]
 DATASET_LABELS = {"devign": "Devign", "bigvul": "BigVul",
                   "diversevul": "DiverseVul", "primevul": "PrimeVul"}
 
-BASELINE_LABELS = {
-    "centralised_ggnn":        "Centralised GGNN (lexical CPG)",
-    "centralised_gat":         "Centralised GAT (lexical CPG)",
+# RQ1 rows are grouped by privacy class: methods with a formal per-round
+# ε-DP guarantee are the peers of VulMorph-Fed; everything that pools raw
+# code or transmits parameters in the clear is a non-private reference.
+NONPRIVATE_LABELS = {
+    "centralised_ggnn":        "Centralised GGNN (lexical graphs)",
+    "centralised_gat":         "Centralised GAT (lexical graphs)",
     "centralised_transformer": "Centralised Transformer (sequence)",
     "centralised_ggnn_morph":  "Centralised GGNN (VCSA graphs)",
-    "fedavg_gat":              "FedAvg + GAT (lexical CPG)",
+    "centralised_vulmorph":    "Centralised VulMorph (oracle)",
+    "fedavg_gat":              "FedAvg + GAT (lexical graphs)",
     "fedavg_ggnn_morph":       "FedAvg + GGNN (VCSA graphs)",
     "fedavg_transformer":      "FedAvg + Transformer (sequence)",
-    "centralised_vulmorph":    "Centralised VulMorph (oracle)",
 }
+PRIVATE_LABELS = {
+    "dp_fedavg_gat":           "DP-FedAvg + GAT (lexical graphs)",
+    "dp_fedavg_ggnn_morph":    "DP-FedAvg + GGNN (VCSA graphs)",
+}
+BASELINE_LABELS = {**NONPRIVATE_LABELS, **PRIVATE_LABELS}
 
 
 def load_json(fname):
@@ -77,31 +85,47 @@ def table_rq1():
         return ""
 
     ds_used = list(per_ds.keys())
-    methods = [k for k in BASELINE_LABELS if any(
-        k in per_ds[ds][0] for ds in ds_used)]
 
     lines = [
         "\\begin{table*}[t]", "\\centering",
         "\\caption{RQ1: Cross-project vulnerability detection F1-score "
         "(mean $\\pm$ std over " + _seed_note(per_ds, ds_used) + " seeds). "
         "Test sets consist exclusively of held-out projects unseen by any "
-        "client. Best \\emph{privacy-preserving} result per dataset in bold; "
-        "centralised models pool raw code and serve as reference points.}",
+        "client. The upper block gives non-private references (raw code "
+        "pooled, or parameters exchanged in the clear); the lower block "
+        "compares methods with a formal per-round $\\varepsilon$-DP "
+        "guarantee at the same budget ($\\varepsilon = 2$/round). Best "
+        "result within the privacy-preserving block in bold.}",
         "\\label{tab:rq1_main}",
         "\\resizebox{\\linewidth}{!}{%",
         "\\begin{tabular}{l" + "r" * len(ds_used) + "}",
         "\\toprule",
         "Model & " + " & ".join(DATASET_LABELS[d] for d in ds_used) + " \\\\",
         "\\midrule",
+        "\\multicolumn{" + str(len(ds_used) + 1) +
+        "}{l}{\\emph{Non-private references}} \\\\",
     ]
 
-    for m in methods:
-        row = [BASELINE_LABELS[m]]
+    for m in NONPRIVATE_LABELS:
+        if not any(m in per_ds[ds][0] for ds in ds_used):
+            continue
+        row = [NONPRIVATE_LABELS[m]]
         for ds in ds_used:
             row.append(fmt_ms(per_ds[ds][0].get(m), "f1"))
         lines.append(" & ".join(row) + " \\\\")
 
     lines.append("\\midrule")
+    lines.append("\\multicolumn{" + str(len(ds_used) + 1) +
+                 "}{l}{\\emph{Formally private ($\\varepsilon$-DP per round)}} \\\\")
+
+    for m in PRIVATE_LABELS:
+        if not any(m in per_ds[ds][0] for ds in ds_used):
+            continue
+        row = [PRIVATE_LABELS[m]]
+        for ds in ds_used:
+            row.append(fmt_ms(per_ds[ds][0].get(m), "f1"))
+        lines.append(" & ".join(row) + " \\\\")
+
     row = ["\\textbf{VulMorph-Fed (ours)}"]
     for ds in ds_used:
         row.append(fmt_ms(per_ds[ds][1], "f1", bold=True))

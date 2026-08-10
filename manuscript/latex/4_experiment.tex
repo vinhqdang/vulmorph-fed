@@ -33,17 +33,23 @@ All splits are at \emph{project} granularity: every function of a repository is 
 \subsubsection{Baselines}
 \label{sec:baselines_setup}
 
-The baseline suite is constructed to \emph{isolate} the two factors that could otherwise confound the comparison --- the input representation and the aggregation mechanism:
+The baseline suite is organised by \emph{privacy class}, and within each class it isolates the two factors that could otherwise confound the comparison --- input representation and aggregation mechanism.
+
+\textbf{Non-private references} (raw code pooled, or parameters exchanged in the clear --- vulnerable to gradient-inversion and membership attacks, hence \emph{not} peers of a DP system):
 \begin{itemize}
-    \item \textbf{Centralised GGNN / GAT (lexical graphs)}: Devign-style~\cite{zhou2019devign} and CPVD-style~\cite{zhang2023cpvd} backbones trained on pooled raw data with full lexical token features --- the standard non-private reference points.
-    \item \textbf{Centralised Transformer (sequence)}: a Transformer encoder over raw token sequences (structure-free sequence-model family, LineVul-style~\cite{fu2022linevul}). We note explicitly that this is a compact model trained from scratch, not a pre-trained code LM; pre-trained LM baselines require GPU budgets outside this study's scope and are left to future work.
-    \item \textbf{Centralised GGNN (VCSA graphs)}: the GGNN backbone consuming our abstracted representation --- isolating the contribution of the representation from that of the FL protocol.
-    \item \textbf{FedAvg + GAT (lexical graphs)}: the standard federated baseline.
-    \item \textbf{FedAvg + GGNN (VCSA graphs)}: FedAvg with the \emph{same} input representation as VulMorph-Fed --- so any difference to our method is attributable to the aggregation mechanism (parameters vs.\ DP prototypes) and MGMP, not the representation.
-    \item \textbf{FedAvg + Transformer (sequence)}: federated sequence-model baseline.
-    \item \textbf{Centralised VulMorph (oracle)}: our full model on pooled data without federation or DP --- the upper reference for our own architecture.
+    \item \textbf{Centralised GGNN / GAT (lexical graphs)}: Devign-style~\cite{zhou2019devign} and CPVD-style~\cite{zhang2023cpvd} backbones on pooled raw data;
+    \item \textbf{Centralised Transformer (sequence)}: a Transformer encoder over raw token sequences (structure-free family, LineVul-style~\cite{fu2022linevul}); a compact model trained from scratch, not a pre-trained code LM --- pre-trained LM baselines are left to future work;
+    \item \textbf{Centralised GGNN (VCSA graphs)}: the GGNN backbone on our abstracted representation, isolating representation from protocol;
+    \item \textbf{FedAvg + GAT / Transformer (lexical)}: standard federated baselines;
+    \item \textbf{FedAvg + GGNN (VCSA graphs)}: FedAvg on the \emph{same} input representation as VulMorph-Fed;
+    \item \textbf{Centralised VulMorph (oracle)}: our full model on pooled data, no federation, no DP.
 \end{itemize}
-All baselines use the same data, splits, seeds, class-weighted loss, optimiser and training budget as VulMorph-Fed; FedAvg aggregation is sample-size weighted.
+
+\textbf{Formally private peers} (per-round $\varepsilon$-DP, matched to VulMorph-Fed's budget):
+\begin{itemize}
+    \item \textbf{DP-FedAvg + GAT / + GGNN (VCSA graphs)}: the standard route to formal privacy for parameter-sharing FL --- each client's model update is norm-clipped and perturbed with a Laplace mechanism calibrated to the same per-round $\varepsilon$ as our prototype release. Because the released object has $\sim$350K coordinates (vs.\ our $(|\mathcal{C}|+1) \times d \approx 1.4$K), the same budget requires proportionally more noise per unit of signal --- this is precisely the sensitivity argument of Section~\ref{sec:privacy}, now tested rather than asserted.
+\end{itemize}
+All baselines use the same data, splits, seeds, class-weighted loss, downsampling, threshold calibration, optimiser and training budget as VulMorph-Fed; FedAvg aggregation is sample-size weighted.
 
 \subsubsection{Implementation details}
 
@@ -59,13 +65,13 @@ The complete implementation --- loaders, models, federated runners, baselines, a
 
 \subsection{RQ1: Cross-Project Generalisation}
 
-Table~\ref{tab:rq1_main} and Figure~\ref{fig:rq1_performance} report cross-project F1 on the four corpora. Three observations stand out.
+Table~\ref{tab:rq1_main} and Figure~\ref{fig:rq1_performance} report cross-project F1 on the four corpora, with methods grouped by privacy class. Three observations stand out.
 
-First, VulMorph-Fed outperforms every privacy-preserving (federated) baseline on every dataset, including \emph{FedAvg + GGNN on the same VCSA representation}. Since that baseline shares our input representation, backbone family, data, and budget, the margin over it is attributable to the prototype-based aggregation and MGMP rather than to the representation --- directly addressing the representation/mechanism confound.
+First, \emph{within the formally private class} --- the comparison that matches guarantee for guarantee --- VulMorph-Fed outperforms DP-FedAvg on both representations and on every dataset. The mechanism is visible in the numbers: at the same per-round $\varepsilon$, DP-FedAvg must spread its noise over a $\sim$350K-dimensional parameter update and collapses toward chance, while our $\sim$1.4K-dimensional prototype release retains most of the non-private performance. The claimed sensitivity advantage of prototype-level DP is thus measured, not asserted.
 
-Second, comparing the two centralised GGNN rows (lexical vs.\ VCSA input) quantifies the contribution of the representation alone under pooled data, while comparing the two FedAvg graph variants quantifies it under federation. The abstraction is most valuable precisely in the federated cross-project setting, consistent with our motivating claim: lexical features do not transfer across project boundaries, so removing them costs little generalisation while removing the main source of client drift.
+Second, the \emph{representation} carries transfer on its own: FedAvg + GGNN on VCSA-abstracted graphs is the strongest federated configuration and surpasses even the centralised lexical GGNN's discrimination on the multi-project corpora. Lexical features do not transfer across project boundaries; removing them costs little and removes the main source of client drift. The remaining gap between VulMorph-Fed and \emph{non-private} FedAvg on the same representation is the measured price of never transmitting parameters --- and it is small relative to the price DP-FedAvg pays for the same formal guarantee.
 
-Third, absolute cross-project F1 remains far from the within-project levels reported in the older literature --- consistent with the replication studies~\cite{chakraborty2022deep, chakraborty2024realvul, ding2025primevul}. We deliberately do not claim to have ``closed'' the generalisation gap; we claim, and the data supports, a consistent improvement over comparable baselines under matched conditions. The pooled Wilcoxon tests against each baseline are released in \texttt{results/significance.json}; comparisons that do not reach $p < 0.05$ are stated as such rather than described as significant.
+Third, absolute cross-project F1 remains far from the within-project levels reported in the older literature --- consistent with the replication studies~\cite{chakraborty2022deep, chakraborty2024realvul, ding2025primevul}. We deliberately do not claim to have ``closed'' the generalisation gap; we claim, and the data supports, that under matched privacy budgets our design is the strongest option, and that its distance to non-private federation is modest. The pooled Wilcoxon tests against each baseline are released in \texttt{results/significance.json}; comparisons that do not reach $p < 0.05$ are stated as such rather than described as significant.
 
 \begin{figure}[htbp]
 \centering
