@@ -8,13 +8,14 @@ To address the cross-project generalisation gap and the data-silo problem simult
 
 Let $\mathcal{G}_k = \{(G_i^{(k)}, y_i^{(k)}, c_i^{(k)})\}_{i=1}^{N_k}$ denote the local dataset of client $k \in \{1, \dots, K\}$, where $y_i \in \{0,1\}$ is the binary vulnerability label and $c_i$ the CWE annotation of vulnerable functions (Section~\ref{sec:label_model}).
 
-Full Code Property Graph (CPG) extraction requires a heavyweight static-analysis engine such as Joern~\cite{yamaguchi2014modeling}, which is impractical to deploy at every federated edge client and complicates exact reproduction. Our implementation therefore operates on a \emph{lightweight lexical dependence graph} that approximates the CPG views most relevant to our abstraction. For a function $f$ with token sequence $t_1, \dots, t_n$ (we retain the first $n \le 100$ tokens produced by a C/C++ tokenizer that merges multi-character operators such as \texttt{->}, \texttt{==}, \texttt{<<=}), the graph $G = (\mathcal{V}, \mathcal{E})$ has:
+Full Code Property Graph (CPG) extraction requires a heavyweight static-analysis engine such as Joern~\cite{yamaguchi2014modeling}, which is impractical to deploy at every federated edge client and complicates exact reproduction. Our implementation instead parses every function with \texttt{tree-sitter} --- a production-grade, error-tolerant C/C++ parser --- and builds the graph $G = (\mathcal{V}, \mathcal{E})$ directly from the abstract syntax tree:
 \begin{itemize}
-    \item one node per token, $|\mathcal{V}| = n$;
-    \item \emph{natural-code-sequence} (NCS) edges $\mathcal{E}_{NCS} = \{(t_i, t_{i+1})\}$, as used in Devign~\cite{zhou2019devign};
-    \item \emph{data-dependence proxy} edges $\mathcal{E}_{DD}$ linking successive occurrences of the same identifier (a def-use approximation), excluding language keywords.
+    \item one node per \emph{named AST node}, in pre-order, capped at $|\mathcal{V}| \le 200$;
+    \item \emph{syntax edges} $\mathcal{E}_{AST}$: parent--child links in both directions;
+    \item \emph{order edges} $\mathcal{E}_{SIB}$: consecutive named siblings (source-order sequencing, the AST analogue of Devign's NCS edges~\cite{zhou2019devign});
+    \item \emph{data-dependence proxy} edges $\mathcal{E}_{DD}$: def-use chains linking successive occurrences of the same identifier leaf.
 \end{itemize}
-The edge set is $\mathcal{E} = \mathcal{E}_{NCS} \cup \mathcal{E}_{DD}$; on our corpora this yields on average 70--90 nodes and 77--98 edges per function. We state explicitly that these are \emph{not} compiler-grade CPGs; Section~\ref{sec:discussion} discusses this trade-off, and the released implementation isolates graph construction behind a single interface so that Joern-derived CPGs can be substituted without touching the rest of the framework.
+The edge set is $\mathcal{E} = \mathcal{E}_{AST} \cup \mathcal{E}_{SIB} \cup \mathcal{E}_{DD}$; on our corpora this yields on average $\sim$130 nodes and $\sim$350 edges per function. Functions that fail to parse (a small minority) fall back to a token-level sequence graph and are marked as such. These graphs carry real syntactic structure, though not the interprocedural control- and data-flow precision of a compiler-grade CPG; Section~\ref{sec:discussion} discusses this trade-off, and graph construction is isolated behind a single interface so Joern-derived CPGs can be substituted without touching the rest of the framework.
 
 \subsection{Vulnerability-Critical Subgraph Abstraction (VCSA)}
 \label{sec:vcsa}
@@ -24,7 +25,9 @@ Raw code graphs carry thousands of project-specific API and identifier tokens, c
 \subsubsection{Morphological taxonomy}
 \label{sec:taxonomy}
 
-We define a fixed semantic taxonomy $\mathcal{T}$ of $|\mathcal{T}| = 8$ operation types, listed exhaustively in Table~\ref{tab:taxonomy} together with the reserved fallback type \texttt{UNKNOWN}. A node therefore takes one of $|\mathcal{T}| + 1 = 9$ categories, and node features are embeddings (equivalently, one-hot encodings) of dimension $|\mathcal{T}| + 1$ --- the \texttt{UNKNOWN} type has its own slot. For the taxonomy-size sensitivity analysis (RQ2b) we additionally define strictly nested refinements with $|\mathcal{T}| = 16$ and $|\mathcal{T}| = 32$ (e.g., \texttt{MEMORY\_ACCESS} splits into \texttt{MEMORY\_ALLOC}, \texttt{MEMORY\_FREE}, \texttt{MEMORY\_COPY}, \texttt{STRING\_OP}); the complete lists ship with the source code.
+We define a fixed semantic taxonomy $\mathcal{T}$ of $|\mathcal{T}| = 8$ operation types, listed exhaustively in Table~\ref{tab:taxonomy} together with the reserved fallback type \texttt{UNKNOWN}. A node therefore takes one of $|\mathcal{T}| + 1 = 9$ morphological categories --- the \texttt{UNKNOWN} type has its own feature slot. For the taxonomy-size sensitivity analysis (RQ2b) we additionally define strictly nested refinements with $|\mathcal{T}| = 16$ and $|\mathcal{T}| = 32$ (e.g., \texttt{MEMORY\_ACCESS} splits into \texttt{MEMORY\_ALLOC}, \texttt{MEMORY\_FREE}, \texttt{MEMORY\_COPY}, \texttt{STRING\_OP}); the complete lists ship with the source code.
+
+Each node's feature vector is the sum of two embeddings, both drawn from \emph{project-invariant} vocabularies: (i) its morphological type in $\mathcal{T} \cup \{\texttt{UNKNOWN}\}$, and (ii) its \emph{grammar kind} --- the tree-sitter node category (\texttt{call\_expression}, \texttt{subscript\_expression}, \texttt{if\_statement}, \dots), a fixed set of 364 categories determined entirely by the C grammar and therefore identical for every project and client by construction. No identifier, API name, literal or any other project-specific token ever enters the network.
 
 \begin{table}[t]
 \centering
@@ -51,18 +54,16 @@ Abstract type & Covers \\
 
 \subsubsection{The abstraction function $\phi_{\mathrm{type}}$}
 
-The mapping $\phi_{\mathrm{type}}: \mathcal{V} \rightarrow \mathcal{T} \cup \{\texttt{UNKNOWN}\}$ is a deterministic, context-aware rule set evaluated over a token and its immediate neighbours, in priority order:
+The mapping $\phi_{\mathrm{type}}: \mathcal{V} \rightarrow \mathcal{T} \cup \{\texttt{UNKNOWN}\}$ is a deterministic rule set evaluated on the AST, in priority order:
 \begin{enumerate}
-    \item an identifier followed by `\texttt{(}' maps to the memory/string API class if it appears on a fixed allow-list (Table~\ref{tab:taxonomy}, row 1; the full allow-lists are in the released code), to the control class if it is a control keyword, and to \texttt{CALL\_SITE} otherwise --- \emph{user-defined functions, macros and unresolved calls all map to \texttt{CALL\_SITE}}; no name resolution is required;
-    \item an identifier followed by `\texttt{[}' maps to \texttt{ARRAY\_INDEX};
-    \item control keywords map to \texttt{CONTROL\_BRANCH};
-    \item \texttt{->}, and \texttt{*}/\texttt{\&} in prefix (unary) position, map to \texttt{PTR\_DEREF}; \texttt{*}/\texttt{\&} in infix position map to \texttt{ARITH\_OP};
-    \item operator tokens map to \texttt{ARITH\_OP}, \texttt{COMPARISON} or \texttt{ASSIGN} as listed in Table~\ref{tab:taxonomy};
-    \item every remaining token maps to \texttt{UNKNOWN}.
+    \item a \texttt{call\_expression} maps to the memory/string/IO API class if its callee name appears on a fixed allow-list (the full allow-lists ship with the code), and to \texttt{CALL\_SITE} otherwise --- \emph{user-defined functions, macros and unresolved calls all map to \texttt{CALL\_SITE}}; no name resolution is required;
+    \item statement and expression kinds map directly: \texttt{subscript\_expression} $\to$ \texttt{ARRAY\_INDEX}; \texttt{field\_expression} and unary pointer expressions $\to$ \texttt{PTR\_DEREF}; \texttt{if}/\texttt{switch}/loop/jump statements and ternaries $\to$ \texttt{CONTROL\_BRANCH}; \texttt{assignment\_expression} and initialising declarators $\to$ \texttt{ASSIGN};
+    \item a \texttt{binary\_expression} maps by its operator text to \texttt{ARITH\_OP} or \texttt{COMPARISON} (Table~\ref{tab:taxonomy});
+    \item every remaining node maps to \texttt{UNKNOWN}.
 \end{enumerate}
-The rules are implemented once at the finest ($|\mathcal{T}|=32$) granularity and projected onto the coarser taxonomies, so all three taxonomy sizes share a single rule set. $\phi_{\mathrm{type}}$ is a discrete label assignment and is \emph{not} differentiable; the only learned part of VCSA is the edge-weighting module below.
+An equivalent token-context rule set (documented in the code) covers the rare parse-failure fallback graphs. The rules are implemented once at the finest ($|\mathcal{T}|=32$) granularity and projected onto the coarser taxonomies, so all three taxonomy sizes share a single rule set. $\phi_{\mathrm{type}}$ is a discrete label assignment and is \emph{not} differentiable; the only learned part of VCSA is the edge-weighting module below.
 
-On our four evaluation corpora, 25--26\% of nodes receive a non-\texttt{UNKNOWN} type. The abstraction does not delete nodes: all $n$ nodes are retained with their graph structure, but their features are collapsed from a $\sim$10,000-token vocabulary onto the $|\mathcal{T}|+1$ abstract categories. This many-to-one collapse --- roughly three orders of magnitude --- is what removes project-specific lexical information from everything the model computes and, downstream, from everything a client transmits (Section~\ref{sec:privacy}).
+On our four evaluation corpora, 25--26\% of AST nodes receive a non-\texttt{UNKNOWN} morphological type (the remainder are declarations, identifiers, literals and other syntax carriers, which still contribute their grammar-kind feature). The abstraction does not delete nodes: all nodes are retained with their graph structure, but their features are collapsed from a $\sim$10,000-token lexical vocabulary onto $|\mathcal{T}|+1$ morphological categories plus 364 grammar kinds. This many-to-one collapse is what removes project-specific lexical information from everything the model computes and, downstream, from everything a client transmits (Section~\ref{sec:privacy}).
 
 \subsubsection{Learned edge weighting}
 
