@@ -231,4 +231,4 @@ All headline metrics are computed from Eq.~\eqref{eq:ensemble} on the held-out c
 \subsection{Communication Cost}
 \label{sec:comm}
 
-Per round, each client uploads and downloads one $|\mathcal{C}| \times d$ float32 bank: $2 \times 10 \times 128 \times 4\,\mathrm{B} = 10\,\mathrm{KB}$ per client per round in our configuration, independent of model size; total server traffic is $K$ times that (e.g., 200\,KB per round at $K = 20$). Standard FedAvg on the same backbone transmits the full parameter vector ($\sim$1.4\,MB for our deliberately compact GNN; hundreds of MB for code-LM backbones) per client per round.
+Per round, each client uploads and downloads one $(|\mathcal{C}|+1) \times d$ float32 bank: $2 \times 11 \times 128 \times 4\,\mathrm{B} \approx 11\,\mathrm{KB}$ per client per round in our configuration, independent of model size; total server traffic is $K$ times that (e.g., $\approx$220\,KB per round at $K = 20$). Standard FedAvg on the same backbone transmits the full parameter vector ($\sim$1.4\,MB for our deliberately compact GNN; hundreds of MB for code-LM backbones) per client per round.

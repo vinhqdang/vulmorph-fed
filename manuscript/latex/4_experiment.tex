@@ -105,7 +105,7 @@ Table~\ref{tab:rq3_privacy} and Figure~\ref{fig:rq3_privacy} sweep the per-round
 
 \subsection{RQ4: Scalability}
 
-Table~\ref{tab:rq4_scalability} and Figure~\ref{fig:rq4_scalability} vary $K \in \{3, 5, 10, 20\}$ over a fixed data pool (so larger $K$ means smaller, more fragmented clients). Communication is reported precisely: each client exchanges $2|\mathcal{C}|d$ float32 values per round ($10$\,KB in our configuration) regardless of $K$ or model size, and total server traffic grows linearly to $200$\,KB per round at $K = 20$ --- orders of magnitude below weight-sharing FL for typical code models (Section~\ref{sec:comm}).
+Table~\ref{tab:rq4_scalability} and Figure~\ref{fig:rq4_scalability} vary $K \in \{3, 5, 10, 20\}$ over a fixed data pool (so larger $K$ means smaller, more fragmented clients). Communication is reported precisely: each client exchanges $2(|\mathcal{C}|+1)d$ float32 values per round ($\approx$11\,KB in our configuration) regardless of $K$ or model size, and total server traffic grows linearly to $\approx$220\,KB per round at $K = 20$ --- orders of magnitude below weight-sharing FL for typical code models (Section~\ref{sec:comm}).
 
 \begin{figure}[htbp]
 \centering

@@ -84,7 +84,7 @@ def run_scalability_sweep(args, seeds):
         agg = run_seeded(run_one, seeds)
 
         # Communication cost per round (float32 prototypes, |C| x d bank):
-        bank_bytes = args.num_cwes * args.hidden_dim * 4
+        bank_bytes = (args.num_cwes + 1) * args.hidden_dim * 4
         agg["ccr_client_kb"] = round(2 * bank_bytes / 1024, 2)      # up + down
         agg["ccr_server_total_kb"] = round(2 * bank_bytes * K / 1024, 2)
         agg["num_clients"] = K
