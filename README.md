@@ -16,7 +16,7 @@ components:
 
 | Component | What it does |
 |---|---|
-| **VCSA** (Vulnerability-Critical Subgraph Abstraction) | Deterministic, context-aware mapping of code tokens onto a small semantic taxonomy (8/16/32 types + `UNKNOWN`), plus a learned soft edge-importance mask. Node features contain **no project-specific tokens**. |
+| **VCSA** (Vulnerability-Critical Subgraph Abstraction) | Functions are parsed with tree-sitter into real AST graphs (parent-child + sibling-order + def-use edges). Nodes carry two project-invariant features: the grammar kind (364 categories fixed by the C grammar) and a morphological operation type (8/16/32-type taxonomy + `UNKNOWN`) assigned by deterministic rules, plus a learned soft edge-importance mask. Node features contain **no project-specific tokens**. |
 | **MCFPA** (Morphology-Conditioned Federated Prototype Aggregation) | Clients share CWE-conditioned prototype vectors instead of model parameters. Per-sample embeddings are L1-clipped (radius `R`) and each prototype row is perturbed with a per-class-calibrated Laplace mechanism → provable per-round ε-DP with sequential composition over rounds (ε_tot = T·ε). |
 | **MGMP** (Morphology-Guided Message Passing) | Custom PyG layer fusing edge-weighted local aggregation with scaled-dot-product attention over the global prototype bank, gated per node by its morphological type. |
 
@@ -31,7 +31,10 @@ ensemble of the K client models conditioned on the final global prototype bank.
 vulmorph-fed/
 ├── data/
 │   ├── morphology.py             # Nested 8/16/32-type taxonomies + embedding
-│   └── loaders/real_datasets.py  # Dataset loaders, phi_type rules, cross-project split
+│   └── loaders/
+│       ├── ast_graphs.py         # tree-sitter AST graph construction (primary)
+│       ├── api_classes.py        # API allow-lists for phi_type
+│       └── real_datasets.py      # Dataset loaders, splits, calibration, downsampling
 ├── models/
 │   ├── vcsa.py                   # Edge-mask MLP + structural contrastive loss
 │   ├── mgmp.py                   # MGMP message-passing layer
@@ -104,7 +107,9 @@ python main.py --dataset devign --max_samples 8000 --num_clients 4 \
 
 ## Label model (explicit)
 
-- Detection is **strictly binary**; all P/R/F1/AUC come from the binary head at threshold 0.5.
+- Detection is **strictly binary**; the decision threshold is calibrated on a
+  training-project calibration slice (never the test set); AUC is threshold-free.
+- Training splits cap benign:vulnerable at 4:1 (test/calibration keep true prevalence).
 - CWE annotations condition **only** the prototype bank; multi-CWE functions use their first-listed (primary) CWE; benign functions get no prototype.
 - The bank has |C| = 10 slots: top-9 most frequent training CWEs + shared `OTHER`.
 
