@@ -125,7 +125,16 @@ def run_centralised(model_name, train_data, test_data,
 
 def run_fedavg(model_name, client_datasets, test_data,
                vocab_size, embed_dim, hidden_dim,
-               rounds, local_epochs, batch_size, lr, device, cal_data=None):
+               rounds, local_epochs, batch_size, lr, device, cal_data=None,
+               dp_epsilon=None, dp_clip=1.0):
+    """
+    Standard FedAvg; when dp_epsilon is set, applies the Laplace mechanism to
+    each client's model UPDATE (DP-FedAvg): the update Δθ = θ_local − θ_global
+    is L1-clipped to `dp_clip` and perturbed with per-coordinate Laplace noise
+    of scale dp_clip/ε, giving ε-DP per round at client level — the standard
+    way to obtain a formal guarantee for parameter-sharing FL, and the
+    matched-privacy-budget counterpart of VulMorph-Fed's prototype mechanism.
+    """
     global_model = _make_model(model_name, vocab_size, embed_dim, hidden_dim, device)
     test_loader = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
     cal_loader = (PyGDataLoader(cal_data, batch_size=batch_size, shuffle=False)
@@ -154,7 +163,26 @@ def run_fedavg(model_name, client_datasets, test_data,
                     loss.backward()
                     opt.step()
 
-            client_weights.append(copy.deepcopy(local_model.state_dict()))
+            local_sd = local_model.state_dict()
+            if dp_epsilon is not None:
+                # DP-FedAvg: clip + noise the UPDATE, then reconstruct weights
+                global_sd = global_model.state_dict()
+                delta = {k: (local_sd[k].float() - global_sd[k].float())
+                         for k in local_sd}
+                l1 = sum(d.abs().sum() for d in delta.values()).clamp(min=1e-12)
+                scale = min(1.0, dp_clip / float(l1))
+                b = dp_clip / dp_epsilon
+                noised = {}
+                for k, d in delta.items():
+                    d = d * scale
+                    noise = torch.tensor(
+                        np.random.laplace(0.0, b, size=d.shape),
+                        dtype=d.dtype, device=d.device)
+                    noised[k] = (global_sd[k].float() + d + noise
+                                 ).to(local_sd[k].dtype)
+                local_sd = noised
+
+            client_weights.append(copy.deepcopy(local_sd))
             client_sizes.append(len(ds))
 
         if not client_weights:
@@ -197,6 +225,7 @@ def run_centralised_vulmorph(args, seed):
 # ── CLI ──────────────────────────────────────────────────────────────────
 
 BASELINES = [
+    # Non-private references (raw data pooled, or parameters shared in clear)
     ("centralised_ggnn",        "centralised", "ggnn"),
     ("centralised_gat",         "centralised", "gat"),
     ("centralised_transformer", "centralised", "transformer"),
@@ -204,6 +233,9 @@ BASELINES = [
     ("fedavg_gat",              "fedavg",      "gat"),
     ("fedavg_ggnn_morph",       "fedavg",      "ggnn_morph"),
     ("fedavg_transformer",      "fedavg",      "transformer"),
+    # Matched-privacy-budget peers (formal ε-DP per round, like VulMorph-Fed)
+    ("dp_fedavg_gat",           "dp_fedavg",   "gat"),
+    ("dp_fedavg_ggnn_morph",    "dp_fedavg",   "ggnn_morph"),
 ]
 
 
@@ -218,6 +250,9 @@ def main():
     p.add_argument("--output",     type=str,   default="results/baselines.json")
     p.add_argument("--only",       type=str,   default=None,
                    help="Comma-separated subset of baseline names to run")
+    p.add_argument("--dp_epsilon", type=float, default=2.0,
+                   help="Per-round ε for the DP-FedAvg baselines (matches "
+                        "VulMorph-Fed's per-round prototype budget)")
     args = p.parse_args()
     seeds = parse_seeds(args.seeds)
 
@@ -256,7 +291,8 @@ def main():
                 vocab_size=args.vocab_size, embed_dim=args.embed_dim,
                 hidden_dim=args.hidden_dim, rounds=args.rounds,
                 local_epochs=args.local_epochs, batch_size=args.batch_size,
-                lr=args.lr, device=args.device, cal_data=cal_dataset)
+                lr=args.lr, device=args.device, cal_data=cal_dataset,
+                dp_epsilon=(args.dp_epsilon if mode == "dp_fedavg" else None))
 
         results[name] = run_seeded(run_one, seeds)
 
