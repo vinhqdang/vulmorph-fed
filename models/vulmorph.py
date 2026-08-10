@@ -39,6 +39,7 @@ class VulMorph(nn.Module):
         self.use_mgmp = use_mgmp
         self.use_morphology = use_morphology
         self.num_layers = num_layers
+        self.bank_slots = num_cwes + 1   # CWE buckets + benign slot
 
         # ── Node embeddings ──────────────────────────────────────────────
         # Structural abstraction REPLACES lexical embeddings entirely: with
@@ -69,7 +70,7 @@ class VulMorph(nn.Module):
                 MGMPLayer(
                     in_channels=dims[i],
                     out_channels=dims[i + 1],
-                    num_cwes=num_cwes,
+                    num_cwes=self.bank_slots,
                     morph_dim=morph_dim,
                 )
                 for i in range(num_layers)
@@ -80,9 +81,9 @@ class VulMorph(nn.Module):
                 for i in range(num_layers)
             ])
 
-        # ── Classifier (mean ⊕ max readout) ──────────────────────────────
+        # ── Classifier (mean ⊕ max readout ⊕ prototype similarities) ─────
         self.classifier = nn.Sequential(
-            nn.Linear(hidden_dim * 2, hidden_dim // 2),
+            nn.Linear(hidden_dim * 2 + self.bank_slots, hidden_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(hidden_dim // 2, 1),
@@ -132,12 +133,22 @@ class VulMorph(nn.Module):
                 h = F.relu(layer(h, data.edge_index))
 
         # 4. Graph pooling — mean readout feeds prototypes/L_SCL; the
-        #    classifier additionally sees the max readout.
+        #    classifier additionally sees the max readout and the cosine
+        #    similarity of the graph embedding to every global prototype
+        #    (a direct pathway from the federated bank to the decision).
         graph_embeddings = global_mean_pool(h, data.batch)    # (B, hidden_dim)
         h_max = global_max_pool(h, data.batch)                 # (B, hidden_dim)
 
+        if prototypes is not None and prototypes.size(0) == self.bank_slots:
+            g = F.normalize(graph_embeddings, dim=-1)
+            p = F.normalize(prototypes, dim=-1)
+            proto_sim = g @ p.t()                              # (B, slots)
+        else:
+            proto_sim = graph_embeddings.new_zeros(
+                (graph_embeddings.size(0), self.bank_slots))
+
         # 5. Classify
         logits = self.classifier(
-            torch.cat([graph_embeddings, h_max], dim=-1))      # (B, 1)
+            torch.cat([graph_embeddings, h_max, proto_sim], dim=-1))  # (B, 1)
 
         return logits, graph_embeddings, edge_mask

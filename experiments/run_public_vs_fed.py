@@ -49,7 +49,7 @@ def _train_federation(client_datasets, test_dataset, args, use_dp=True,
         )
         for i, ds in enumerate(client_datasets)
     ]
-    server = VulMorphServer(num_cwes=args.num_cwes, hidden_dim=args.hidden_dim,
+    server = VulMorphServer(num_cwes=args.num_cwes + 1, hidden_dim=args.hidden_dim,
                             device=args.device, use_cwe_affinity=True)
 
     metrics = {}

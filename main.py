@@ -221,7 +221,7 @@ def run_fl(args, model_kwargs=None):
     ]
 
     server = VulMorphServer(
-        num_cwes=args.num_cwes,
+        num_cwes=args.num_cwes + 1,   # +1 benign slot
         hidden_dim=args.hidden_dim,
         device=args.device,
         use_cwe_affinity=use_cwe_affinity,

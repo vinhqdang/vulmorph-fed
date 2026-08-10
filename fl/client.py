@@ -41,6 +41,11 @@ class VulMorphClient:
         self.client_id = client_id
         self.dataset = dataset
         self.num_cwes = num_cwes
+        # Prototype bank has one slot per CWE bucket PLUS one benign slot;
+        # every record (benign or vulnerable) contributes to exactly one row,
+        # so the parallel-composition DP argument covers the whole bank.
+        self.bank_slots = num_cwes + 1
+        self.benign_slot = num_cwes
         self.device = torch.device(device)
         self.hidden_dim = hidden_dim
         self.use_dp = use_dp
@@ -77,6 +82,7 @@ class VulMorphClient:
         epochs: int = 1,
         alpha: float = 0.1,
         gamma: float = 0.01,
+        mu: float = 0.5,
     ) -> float:
         """
         Train the local model for `epochs` passes over the local dataset.
@@ -120,7 +126,24 @@ class VulMorphClient:
                 else:
                     loss_l1 = torch.tensor(0.0, device=self.device)
 
-                loss = loss_bce + alpha * loss_scl + gamma * loss_l1
+                # Prototype-alignment regulariser (FedProto-style): pull each
+                # sample embedding toward its own class prototype in the
+                # GLOBAL bank, aligning client embedding spaces across rounds.
+                loss_proto = torch.tensor(0.0, device=self.device)
+                if global_prototypes is not None and mu > 0:
+                    slots = torch.where(
+                        batch.y.long() == 1,
+                        batch.cwe.clamp(min=0, max=self.num_cwes - 1),
+                        torch.full_like(batch.cwe, self.benign_slot),
+                    )
+                    targets = global_prototypes[slots]              # (B, d)
+                    live = targets.norm(dim=1) > 1e-6               # skip empty rows
+                    if live.any():
+                        loss_proto = ((graph_emb[live] - targets[live]) ** 2
+                                      ).sum(dim=1).mean()
+
+                loss = (loss_bce + alpha * loss_scl + gamma * loss_l1
+                        + mu * loss_proto)
                 loss.backward()
                 self.optimizer.step()
 
@@ -148,9 +171,9 @@ class VulMorphClient:
         self.model.eval()
 
         proto_sums = torch.zeros(
-            (self.num_cwes, self.hidden_dim), device=self.device
+            (self.bank_slots, self.hidden_dim), device=self.device
         )
-        proto_counts = torch.zeros(self.num_cwes, device=self.device)
+        proto_counts = torch.zeros(self.bank_slots, device=self.device)
 
         with torch.no_grad():
             for batch in self.train_loader:
@@ -161,12 +184,15 @@ class VulMorphClient:
                 for i in range(batch.num_graphs):
                     if batch.y[i] == 1:
                         c = batch.cwe[i].item()
-                        if 0 <= c < self.num_cwes:
-                            proto_sums[c] += graph_emb[i]
-                            proto_counts[c] += 1
+                        if not (0 <= c < self.num_cwes):
+                            continue
+                    else:
+                        c = self.benign_slot
+                    proto_sums[c] += graph_emb[i]
+                    proto_counts[c] += 1
 
         protos = torch.zeros_like(proto_sums)
-        for c in range(self.num_cwes):
+        for c in range(self.bank_slots):
             if proto_counts[c] > 0:
                 protos[c] = proto_sums[c] / proto_counts[c]
 
