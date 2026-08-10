@@ -1,12 +1,12 @@
 """
-LaTeX Table Generator for VulMorph-Fed manuscript (plan.md §7).
+LaTeX Table Generator for the VulMorph-Fed manuscript.
 
-Reads all JSON result files and produces:
-  - Table 1: Main RQ1 comparison (VulMorph-Fed vs all baselines)
-  - Table 2: Ablation study (RQ2)
-  - Table 3: Privacy-utility tradeoff (RQ3)
-  - Table 4: Scalability (RQ4)
-  - Runs Wilcoxon / Cliff's delta significance tests where multiple seeds available.
+Reads the multi-seed result JSONs produced by the experiment runners
+(schema: {metric: {"mean": .., "std": .., "values": [..]}}) and produces
+tables reporting mean ± std. Missing metrics are rendered as "--", never
+as fabricated zeros. Statistical tests (Wilcoxon signed-rank + Cliff's
+delta) pair per-dataset, per-seed F1 values of VulMorph-Fed against each
+baseline.
 """
 
 import sys
@@ -15,12 +15,25 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
 import argparse
-import numpy as np
 from utils.stats import run_statistical_tests
 
 RESULTS_DIR = Path(__file__).parent / "results"
 
-# ── Loaders ──────────────────────────────────────────────────────────────────
+DATASETS = ["devign", "bigvul", "diversevul", "primevul"]
+DATASET_LABELS = {"devign": "Devign", "bigvul": "BigVul",
+                  "diversevul": "DiverseVul", "primevul": "PrimeVul"}
+
+BASELINE_LABELS = {
+    "centralised_ggnn":        "Centralised GGNN (lexical CPG)",
+    "centralised_gat":         "Centralised GAT (lexical CPG)",
+    "centralised_transformer": "Centralised Transformer (sequence)",
+    "centralised_ggnn_morph":  "Centralised GGNN (VCSA graphs)",
+    "fedavg_gat":              "FedAvg + GAT (lexical CPG)",
+    "fedavg_ggnn_morph":       "FedAvg + GGNN (VCSA graphs)",
+    "fedavg_transformer":      "FedAvg + Transformer (sequence)",
+    "centralised_vulmorph":    "Centralised VulMorph (oracle)",
+}
+
 
 def load_json(fname):
     p = RESULTS_DIR / fname
@@ -30,130 +43,170 @@ def load_json(fname):
         return json.load(f)
 
 
-# ── Formatting helpers ────────────────────────────────────────────────────────
-
-def fmt(v, bold=False):
-    s = f"{v:.4f}"
+def fmt_ms(entry, metric, bold=False, prec=3):
+    """Format a metric as mean±std; '--' when absent."""
+    m = entry.get(metric) if entry else None
+    if not isinstance(m, dict) or "mean" not in m:
+        return "--"
+    s = f"{m['mean']:.{prec}f}$\\pm${m['std']:.{prec}f}"
     return f"\\textbf{{{s}}}" if bold else s
 
-def bold_best(values, metrics, higher_is_better=True):
-    """Return list of bold flags for the best value in each metric column."""
-    result = []
-    for col_vals in zip(*[[m[k] for k in metrics] for m in values]):
-        best = max(col_vals) if higher_is_better else min(col_vals)
-        result.append([v == best for v in col_vals])
-    # Transpose back
-    n_methods = len(values)
-    n_metrics = len(metrics)
-    flags = [[False]*n_metrics for _ in range(n_methods)]
-    for mi, col in enumerate(zip(*[
-        [m[k] for k in metrics] for m in values
-    ])):
-        best = max(col)
-        for ri, v in enumerate(col):
-            if v == best:
-                flags[ri][mi] = True
-    return flags
+
+def mean_of(entry, metric):
+    m = entry.get(metric) if entry else None
+    return m["mean"] if isinstance(m, dict) and "mean" in m else None
+
+
+def values_of(entry, metric):
+    m = entry.get(metric) if entry else None
+    return m.get("values", []) if isinstance(m, dict) else []
 
 
 # ── Table 1: RQ1 Main Comparison ─────────────────────────────────────────────
 
 def table_rq1():
-    data = load_json("cross_project.json")
-    if not data:
-        print("Warning: cross_project.json not found, skipping Table 1.")
+    per_ds = {}
+    for ds in DATASETS:
+        base = load_json(f"baselines_{ds}.json")
+        ours = load_json(f"vulmorph_{ds}.json")
+        if base or ours:
+            per_ds[ds] = (base or {}, ours)
+
+    if not per_ds:
+        print("Warning: no RQ1 results found, skipping Table 1.")
         return ""
 
-    datasets = ["Devign", "BigVul", "ReVeal", "CVEfixes", "DiverseVul", "MegaVul", "PrimeVul", "VulGate"]
-    models = ["Centralised GGNN", "Centralised GAT", "FedAvg+GAT", "VulMorph-Fed"]
+    ds_used = list(per_ds.keys())
+    methods = [k for k in BASELINE_LABELS if any(
+        k in per_ds[ds][0] for ds in ds_used)]
 
-    lines = []
-    lines.append("\\begin{table*}[t]")
-    lines.append("\\centering")
-    lines.append("\\caption{RQ1: Cross-Project Vulnerability Detection (F1-Score). Best results per dataset in \\textbf{bold}.}")
-    lines.append("\\label{tab:rq1_main}")
-    lines.append("\\resizebox{\\linewidth}{!}{%")
-    lines.append("\\begin{tabular}{l" + "r"*len(datasets) + "}")
-    lines.append("\\toprule")
-    lines.append("Model & " + " & ".join(datasets) + " \\\\")
-    lines.append("\\midrule")
+    lines = [
+        "\\begin{table*}[t]", "\\centering",
+        "\\caption{RQ1: Cross-project vulnerability detection F1-score "
+        "(mean $\\pm$ std over " + _seed_note(per_ds, ds_used) + " seeds). "
+        "Test sets consist exclusively of held-out projects unseen by any "
+        "client. Best \\emph{privacy-preserving} result per dataset in bold; "
+        "centralised models pool raw code and serve as reference points.}",
+        "\\label{tab:rq1_main}",
+        "\\resizebox{\\linewidth}{!}{%",
+        "\\begin{tabular}{l" + "r" * len(ds_used) + "}",
+        "\\toprule",
+        "Model & " + " & ".join(DATASET_LABELS[d] for d in ds_used) + " \\\\",
+        "\\midrule",
+    ]
 
-    # Find best F1 per dataset
-    best = {}
-    for d in datasets:
-        vals = [data[d][m].get("f1", 0) for m in models if d in data and m in data[d]]
-        best[d] = max(vals) if vals else 0
-
-    for m in models:
-        row = [m]
-        for d in datasets:
-            if d in data and m in data[d]:
-                val = data[d][m].get("f1", 0)
-                row.append(fmt(val, bold=(abs(val - best[d]) < 1e-4)))
-            else:
-                row.append("--")
+    for m in methods:
+        row = [BASELINE_LABELS[m]]
+        for ds in ds_used:
+            row.append(fmt_ms(per_ds[ds][0].get(m), "f1"))
         lines.append(" & ".join(row) + " \\\\")
 
-    lines.append("\\bottomrule")
-    lines.append("\\end{tabular}")
-    lines.append("}")
-    lines.append("\\end{table*}")
+    lines.append("\\midrule")
+    row = ["\\textbf{VulMorph-Fed (ours)}"]
+    for ds in ds_used:
+        row.append(fmt_ms(per_ds[ds][1], "f1", bold=True))
+    lines.append(" & ".join(row) + " \\\\")
+
+    lines += ["\\bottomrule", "\\end{tabular}", "}", "\\end{table*}"]
+    return "\n".join(lines)
+
+
+def _seed_note(per_ds, ds_used):
+    for ds in ds_used:
+        ours = per_ds[ds][1]
+        if ours and "num_seeds" in ours:
+            return str(ours["num_seeds"])
+    return "?"
+
+
+def significance_summary():
+    """Pairs per-dataset per-seed F1 of VulMorph-Fed vs each baseline."""
+    ours_vals, base_vals = {}, {}
+    for ds in DATASETS:
+        ours = load_json(f"vulmorph_{ds}.json")
+        base = load_json(f"baselines_{ds}.json")
+        if not ours or not base:
+            continue
+        ov = values_of(ours, "f1")
+        for m, entry in base.items():
+            bv = values_of(entry, "f1")
+            if len(bv) == len(ov) and ov:
+                ours_vals.setdefault(m, []).extend(ov)
+                base_vals.setdefault(m, []).extend(bv)
+
+    lines = ["% Statistical comparison: VulMorph-Fed vs each baseline",
+             "% (Wilcoxon signed-rank over paired per-dataset, per-seed F1)"]
+    stats = {}
+    for m in ours_vals:
+        r = run_statistical_tests(ours_vals[m], base_vals[m])
+        stats[m] = {**r, "n_pairs": len(ours_vals[m])}
+        lines.append(f"%   vs {m}: n={len(ours_vals[m])}, "
+                     f"p={r['wilcoxon_p']:.4f}, delta={r['cliffs_delta']:.3f}")
+
+    with open(RESULTS_DIR / "significance.json", "w") as f:
+        json.dump(stats, f, indent=2)
     return "\n".join(lines)
 
 
 # ── Table 2: RQ2 Ablation ─────────────────────────────────────────────────────
 
-def table_rq2():
-    data = load_json("ablations_real.json")
-    if not data:
-        print("Warning: ablations_real.json not found, skipping Table 2.")
-        return ""
+VARIANT_ORDER = [
+    ("Full VulMorph-Fed",             "\\textbf{Full VulMorph-Fed (proposed)}"),
+    ("w/o VCSA",                      "w/o VCSA"),
+    ("w/o Morphological Abstraction", "w/o Morph. Abstraction"),
+    ("w/o MCFPA (Uniform Avg)",       "w/o MCFPA (uniform avg.)"),
+    ("w/o MGMP (Standard GAT)",       "w/o MGMP (standard GAT)"),
+    ("w/o DP",                        "w/o Differential Privacy"),
+    ("Local Only",                    "Local only (no federation)"),
+]
 
-    # Map display names
-    variant_map = {
-        "Full VulMorph-Fed":             "Full VulMorph-Fed (proposed)",
-        "w/o VCSA":                      "w/o VCSA",
-        "w/o Morphological Abstraction": "w/o Morph. Abstraction",
-        "w/o MCFPA (Uniform Avg)":       "w/o MCFPA (uniform avg.)",
-        "w/o MGMP (Standard GAT)":       "w/o MGMP (standard GAT)",
-        "w/o DP":                        "w/o Differential Privacy",
-        "Local Only":                    "Local only (no federation)",
-    }
+METRIC_COLS = [("f1", "F1"), ("auc", "AUC"),
+               ("precision", "Prec."), ("recall", "Rec.")]
 
-    cols = ["f1", "auc", "precision", "recall"]
-    col_labels = ["F1", "AUC", "Prec.", "Rec."]
 
-    lines = []
-    lines.append("\\begin{table}[t]")
-    lines.append("\\centering")
-    lines.append("\\caption{RQ2: Ablation Study. Each row removes one VulMorph-Fed component. "
-                 "Best per column in \\textbf{bold}.}")
-    lines.append("\\label{tab:rq2_ablation}")
-    lines.append("\\resizebox{\\linewidth}{!}{%")
-    lines.append("\\begin{tabular}{l" + "r"*len(cols) + "}")
-    lines.append("\\toprule")
-    lines.append("Variant & " + " & ".join(col_labels) + " \\\\")
-    lines.append("\\midrule")
-
-    all_vals = [v for v in data.values()]
-    best = {c: max(v.get(c, 0) for v in all_vals) for c in cols}
-
-    for key, display in variant_map.items():
-        m = data.get(key, {})
-        if key == "Full VulMorph-Fed":
-            display = "\\textbf{" + display + "}"
-            lines.append("\\midrule")
-        cells = " & ".join(
-            fmt(m.get(c, 0), bold=(abs(m.get(c, 0) - best[c]) < 1e-4))
-            for c in cols
-        )
+def _metric_table(data, order, caption, label, first_col="Variant"):
+    lines = [
+        "\\begin{table}[t]", "\\centering",
+        f"\\caption{{{caption}}}", f"\\label{{{label}}}",
+        "\\resizebox{\\linewidth}{!}{%",
+        "\\begin{tabular}{l" + "r" * len(METRIC_COLS) + "}",
+        "\\toprule",
+        first_col + " & " + " & ".join(l for _, l in METRIC_COLS) + " \\\\",
+        "\\midrule",
+    ]
+    for key, display in order:
+        entry = data.get(key)
+        if entry is None:
+            continue
+        cells = " & ".join(fmt_ms(entry, c) for c, _ in METRIC_COLS)
         lines.append(f"{display} & {cells} \\\\")
-
-    lines.append("\\bottomrule")
-    lines.append("\\end{tabular}")
-    lines.append("}")
-    lines.append("\\end{table}")
+    lines += ["\\bottomrule", "\\end{tabular}", "}", "\\end{table}"]
     return "\n".join(lines)
+
+
+def table_rq2():
+    data = load_json("ablations.json")
+    if not data:
+        print("Warning: ablations.json not found, skipping Table 2.")
+        return ""
+    return _metric_table(
+        data, VARIANT_ORDER,
+        "RQ2: Ablation study on Devign (mean $\\pm$ std over seeds). "
+        "Each row removes one VulMorph-Fed component.",
+        "tab:rq2_ablation")
+
+
+def table_rq2b():
+    data = load_json("taxonomy_size.json")
+    if not data:
+        print("Warning: taxonomy_size.json not found, skipping Table 2b.")
+        return ""
+    order = [(k, f"$|\\mathcal{{T}}| = {k}$") for k in ["8", "16", "32"]]
+    return _metric_table(
+        data, order,
+        "RQ2b: Sensitivity to the morphological taxonomy size "
+        "$|\\mathcal{T}|$ (mean $\\pm$ std over seeds).",
+        "tab:rq2b_taxonomy", first_col="Taxonomy")
 
 
 # ── Table 3: RQ3 Privacy-Utility ─────────────────────────────────────────────
@@ -164,33 +217,33 @@ def table_rq3():
         print("Warning: rq3_privacy.json not found, skipping Table 3.")
         return ""
 
-    cols = ["f1", "auc", "precision", "recall"]
-    col_labels = ["F1", "AUC", "Prec.", "Rec."]
     eps_display = {
         "0.1": "0.1 (strong)", "0.5": "0.5", "1.0": "1.0",
-        "2.0": "2.0", "5.0": "5.0", "inf": "$\\infty$ (no DP)"
+        "2.0": "2.0", "5.0": "5.0", "inf": "$\\infty$ (no DP)",
     }
-
-    lines = []
-    lines.append("\\begin{table}[t]")
-    lines.append("\\centering")
-    lines.append("\\caption{RQ3: Privacy-Utility Tradeoff across Laplace DP budgets $\\varepsilon$.}")
-    lines.append("\\label{tab:rq3_privacy}")
-    lines.append("\\resizebox{\\linewidth}{!}{%")
-    lines.append("\\begin{tabular}{l" + "r"*len(cols) + "}")
-    lines.append("\\toprule")
-    lines.append("$\\varepsilon$ & " + " & ".join(col_labels) + " \\\\")
-    lines.append("\\midrule")
-
+    lines = [
+        "\\begin{table}[t]", "\\centering",
+        "\\caption{RQ3: Privacy-utility trade-off across per-round Laplace "
+        "DP budgets $\\varepsilon$ (mean $\\pm$ std over seeds). "
+        "$\\varepsilon_{\\mathrm{tot}}$ is the end-to-end budget after "
+        "sequential composition over $T$ rounds.}",
+        "\\label{tab:rq3_privacy}",
+        "\\resizebox{\\linewidth}{!}{%",
+        "\\begin{tabular}{llrrrr}",
+        "\\toprule",
+        "$\\varepsilon$/round & $\\varepsilon_{\\mathrm{tot}}$ & "
+        + " & ".join(l for _, l in METRIC_COLS) + " \\\\",
+        "\\midrule",
+    ]
     for eps_key, display in eps_display.items():
-        m = data.get(eps_key, {})
-        cells = " & ".join(fmt(m.get(c, 0)) for c in cols)
-        lines.append(f"{display} & {cells} \\\\")
-
-    lines.append("\\bottomrule")
-    lines.append("\\end{tabular}")
-    lines.append("}")
-    lines.append("\\end{table}")
+        entry = data.get(eps_key)
+        if entry is None:
+            continue
+        comp = entry.get("epsilon_composed", "--")
+        comp_s = "$\\infty$" if comp == "inf" else f"{comp:g}"
+        cells = " & ".join(fmt_ms(entry, c) for c, _ in METRIC_COLS)
+        lines.append(f"{display} & {comp_s} & {cells} \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}", "}", "\\end{table}"]
     return "\n".join(lines)
 
 
@@ -202,30 +255,56 @@ def table_rq4():
         print("Warning: rq4_scalability.json not found, skipping Table 4.")
         return ""
 
-    cols = ["f1", "auc"]
-    col_labels = ["F1", "AUC"]
+    lines = [
+        "\\begin{table}[t]", "\\centering",
+        "\\caption{RQ4: Scalability across $K$ federated clients "
+        "(mean $\\pm$ std over seeds). Per-client communication cost per "
+        "round (upload + download of one $|\\mathcal{C}| \\times d$ "
+        "prototype bank) is constant in $K$; total server traffic grows "
+        "linearly.}",
+        "\\label{tab:rq4_scalability}",
+        "\\resizebox{\\linewidth}{!}{%",
+        "\\begin{tabular}{rrrrr}",
+        "\\toprule",
+        "$K$ & F1 & AUC & Client CCR (KB) & Server total (KB) \\\\",
+        "\\midrule",
+    ]
+    for k in sorted(data.keys(), key=int):
+        m = data[k]
+        lines.append(
+            f"{k} & {fmt_ms(m, 'f1')} & {fmt_ms(m, 'auc')} & "
+            f"{m.get('ccr_client_kb', '--')} & "
+            f"{m.get('ccr_server_total_kb', '--')} \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}", "}", "\\end{table}"]
+    return "\n".join(lines)
 
-    lines = []
-    lines.append("\\begin{table}[t]")
-    lines.append("\\centering")
-    lines.append("\\caption{RQ4: Scalability — performance and communication cost "
-                 "across $K$ federated clients.}")
-    lines.append("\\label{tab:rq4_scalability}")
-    lines.append("\\resizebox{\\linewidth}{!}{%")
-    lines.append("\\begin{tabular}{r" + "r"*len(cols) + "r}")
-    lines.append("\\toprule")
-    lines.append("$K$ & " + " & ".join(col_labels) + " & CCR (KB/rnd) \\\\")
-    lines.append("\\midrule")
 
-    for k, m in sorted(data.items(), key=lambda x: int(x[0])):
-        cells = " & ".join(fmt(m.get(c, 0)) for c in cols)
-        ccr = m.get("ccr_kb", 0)
-        lines.append(f"{k} & {cells} & {ccr:.1f} \\\\")
+# ── Table 5: RQ1b Public-only vs Public+Federated ────────────────────────────
 
-    lines.append("\\bottomrule")
-    lines.append("\\end{tabular}")
-    lines.append("}")
-    lines.append("\\end{table}")
+def table_rq1b():
+    data = load_json("public_vs_fed.json")
+    if not data:
+        print("Warning: public_vs_fed.json not found, skipping Table 5.")
+        return ""
+    rows = [
+        ("public_only_f1", "Centralised, public data only"),
+        ("public_fed_f1",  "Public + DP-federated private clients"),
+        ("delta_f1",       "$\\Delta$ (value of federation)"),
+    ]
+    lines = [
+        "\\begin{table}[t]", "\\centering",
+        "\\caption{RQ1b: What do private federated clients add on top of a "
+        "public corpus? Cross-project F1 (mean $\\pm$ std over seeds).}",
+        "\\label{tab:rq1b_public}",
+        "\\begin{tabular}{lr}",
+        "\\toprule", "Configuration & F1 \\\\", "\\midrule",
+    ]
+    for key, display in rows:
+        m = data.get(key)
+        if not isinstance(m, dict):
+            continue
+        lines.append(f"{display} & {m['mean']:.3f}$\\pm${m['std']:.3f} \\\\")
+    lines += ["\\bottomrule", "\\end{tabular}", "\\end{table}"]
     return "\n".join(lines)
 
 
@@ -236,10 +315,15 @@ def main():
     p.add_argument("--output", type=str, default="results/tables.tex")
     args = p.parse_args()
 
-    t1 = table_rq1()
-    t2 = table_rq2()
-    t3 = table_rq3()
-    t4 = table_rq4()
+    sections = [
+        ("RQ1 Main Comparison", table_rq1()),
+        ("RQ1 Significance", significance_summary()),
+        ("RQ1b Public vs Federated", table_rq1b()),
+        ("RQ2 Ablation Study", table_rq2()),
+        ("RQ2b Taxonomy Size", table_rq2b()),
+        ("RQ3 Privacy-Utility", table_rq3()),
+        ("RQ4 Scalability", table_rq4()),
+    ]
 
     out = Path(__file__).parent / args.output
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -248,22 +332,15 @@ def main():
         f.write("% ===================================================\n")
         f.write("% VulMorph-Fed — Auto-generated LaTeX Tables\n")
         f.write("% Generated by experiments/generate_tables.py\n")
+        f.write("% All values are computed from the JSON files in\n")
+        f.write("% experiments/results/ produced by the experiment runners.\n")
         f.write("% ===================================================\n\n")
-        for label, tbl in [("RQ1 Main Comparison", t1),
-                            ("RQ2 Ablation Study", t2),
-                            ("RQ3 Privacy-Utility", t3),
-                            ("RQ4 Scalability", t4)]:
+        for label, tbl in sections:
             if tbl:
                 f.write(f"% --- {label} ---\n")
                 f.write(tbl + "\n\n")
 
     print(f"\nLaTeX tables saved → {out}")
-    print("\nPreviewing table headers:")
-    for t in [t1, t2, t3, t4]:
-        if t:
-            for line in t.split("\n"):
-                if "caption" in line.lower():
-                    print(" ", line.strip())
 
 
 if __name__ == "__main__":

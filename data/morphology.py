@@ -1,70 +1,104 @@
+"""
+Morphological abstraction taxonomies for VulMorph-Fed.
+
+Defines three nested semantic taxonomies (|T| = 8, 16, 32) used to map
+concrete code tokens / CPG node labels onto project-invariant operation
+types. The 8-type taxonomy is the default used in the paper; the 16- and
+32-type variants support the taxonomy-size sensitivity analysis (RQ2b).
+
+Every taxonomy additionally reserves one UNKNOWN type as a fallback, so a
+taxonomy of size |T| yields |T| + 1 node categories and one-hot features
+of dimension |T| + 1.
+"""
+
 import torch
 import torch.nn as nn
 
-# The 8 abstract morphological types from the research plan
-MORPHOLOGY_TYPES = [
-    "MEMORY_ACCESS",  # malloc, free, memcpy, buffer reads/writes
-    "ARRAY_INDEX",    # array/pointer indexing operations
-    "PTR_DEREF",      # pointer dereferences (*p, ->)
-    "CONTROL_BRANCH", # if/else, switch, ternary conditionals
-    "ARITH_OP",       # arithmetic operations (+, -, *, /, %)
-    "COMPARISON",     # relational operators (<, >, ==, !=)
-    "CALL_SITE",      # function/method calls
-    "ASSIGN",         # assignment statements
-    "UNKNOWN"         # fallback for non-critical nodes
+# ── Taxonomy definitions ─────────────────────────────────────────────────────
+
+# |T| = 8 (default, used throughout the paper)
+TAXONOMY_8 = [
+    "MEMORY_ACCESS",   # allocation/free/copy/set APIs (malloc, free, memcpy, ...)
+    "ARRAY_INDEX",     # array subscript operations  a[i]
+    "PTR_DEREF",       # pointer dereference / member access  *p, p->f
+    "CONTROL_BRANCH",  # if/else/switch/loops/goto
+    "ARITH_OP",        # arithmetic and bitwise operators
+    "COMPARISON",      # relational operators
+    "CALL_SITE",       # any function/method call
+    "ASSIGN",          # assignment statements
 ]
 
-MORPHOLOGY_MAP = {k: i for i, k in enumerate(MORPHOLOGY_TYPES)}
-NUM_MORPHOLOGY_TYPES = len(MORPHOLOGY_TYPES)
+# |T| = 16 (splits each coarse class into finer operation families)
+TAXONOMY_16 = [
+    "MEMORY_ALLOC",    # malloc, calloc, realloc, new
+    "MEMORY_FREE",     # free, delete
+    "MEMORY_COPY",     # memcpy, memmove, memset, bcopy
+    "STRING_OP",       # strcpy, strcat, sprintf, strlen, ...
+    "ARRAY_INDEX",
+    "PTR_DEREF",       # *p
+    "FIELD_ACCESS",    # p->f, s.f
+    "LOOP",            # for, while, do
+    "BRANCH",          # if, else, switch, case, ternary
+    "JUMP",            # goto, break, continue, return
+    "ARITH_OP",        # + - * / %
+    "BITWISE_OP",      # & | ^ ~ << >>
+    "COMPARISON",      # == != < > <= >=
+    "LOGICAL_OP",      # && || !
+    "CALL_SITE",
+    "ASSIGN",
+]
 
-# A simplified mock mapping from C/C++ AST node types to the 8 morphological types
-AST_TO_MORPHOLOGY = {
-    "CallExpression": "CALL_SITE",
-    "AssignmentExpression": "ASSIGN",
-    "BinaryExpression": "ARITH_OP", # General arithmetic
-    "Identifier": "UNKNOWN",
-    "IfStatement": "CONTROL_BRANCH",
-    "SwitchStatement": "CONTROL_BRANCH",
-    "ForStatement": "CONTROL_BRANCH",
-    "WhileStatement": "CONTROL_BRANCH",
-    "ArraySubscriptExpression": "ARRAY_INDEX",
-    "PointerDereference": "PTR_DEREF",
-    "MemberExpression": "PTR_DEREF", # often -> in C/C++
-    "ReturnStatement": "UNKNOWN",
-    "FunctionDecl": "UNKNOWN",
-    # Mocks for direct memory APIs
-    "malloc": "MEMORY_ACCESS",
-    "free": "MEMORY_ACCESS",
-    "memcpy": "MEMORY_ACCESS",
-    "memset": "MEMORY_ACCESS",
-    # Comparators
-    "<": "COMPARISON",
-    ">": "COMPARISON",
-    "==": "COMPARISON",
-    "!=": "COMPARISON",
-    "<=": "COMPARISON",
-    ">=": "COMPARISON",
-}
+# |T| = 32 (finest granularity)
+TAXONOMY_32 = [
+    "MEMORY_ALLOC", "MEMORY_REALLOC", "MEMORY_FREE",
+    "MEMORY_COPY", "MEMORY_SET",
+    "STRING_COPY", "STRING_CONCAT", "STRING_FORMAT", "STRING_LENGTH",
+    "IO_CALL",
+    "ARRAY_INDEX",
+    "PTR_DEREF", "ADDR_OF", "FIELD_ACCESS", "CAST",
+    "LOOP_FOR", "LOOP_WHILE",
+    "BRANCH_IF", "BRANCH_SWITCH",
+    "JUMP_BREAK", "JUMP_GOTO", "RETURN",
+    "ARITH_ADD", "ARITH_MUL", "ARITH_MOD",
+    "BITWISE_OP", "SHIFT_OP",
+    "COMPARISON_EQ", "COMPARISON_REL",
+    "LOGICAL_OP",
+    "CALL_SITE", "ASSIGN",
+]
 
-def get_morphology_id(ast_node_label: str) -> int:
-    """Map a raw AST/CPG node label to its abstract morphology ID."""
-    abstract_type = AST_TO_MORPHOLOGY.get(ast_node_label, "UNKNOWN")
-    return MORPHOLOGY_MAP[abstract_type]
+TAXONOMIES = {8: TAXONOMY_8, 16: TAXONOMY_16, 32: TAXONOMY_32}
+
+
+def get_taxonomy(size: int = 8):
+    """Return (type_list_with_unknown, {name: id}) for taxonomy of |T| = size."""
+    if size not in TAXONOMIES:
+        raise ValueError(f"Unsupported taxonomy size {size}; choose from {sorted(TAXONOMIES)}")
+    types = TAXONOMIES[size] + ["UNKNOWN"]
+    return types, {name: i for i, name in enumerate(types)}
+
+
+# Default (|T| = 8) globals kept for backwards compatibility.
+MORPHOLOGY_TYPES, MORPHOLOGY_MAP = get_taxonomy(8)
+NUM_MORPHOLOGY_TYPES = len(MORPHOLOGY_TYPES)   # = |T| + 1 = 9 (incl. UNKNOWN)
+
 
 class MorphologyEmbedding(nn.Module):
     """
-    Embedding layer for the abstract morphology types.
-    This replaces project-specific lexical token embeddings to enable cross-project transfer.
+    Embedding layer for the abstract morphology types (|T| + 1 categories,
+    including the reserved UNKNOWN type). Replaces project-specific lexical
+    token embeddings to enable cross-project transfer.
     """
-    def __init__(self, embedding_dim: int):
+
+    def __init__(self, embedding_dim: int, num_types: int = NUM_MORPHOLOGY_TYPES):
         super().__init__()
-        self.embedding = nn.Embedding(NUM_MORPHOLOGY_TYPES, embedding_dim)
+        self.num_types = num_types
+        self.embedding = nn.Embedding(num_types, embedding_dim)
 
     def forward(self, abstract_type_ids: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            abstract_type_ids: Tensor of shape (num_nodes,) containing morphological IDs.
+            abstract_type_ids: (num_nodes,) morphological type ids in [0, num_types).
         Returns:
-            Tensor of shape (num_nodes, embedding_dim)
+            (num_nodes, embedding_dim)
         """
         return self.embedding(abstract_type_ids)

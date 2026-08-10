@@ -1,71 +1,226 @@
 \section{Methodology}
 \label{sec:method}
 
-To address the cross-project generalisation gap and the data-silo problem simultaneously, we propose \emph{VulMorph-Fed}. The framework replaces standard parameter-averaging with a privacy-preserving federated aggregation of semantic structural prototypes. The methodology consists of three core components: (1)~Vulnerability-Critical Subgraph Abstraction (VCSA), which extracts project-invariant structural morphologies; (2)~Morphology-Conditioned Federated Prototype Aggregation (MCFPA), which securely aggregates structural knowledge; and (3)~Morphology-Guided Message Passing (MGMP), which integrates global intelligence into local graph evaluation. Let $\mathcal{G}_k = \{G_i^{(k)}\}_{i=1}^{N_k}$ denote the local dataset of client $k \in \{1, \dots, K\}$, where each graph $G_i^{(k)} = (\mathcal{V}, \mathcal{E}, \mathbf{X})$ represents a function property graph with node features $\mathbf{X} \in \mathbb{R}^{|\mathcal{V}| \times d}$.
+To address the cross-project generalisation gap and the data-silo problem simultaneously, we propose \emph{VulMorph-Fed}. The framework replaces standard parameter averaging with a privacy-preserving federated aggregation of semantic structural prototypes. It consists of three components: (1)~Vulnerability-Critical Subgraph Abstraction (VCSA), which maps functions onto project-invariant structural morphologies; (2)~Morphology-Conditioned Federated Prototype Aggregation (MCFPA), which aggregates structural knowledge under differential privacy; and (3)~Morphology-Guided Message Passing (MGMP), which injects the aggregated global knowledge into local graph learning. Figure~\ref{fig:worked_example} illustrates the end-to-end abstraction on two lexically different but structurally similar vulnerable functions.
+
+\subsection{Graph Construction}
+\label{sec:graph_construction}
+
+Let $\mathcal{G}_k = \{(G_i^{(k)}, y_i^{(k)}, c_i^{(k)})\}_{i=1}^{N_k}$ denote the local dataset of client $k \in \{1, \dots, K\}$, where $y_i \in \{0,1\}$ is the binary vulnerability label and $c_i$ the CWE annotation of vulnerable functions (Section~\ref{sec:label_model}).
+
+Full Code Property Graph (CPG) extraction requires a heavyweight static-analysis engine such as Joern~\cite{yamaguchi2014modeling}, which is impractical to deploy at every federated edge client and complicates exact reproduction. Our implementation therefore operates on a \emph{lightweight lexical dependence graph} that approximates the CPG views most relevant to our abstraction. For a function $f$ with token sequence $t_1, \dots, t_n$ (we retain the first $n \le 100$ tokens produced by a C/C++ tokenizer that merges multi-character operators such as \texttt{->}, \texttt{==}, \texttt{<<=}), the graph $G = (\mathcal{V}, \mathcal{E})$ has:
+\begin{itemize}
+    \item one node per token, $|\mathcal{V}| = n$;
+    \item \emph{natural-code-sequence} (NCS) edges $\mathcal{E}_{NCS} = \{(t_i, t_{i+1})\}$, as used in Devign~\cite{zhou2019devign};
+    \item \emph{data-dependence proxy} edges $\mathcal{E}_{DD}$ linking successive occurrences of the same identifier (a def-use approximation), excluding language keywords.
+\end{itemize}
+The edge set is $\mathcal{E} = \mathcal{E}_{NCS} \cup \mathcal{E}_{DD}$; on our corpora this yields on average 70--90 nodes and 77--98 edges per function. We state explicitly that these are \emph{not} compiler-grade CPGs; Section~\ref{sec:discussion} discusses this trade-off, and the released implementation isolates graph construction behind a single interface so that Joern-derived CPGs can be substituted without touching the rest of the framework.
 
 \subsection{Vulnerability-Critical Subgraph Abstraction (VCSA)}
-Raw Code Property Graphs (CPGs) contain thousands of project-specific API tokens, causing GNNs to overfit to local lexical distributions. VCSA performs a structural abstraction mapping $\Phi: \mathcal{G} \rightarrow \tilde{\mathcal{G}}$ that strips lexical noise while preserving vulnerability-critical data flow. 
+\label{sec:vcsa}
 
-We define a finite semantic taxonomy $\mathcal{T} = \{\tau_1, \dots, \tau_8\}$, comprising fundamental operation types (e.g., \texttt{MEMORY\_ALLOC}, \texttt{PTR\_DEREF}, \texttt{ARRAY\_INDEX}). The abstraction function maps each node $v \in \mathcal{V}$ to a semantic type:
+Raw code graphs carry thousands of project-specific API and identifier tokens, causing GNNs to overfit local lexical distributions. VCSA replaces the lexical node labels with a small taxonomy of abstract operation types and learns to down-weight vulnerability-irrelevant edges.
+
+\subsubsection{Morphological taxonomy}
+\label{sec:taxonomy}
+
+We define a fixed semantic taxonomy $\mathcal{T}$ of $|\mathcal{T}| = 8$ operation types, listed exhaustively in Table~\ref{tab:taxonomy} together with the reserved fallback type \texttt{UNKNOWN}. A node therefore takes one of $|\mathcal{T}| + 1 = 9$ categories, and node features are embeddings (equivalently, one-hot encodings) of dimension $|\mathcal{T}| + 1$ --- the \texttt{UNKNOWN} type has its own slot. For the taxonomy-size sensitivity analysis (RQ2b) we additionally define strictly nested refinements with $|\mathcal{T}| = 16$ and $|\mathcal{T}| = 32$ (e.g., \texttt{MEMORY\_ACCESS} splits into \texttt{MEMORY\_ALLOC}, \texttt{MEMORY\_FREE}, \texttt{MEMORY\_COPY}, \texttt{STRING\_OP}); the complete lists ship with the source code.
+
+\begin{table}[t]
+\centering
+\caption{The complete $|\mathcal{T}| = 8$ morphological taxonomy (plus the reserved \texttt{UNKNOWN} fallback). Node features have $|\mathcal{T}|+1 = 9$ dimensions.}
+\label{tab:taxonomy}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{ll}
+\toprule
+Abstract type & Covers \\
+\midrule
+\texttt{MEMORY\_ACCESS} & allocation/free/copy/set and string APIs (\texttt{malloc}, \texttt{free}, \texttt{memcpy}, \texttt{strcpy}, \dots) \\
+\texttt{ARRAY\_INDEX}   & array subscript operations \texttt{a[i]} \\
+\texttt{PTR\_DEREF}     & pointer dereference and member access (\texttt{*p}, \texttt{p->f}, unary \texttt{\&}) \\
+\texttt{CONTROL\_BRANCH}& \texttt{if}/\texttt{else}/\texttt{switch}, loops, \texttt{goto}/\texttt{break}/\texttt{continue}/\texttt{return}, ternary \\
+\texttt{ARITH\_OP}      & arithmetic and bitwise operators (\texttt{+ - * / \% \& | \^{} \~{} << >>}) \\
+\texttt{COMPARISON}     & relational and logical operators (\texttt{== != < > <= >= \&\& || !}) \\
+\texttt{CALL\_SITE}     & any other function/macro call (user-defined and unresolved calls included) \\
+\texttt{ASSIGN}         & plain and compound assignments (\texttt{=}, \texttt{+=}, \dots) \\
+\midrule
+\texttt{UNKNOWN}        & all remaining tokens (identifiers, literals, punctuation, declarations) \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsubsection{The abstraction function $\phi_{\mathrm{type}}$}
+
+The mapping $\phi_{\mathrm{type}}: \mathcal{V} \rightarrow \mathcal{T} \cup \{\texttt{UNKNOWN}\}$ is a deterministic, context-aware rule set evaluated over a token and its immediate neighbours, in priority order:
+\begin{enumerate}
+    \item an identifier followed by `\texttt{(}' maps to the memory/string API class if it appears on a fixed allow-list (Table~\ref{tab:taxonomy}, row 1; the full allow-lists are in the released code), to the control class if it is a control keyword, and to \texttt{CALL\_SITE} otherwise --- \emph{user-defined functions, macros and unresolved calls all map to \texttt{CALL\_SITE}}; no name resolution is required;
+    \item an identifier followed by `\texttt{[}' maps to \texttt{ARRAY\_INDEX};
+    \item control keywords map to \texttt{CONTROL\_BRANCH};
+    \item \texttt{->}, and \texttt{*}/\texttt{\&} in prefix (unary) position, map to \texttt{PTR\_DEREF}; \texttt{*}/\texttt{\&} in infix position map to \texttt{ARITH\_OP};
+    \item operator tokens map to \texttt{ARITH\_OP}, \texttt{COMPARISON} or \texttt{ASSIGN} as listed in Table~\ref{tab:taxonomy};
+    \item every remaining token maps to \texttt{UNKNOWN}.
+\end{enumerate}
+The rules are implemented once at the finest ($|\mathcal{T}|=32$) granularity and projected onto the coarser taxonomies, so all three taxonomy sizes share a single rule set. $\phi_{\mathrm{type}}$ is a discrete label assignment and is \emph{not} differentiable; the only learned part of VCSA is the edge-weighting module below.
+
+On our four evaluation corpora, 25--26\% of nodes receive a non-\texttt{UNKNOWN} type. The abstraction does not delete nodes: all $n$ nodes are retained with their graph structure, but their features are collapsed from a $\sim$10,000-token vocabulary onto the $|\mathcal{T}|+1$ abstract categories. This many-to-one collapse --- roughly three orders of magnitude --- is what removes project-specific lexical information from everything the model computes and, downstream, from everything a client transmits (Section~\ref{sec:privacy}).
+
+\subsubsection{Learned edge weighting}
+
+VCSA additionally learns a soft edge-importance mask. A two-layer MLP over concatenated endpoint features produces
 \begin{equation}
-    \tilde{v} = \phi_{\text{type}}(v) \in \mathcal{T} \cup \{\texttt{UNKNOWN}\}
+    \varepsilon_e = \sigma\!\left(\mathrm{MLP}([\mathbf{x}_u \,\|\, \mathbf{x}_v])\right) \in [0,1] \quad \text{for } e = (u,v) \in \mathcal{E},
+\label{eq:edge_mask}
 \end{equation}
-We extract the vulnerability-critical subgraph $\tilde{G} \subset G$ by executing a bidirectional reachability query over the data-dependence edges $\mathcal{E}_{DD}$ originating from any node $v$ where $\phi_{\text{type}}(v) \neq \texttt{UNKNOWN}$:
+which reweights messages during propagation (Eq.~\ref{eq:mgmp_local}); edges are softly down-weighted rather than hard-pruned, keeping the pipeline trainable end-to-end. Sparsity is encouraged by an $\ell_1$ penalty $\mathcal{L}_{\mathrm{sparse}} = \frac{1}{|\mathcal{E}|}\sum_e \varepsilon_e$. To align morphologies across clients we further use a structural contrastive loss over graph embeddings $\mathbf{h}_G$:
 \begin{equation}
-    \tilde{\mathcal{V}} = \{ u \in \mathcal{V} \mid \exists \text{ path } u \leftrightarrow v \text{ in } \mathcal{E}_{DD} \}
+    \mathcal{L}_{SCL} = \!\!\sum_{(i,j) \in \mathcal{P}^+}\!\! \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2
+    + \!\!\sum_{(i,j) \in \mathcal{P}^-}\!\! \max\left(0, m - \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2\right),
+\label{eq:scl}
 \end{equation}
-The abstracted node features $\tilde{\mathbf{X}} \in \mathbb{R}^{|\tilde{\mathcal{V}}| \times |\mathcal{T}|}$ are initialized as one-hot encodings of their semantic types. The local GNN encoder $f_{\theta_k}: \tilde{\mathcal{G}} \rightarrow \mathbb{R}^{d}$ then computes the graph-level representation:
-\begin{equation}
-    \mathbf{h}_{\tilde{G}} = \text{READOUT} \left( \text{GNN}_{\theta_k}(\tilde{\mathbf{X}}, \tilde{\mathcal{E}}) \right)
-\end{equation}
-By operating strictly on $\tilde{G}$, $f_{\theta_k}$ is forced to learn the \emph{shape} of the data flow (the morphology) rather than memorizing project-specific token distributions.
+where $\mathcal{P}^+$ are same-CWE vulnerable pairs and $\mathcal{P}^-$ are (vulnerable, benign) pairs within a mini-batch, with margin $m = 1$. The total local objective is $\mathcal{L} = \mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}}$ with $\alpha = 0.1$, $\gamma = 0.01$; $\mathcal{L}_{BCE}$ is class-weighted binary cross-entropy with $\mathrm{pos\_weight} = \min(N^-/N^+, 20)$ computed on each client's local split.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}{0.48\linewidth}
+\footnotesize
+\textbf{Project A (FFmpeg-style):}
+\begin{verbatim}
+n = av_get_size(ctx);
+buf = av_malloc(n);
+for (i = 0; i <= n; i++)
+    buf[i] = src[i];
+\end{verbatim}
+\end{minipage}\hfill
+\begin{minipage}{0.48\linewidth}
+\footnotesize
+\textbf{Project B (OpenSSL-style):}
+\begin{verbatim}
+len = BN_num_bytes(a);
+out = OPENSSL_malloc(len);
+for (k = 0; k <= len; k++)
+    out[k] = in[k];
+\end{verbatim}
+\end{minipage}
+\vspace{2pt}
+\begin{minipage}{\linewidth}
+\centering
+\footnotesize
+\textbf{Shared morphology (both fragments):}\\[2pt]
+\texttt{CALL\_SITE} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{MEMORY\_ACCESS} $\rightarrow$ \texttt{CONTROL\_BRANCH}(\texttt{LOOP}) $\rightarrow$ \texttt{COMPARISON}($\le$) $\rightarrow$ \texttt{ARRAY\_INDEX} $\rightarrow$ \texttt{ASSIGN}
+\end{minipage}
+\caption{Worked example of the VCSA abstraction. Two off-by-one buffer overflows (CWE-787) from different projects share no API or identifier tokens, yet $\phi_{\mathrm{type}}$ maps both onto the same morphological pattern: an allocation of $n$ bytes followed by a loop whose \emph{inclusive} bound ($\le$) drives an array write. The abstracted graphs --- and hence the prototypes built from them --- are indistinguishable across the two projects.}
+\label{fig:worked_example}
+\end{figure}
+
+\subsection{Label Model}
+\label{sec:label_model}
+
+Real vulnerability corpora have a many-to-many CVE--function--CWE structure, so we state our label model explicitly:
+\begin{itemize}
+    \item \textbf{Detection is strictly binary.} The classification head predicts $\hat{y} \in [0,1]$ (vulnerable vs.\ benign); all reported Precision, Recall, F1 and AUC values are computed from this binary head at threshold $0.5$. CWE information never enters the detection head.
+    \item \textbf{CWE labels condition only the prototypes.} A vulnerable function annotated with several CWEs contributes to the prototype of its \emph{first-listed (primary)} CWE. Benign functions receive no prototype.
+    \item \textbf{CWE vocabulary.} The prototype bank has a fixed size $|\mathcal{C}| = 10$: the nine most frequent CWE types in the training corpus receive dedicated slots and all remaining types share an \texttt{OTHER} slot. This bucketing is computed once per dataset and reported with the released configurations. Datasets without per-function CWE annotations (Devign) degenerate gracefully to a single vulnerable-prototype slot.
+\end{itemize}
 
 \subsection{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}
-Standard Federated Learning algorithms, such as FedAvg \cite{mcmahan2017fedavg}, aggregate neural network parameters: $\theta_{t+1} = \sum_{k=1}^K \frac{N_k}{N} \theta_t^{(k)}$. This formulation assumes IID data distributions. However, vulnerability datasets exhibit extreme non-IID characteristics, with highly skewed Common Weakness Enumeration (CWE) class distributions across clients.
+\label{sec:mcfpa}
 
-MCFPA circumvents parameter averaging by federating \emph{semantic prototypes}. Let $\mathcal{C}$ be the global set of CWE classes. For each class $c \in \mathcal{C}$, client $k$ computes a local prototype $\mathbf{p}_c^{(k)} \in \mathbb{R}^d$ as the empirical centroid of the embeddings of functions labeled with $c$:
+FedAvg-style parameter averaging~\cite{mcmahan2017fedavg} assumes near-IID clients; vulnerability data is extremely non-IID in its CWE composition. MCFPA instead federates \emph{CWE-conditioned prototypes}. After local training, client $k$ computes, for each CWE bucket $c$ with local support $N_{c,k} > 0$,
 \begin{equation}
-    \mathbf{p}_c^{(k)} = \frac{1}{| \{ G \in \mathcal{G}_k \mid y_G = c \} |} \sum_{G \in \mathcal{G}_k, y_G = c} f_{\theta_k}(\tilde{G})
+    \mathbf{p}_c^{(k)} = \frac{1}{N_{c,k}} \sum_{\substack{G \in \mathcal{G}_k:\; y_G = 1,\; c_G = c}} \mathrm{clip}_R\!\left(f_{\theta_k}(\tilde{G})\right),
+    \qquad
+    \mathrm{clip}_R(\mathbf{z}) = \mathbf{z} \cdot \min\!\left(1, \tfrac{R}{\|\mathbf{z}\|_1}\right),
+\label{eq:prototype}
 \end{equation}
-To preserve data privacy, we apply the Laplace mechanism. We bound the $L_2$ norm of $\mathbf{h}_{\tilde{G}}$ to $R$, yielding a global sensitivity of $\Delta f = 2R / N_{c,k}$. The perturbed local prototype is:
+i.e., the centroid of the $\ell_1$-clipped embeddings of its local vulnerable functions of type $c$. Buckets with $N_{c,k} = 0$ are transmitted as zero rows and carry no information.
+
+\subsubsection{Differential privacy}
+\label{sec:privacy}
+
+Before upload, each non-empty prototype row is perturbed with the Laplace mechanism:
 \begin{equation}
-    \hat{\mathbf{p}}_c^{(k)} = \mathbf{p}_c^{(k)} + \text{Lap}\left(0, \frac{\Delta f}{\varepsilon}\right)
+    \hat{\mathbf{p}}_c^{(k)} = \mathbf{p}_c^{(k)} + \mathrm{Lap}\!\left(0,\; \frac{2R}{N_{c,k}\,\varepsilon}\right)^{\otimes d}.
+\label{eq:laplace}
 \end{equation}
-The central server aggregates the perturbed prototypes weighted by the local class frequencies $w_c^{(k)}$, producing the global morphology bank $\mathcal{P}_{global} = \{ \mathbf{p}_c^{global} \}_{c \in \mathcal{C}}$:
+
+\begin{proposition}[Per-round privacy of the prototype bank]
+\label{prop:dp}
+Fix a client $k$ and let two neighbouring datasets differ in one function. Releasing the noisy bank $\{\hat{\mathbf{p}}_c^{(k)}\}_{c \in \mathcal{C}}$ of Eq.~\eqref{eq:laplace} satisfies $\varepsilon$-differential privacy.
+\end{proposition}
+
+\begin{proof}
+Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so replacing one function changes the class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm. The Laplace mechanism with scale $\Delta_1 / \varepsilon$ is therefore $\varepsilon$-DP for that row \cite{dwork2014algorithmic}. A function carries exactly one primary CWE (Section~\ref{sec:label_model}), so a record change affects exactly one row of the bank; by parallel composition across the disjoint buckets the entire release is $\varepsilon$-DP.
+\end{proof}
+
+\begin{corollary}[End-to-end budget]
+Over $T$ federated rounds, sequential composition yields an end-to-end budget of $\varepsilon_{\mathrm{tot}} = T\varepsilon$. All privacy tables report both the per-round and the composed budget (e.g., $\varepsilon = 2$ per round over $T = 10$ rounds gives $\varepsilon_{\mathrm{tot}} = 20$).
+\end{corollary}
+
+We emphasise why the morphological abstraction matters here: because the encoder consumes only $|\mathcal{T}|+1$ abstract node types, the embeddings being clipped and averaged contain no project-specific lexical information to begin with. DP protects \emph{membership} of individual functions; the abstraction removes \emph{content} (identifiers, API names) categorically rather than statistically.
+
+\subsubsection{Affinity-weighted aggregation}
+
+The server aggregates the noisy banks per CWE bucket. Let $A_k \subseteq \{1..K\}$ be the clients with non-zero rows for bucket $c$. With $\bar{\mathbf{p}}_j = \hat{\mathbf{p}}_c^{(j)} / \|\hat{\mathbf{p}}_c^{(j)}\|_2$, the server computes cosine-affinity weights and the global prototype
 \begin{equation}
-    \mathbf{p}_c^{global} = \sum_{k=1}^K w_c^{(k)} \hat{\mathbf{p}}_c^{(k)}
+    w_c^{(k)} = \max\!\left(0,\; \frac{1}{|A_k| - 1} \sum_{j \in A_k,\, j \neq k} \bar{\mathbf{p}}_j^\top \bar{\mathbf{p}}_k \right),
+    \qquad
+    \mathbf{p}_c^{\mathrm{glob}} = \frac{\sum_{k \in A_k} w_c^{(k)}\, \hat{\mathbf{p}}_c^{(k)}}{\sum_{k \in A_k} w_c^{(k)}},
+\label{eq:mcfpa}
 \end{equation}
+falling back to the uniform mean when all affinities vanish, and to the previous round's value when no client has data for $c$. Clients whose local view of CWE $c$ agrees with the consensus contribute more; outlier (or heavily noised) views are attenuated. The ablation ``w/o MCFPA'' replaces Eq.~\eqref{eq:mcfpa} with the uniform mean.
 
 \subsection{Morphology-Guided Message Passing (MGMP)}
-During local training and inference, client $k$ retrieves $\mathcal{P}_{global}$ and integrates it into its local GNN via MGMP. Instead of updating local node representations solely based on immediate neighbors $\mathcal{N}(v)$, MGMP computes a global context vector $\mathbf{m}_{global}^{(v)}$ via an attention mechanism over the global prototypes:
+\label{sec:mgmp}
+
+Each client integrates the broadcast bank $\mathcal{P}^{\mathrm{glob}} = \{\mathbf{p}_c^{\mathrm{glob}}\}$ into its GNN. Layer $l$ first performs edge-weighted local aggregation (GCN-style normalisation $\hat{d}$ with the VCSA mask $\varepsilon$ as edge weight):
 \begin{equation}
-    \alpha_{v, c} = \frac{\exp \left( \text{LeakyReLU}(\mathbf{a}^T [\mathbf{W} \mathbf{h}_v \Vert \mathbf{p}_c^{global}]) \right)}{\sum_{c' \in \mathcal{C}} \exp \left( \text{LeakyReLU}(\mathbf{a}^T [\mathbf{W} \mathbf{h}_v \Vert \mathbf{p}_{c'}^{global}]) \right)}
+    \mathbf{h}_v^{\mathrm{loc}} = \sum_{u \in \mathcal{N}(v) \cup \{v\}} \frac{\varepsilon_{uv}}{\sqrt{\hat{d}_u \hat{d}_v}}\, \mathbf{W}^{(l)} \mathbf{h}_u^{(l)},
+\label{eq:mgmp_local}
 \end{equation}
+then attends over the global prototypes with scaled dot-product attention:
 \begin{equation}
-    \mathbf{m}_{global}^{(v)} = \sum_{c \in \mathcal{C}} \alpha_{v, c} \mathbf{p}_c^{global}
+    \mathbf{m}_v = \sum_{c \in \mathcal{C}} \mathrm{softmax}_c\!\left(\frac{(\mathbf{W}^{(l)}\mathbf{h}_v^{(l)})^\top \mathbf{p}_c^{\mathrm{glob}}}{\sqrt{d}}\right) \mathbf{p}_c^{\mathrm{glob}},
+\label{eq:protoattn}
 \end{equation}
-The final node representation at layer $l+1$ is then updated by fusing the local neighborhood aggregation with the global context:
+and fuses the two signals through a per-node morphology gate $\beta_v = \sigma(\mathbf{w}_\beta^\top [\mathbf{W}^{(l)}\mathbf{h}_v^{(l)} \,\|\, \mathbf{x}_v^{\mathrm{morph}}])$ and a learnable per-layer balance $\lambda \in [0,1]$:
 \begin{equation}
-    \mathbf{h}_v^{(l+1)} = \sigma \left( \mathbf{W}_{local} \sum_{u \in \mathcal{N}(v)} \mathbf{h}_u^{(l)} + \mathbf{W}_{global} \mathbf{m}_{global}^{(v)} \right)
+    \mathbf{h}_v^{(l+1)} = \mathrm{ReLU}\!\left((1-\lambda)\, \mathbf{h}_v^{\mathrm{loc}} + \lambda\, \beta_v\, \mathbf{m}_v\right).
+\label{eq:mgmp_fuse}
 \end{equation}
-This mechanism ensures that even if client $k$ has never encountered a specific CWE class locally, its GNN can recognize the structural morphology of that vulnerability by attending to the corresponding global prototype during message passing.
+Nodes whose abstract type is implicated in known vulnerability morphologies receive a higher gate $\beta_v$ and thus a stronger global signal. Even a client that has never observed CWE $c$ locally can recognise its structural morphology by attending to $\mathbf{p}_c^{\mathrm{glob}}$.
+
+\subsection{Training and Inference Protocol}
+\label{sec:protocol}
+
+Algorithm~\ref{alg:vulmorph_fed} summarises one federation. Note that \emph{model parameters are never aggregated}: each client keeps its own encoder $\theta_k$, and the only shared state is the prototype bank.
+
+\textbf{Inference.} The deployed global detector is the uniform probability ensemble of the $K$ client models, each conditioned on the same final prototype bank:
+\begin{equation}
+    \hat{p}(y \mid G) = \frac{1}{K} \sum_{k=1}^{K} \sigma\!\left(f_{\theta_k}(\tilde{G};\, \mathcal{P}^{\mathrm{glob}})\right).
+\label{eq:ensemble}
+\end{equation}
+All headline metrics are computed from Eq.~\eqref{eq:ensemble} on the held-out cross-project test set; we additionally report the mean and standard deviation of per-client F1 to expose client-level variance. In a production deployment, Eq.~\eqref{eq:ensemble} corresponds to clients exposing scoring endpoints, or --- when a single model is required --- any client model can be used alone, at the cost quantified by the reported per-client variance.
 
 \begin{algorithm}[t]
-\caption{VulMorph-Fed Framework}
+\caption{VulMorph-Fed}
 \label{alg:vulmorph_fed}
 \begin{algorithmic}[1]
-\REQUIRE $K$ clients, Global rounds $T$, DP budget $\varepsilon$
-\STATE Server initializes global prototype bank $\mathcal{P}_{global}^{(0)} = \emptyset$
+\REQUIRE $K$ clients, rounds $T$, per-round budget $\varepsilon$, clip radius $R$
+\STATE Server initialises $\mathcal{P}^{\mathrm{glob}, (0)} = \mathbf{0}$
 \FOR{$t = 1, \dots, T$}
-    \FOR{each client $k \in \{1, \dots, K\}$ \textbf{in parallel}}
-        \STATE Retrieve $\mathcal{P}_{global}^{(t-1)}$ from server
-        \STATE Extract abstracted graphs $\tilde{\mathcal{G}}_k = \text{VCSA}(\mathcal{G}_k)$
-        \STATE Update local GNN $\theta_k$ using MGMP with $\mathcal{P}_{global}^{(t-1)}$ for $E$ epochs
-        \STATE Compute local prototypes $\mathbf{p}_c^{(k)} \leftarrow \frac{1}{N_{c,k}} \sum \text{GNN}_{\theta_k}(\tilde{G})$
-        \STATE Perturb: $\hat{\mathbf{p}}_c^{(k)} \leftarrow \mathbf{p}_c^{(k)} + \text{Lap}(0, \Delta f / \varepsilon)$
-        \STATE Transmit $\hat{\mathbf{p}}_c^{(k)}$ and $w_c^{(k)}$ to server
+    \FOR{each client $k$ \textbf{in parallel}}
+        \STATE Retrieve $\mathcal{P}^{\mathrm{glob}, (t-1)}$; abstract graphs via VCSA ($\phi_{\mathrm{type}}$, Eq.~\ref{eq:edge_mask})
+        \STATE Train $\theta_k$ for $E$ local epochs with MGMP (Eqs.~\ref{eq:mgmp_local}--\ref{eq:mgmp_fuse}) and loss $\mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}}$
+        \STATE Build clipped prototypes $\mathbf{p}_c^{(k)}$ (Eq.~\ref{eq:prototype}); perturb via Eq.~\eqref{eq:laplace}
+        \STATE Upload $\{\hat{\mathbf{p}}_c^{(k)}\}_{c \in \mathcal{C}}$ \COMMENT{$2|\mathcal{C}|d$ floats per round incl.\ download}
     \ENDFOR
-    \STATE Server aggregates: $\mathbf{p}_c^{global, (t)} \leftarrow \sum_k w_c^{(k)} \hat{\mathbf{p}}_c^{(k)}$
+    \STATE Server aggregates $\mathcal{P}^{\mathrm{glob}, (t)}$ via Eq.~\eqref{eq:mcfpa} and broadcasts
 \ENDFOR
+\ENSURE Prototype bank $\mathcal{P}^{\mathrm{glob}, (T)}$; ensemble detector of Eq.~\eqref{eq:ensemble}; spent budget $\varepsilon_{\mathrm{tot}} = T\varepsilon$
 \end{algorithmic}
 \end{algorithm}
+
+\subsection{Communication Cost}
+\label{sec:comm}
+
+Per round, each client uploads and downloads one $|\mathcal{C}| \times d$ float32 bank: $2 \times 10 \times 128 \times 4\,\mathrm{B} = 10\,\mathrm{KB}$ per client per round in our configuration, independent of model size; total server traffic is $K$ times that (e.g., 200\,KB per round at $K = 20$). Standard FedAvg on the same backbone transmits the full parameter vector ($\sim$1.4\,MB for our deliberately compact GNN; hundreds of MB for code-LM backbones) per client per round.

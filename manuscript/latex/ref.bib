@@ -1,6 +1,9 @@
 % ref.bib — Bibliography for VulMorph-Fed
-% All entries verified against publicly accessible sources (URLs included).
-% Last verified: May 2026.
+% Deduplicated and corrected in response to SCICO-D-26-00310 reviews:
+%   - every work now has exactly one entry (former duplicates merged);
+%   - CSVD-TF re-attributed to Cai et al., JSS 213 (2024) 112038;
+%   - Yamamoto et al. SANER 2023 pages/DOI corrected to 485-496 / ...00052;
+%   - Real-Vul study re-attributed to Chakraborty et al. (TSE 2024).
 
 % ============================================================
 % 1. DEEP LEARNING FOR VULNERABILITY DETECTION — SEQUENCE/CNN
@@ -12,8 +15,7 @@
   booktitle = {Proceedings of the Network and Distributed System Security Symposium (NDSS)},
   year      = {2018},
   publisher = {Internet Society},
-  url       = {https://www.ndss-symposium.org/wp-content/uploads/2018/02/ndss2018_03A-2_Li_paper.pdf},
-  note      = {arXiv:1801.01681}
+  doi       = {10.14722/ndss.2018.23158}
 }
 
 @article{li2022sysevr,
@@ -24,9 +26,7 @@
   number    = {4},
   pages     = {2244--2258},
   year      = {2022},
-  doi       = {10.1109/TDSC.2021.3051427},
-  url       = {https://ieeexplore.ieee.org/document/9321538},
-  note      = {arXiv:1807.06756}
+  doi       = {10.1109/TDSC.2021.3051427}
 }
 
 @inproceedings{wu2022vulcnn,
@@ -36,23 +36,21 @@
   pages     = {2365--2376},
   year      = {2022},
   publisher = {ACM},
-  doi       = {10.1145/3510003.3510229},
-  url       = {https://dl.acm.org/doi/10.1145/3510003.3510229}
+  doi       = {10.1145/3510003.3510229}
 }
 
 % ============================================================
 % 2. DEEP LEARNING FOR VULNERABILITY DETECTION — GNN-BASED
 % ============================================================
 
-@inproceedings{yamaguchi2014cpg,
+@inproceedings{yamaguchi2014modeling,
   author    = {Fabian Yamaguchi and Nico Golde and Daniel Arp and Konrad Rieck},
   title     = {Modeling and Discovering Vulnerabilities with Code Property Graphs},
   booktitle = {Proceedings of the IEEE Symposium on Security and Privacy (S\&P)},
   pages     = {590--604},
   year      = {2014},
   publisher = {IEEE},
-  doi       = {10.1109/SP.2014.44},
-  url       = {https://ieeexplore.ieee.org/document/6956589}
+  doi       = {10.1109/SP.2014.44}
 }
 
 @inproceedings{zhou2019devign,
@@ -61,7 +59,6 @@
   booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
   volume    = {32},
   year      = {2019},
-  url       = {https://arxiv.org/abs/1909.03496},
   note      = {arXiv:1909.03496}
 }
 
@@ -73,22 +70,20 @@
   number    = {3},
   pages     = {1--33},
   year      = {2021},
-  doi       = {10.1145/3436877},
-  url       = {https://dl.acm.org/doi/10.1145/3436877}
+  doi       = {10.1145/3436877}
 }
 
 @inproceedings{li2021ivdetect,
-  author    = {Zhen Li and Deqing Zou and Shouhuai Xu and Hai Jin and Yawei Zhu and Zhaoxuan Chen},
+  author    = {Yi Li and Shaohua Wang and Tien N. Nguyen},
   title     = {Vulnerability Detection with Fine-Grained Interpretations},
   booktitle = {Proceedings of the 29th ACM Joint Meeting on European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE)},
   pages     = {292--303},
   year      = {2021},
   publisher = {ACM},
-  doi       = {10.1145/3468264.3468597},
-  url       = {https://dl.acm.org/doi/10.1145/3468264.3468597}
+  doi       = {10.1145/3468264.3468597}
 }
 
-@article{chakraborty2022reveal,
+@article{chakraborty2022deep,
   author    = {Saikat Chakraborty and Rahul Krishna and Yangruibo Ding and Baishakhi Ray},
   title     = {Deep Learning Based Vulnerability Detection: Are We There Yet?},
   journal   = {IEEE Transactions on Software Engineering},
@@ -96,28 +91,17 @@
   number    = {9},
   pages     = {3280--3296},
   year      = {2022},
-  doi       = {10.1109/TSE.2021.3087402},
-  url       = {https://ieeexplore.ieee.org/document/9448435},
-  note      = {arXiv:2009.07235}
+  doi       = {10.1109/TSE.2021.3087402}
 }
 
 @article{luo2025hagnn,
   author    = {Yu Luo and Weifeng Xu and Dianxiang Xu},
   title     = {Detecting Code Vulnerabilities with Heterogeneous {GNN} Training},
   journal   = {International Journal of Information Security},
+  volume    = {24},
   year      = {2025},
   doi       = {10.1007/s10207-025-01132-x},
-  url       = {https://link.springer.com/article/10.1007/s10207-025-01132-x},
   note      = {arXiv:2502.16835}
-}
-
-@article{farmer2026vulgnn,
-  author    = {Miles Farmer and Ekincan Ufuktepe and Anne Watson and Hialo Muniz Carvalho and Vadim Okun and Zineb Maasaoui and Kannappan Palaniappan},
-  title     = {Software Vulnerability Detection Using a Lightweight Graph Neural Network},
-  journal   = {arXiv preprint},
-  year      = {2026},
-  url       = {https://arxiv.org/abs/2603.29216},
-  note      = {arXiv:2603.29216, submitted 31 March 2026}
 }
 
 % ============================================================
@@ -125,23 +109,23 @@
 % ============================================================
 
 @inproceedings{hin2022linevd,
-  author    = {David Hin and Andrew Kan and Huaming Chen and Muhammad Ali Babar},
+  author    = {David Hin and Andrey Kan and Huaming Chen and Muhammad Ali Babar},
   title     = {{LineVD}: Statement-level Vulnerability Detection using Graph Neural Networks},
   booktitle = {Proceedings of the 19th International Conference on Mining Software Repositories (MSR)},
   pages     = {596--607},
   year      = {2022},
   publisher = {ACM},
-  doi       = {10.1145/3524842.3527949},
-  url       = {https://arxiv.org/abs/2203.05181},
-  note      = {arXiv:2203.05181}
+  doi       = {10.1145/3524842.3527949}
 }
 
 @article{sun2024vullmgnns,
-  author    = {Xuefeng Sun and Lili Bo and Yuekang Li and Yi Liu and Ling Shi and Keve Yang and Quanchen Zou and Yang Liu},
+  author    = {Ruitong Liu and Yanbin Wang and Haitao Xu and Jianguo Sun and Fan Zhang and Peiyue Li and Zhenhao Guo},
   title     = {Vul-{LMGNNs}: Fusing Language Models and Online-Distilled Graph Neural Networks for Code Vulnerability Detection},
-  journal   = {arXiv preprint},
-  year      = {2024},
-  url       = {https://arxiv.org/abs/2404.14719},
+  journal   = {Information Fusion},
+  volume    = {115},
+  pages     = {102748},
+  year      = {2025},
+  doi       = {10.1016/j.inffus.2024.102748},
   note      = {arXiv:2404.14719}
 }
 
@@ -156,18 +140,24 @@
   pages     = {608--620},
   year      = {2022},
   publisher = {ACM},
-  doi       = {10.1145/3524842.3527927},
-  url       = {https://dl.acm.org/doi/10.1145/3524842.3527927}
+  doi       = {10.1145/3524842.3527927}
+}
+
+@article{lekssays2025llmxcpg,
+  author    = {Ahmed Lekssays and Hamza Mouhcine and Khang Tran and Ting Yu and Issa Khalil},
+  title     = {{LLMxCPG}: Context-Aware Vulnerability Detection Through Code Property Graph-Guided Large Language Models},
+  journal   = {arXiv preprint},
+  year      = {2025},
+  note      = {arXiv:2507.16585}
 }
 
 @inproceedings{weissberg2026codemetrics,
-  author    = {Felix Weissberg and Lukas Pirch and Erik Imgrund and Jonas M\"{o}ller and Thorsten Eisenhofer and Konrad Rieck},
+  author    = {Felix Weissberg and Lukas Pirch and Erik Imgrund and Jonas M{\"o}ller and Thorsten Eisenhofer and Konrad Rieck},
   title     = {{LLM}-based Vulnerability Discovery through the Lens of Code Metrics},
   booktitle = {Proceedings of the 48th IEEE/ACM International Conference on Software Engineering (ICSE)},
   year      = {2026},
   publisher = {ACM},
   doi       = {10.1145/3744916.3764574},
-  url       = {https://arxiv.org/abs/2509.19117},
   note      = {arXiv:2509.19117}
 }
 
@@ -178,53 +168,70 @@
   year      = {2026},
   publisher = {ACM},
   doi       = {10.1145/3744916.3773256},
-  url       = {https://arxiv.org/abs/2505.10961},
   note      = {arXiv:2505.10961}
 }
 
 % ============================================================
-% 5. REPLICATION AND GENERALISATION STUDIES
+% 5. REPLICATION AND GENERALISATION STUDIES / DATASETS
 % ============================================================
 
 @inproceedings{chen2023diversevul,
   author    = {Yizheng Chen and Zhoujie Ding and Lamya Alowain and Xinyun Chen and David Wagner},
   title     = {{DiverseVul}: A New Vulnerable Source Code Dataset for Deep Learning Based Vulnerability Detection},
   booktitle = {Proceedings of the 26th International Symposium on Research in Attacks, Intrusions and Defenses (RAID)},
-  pages     = {1--16},
+  pages     = {654--668},
   year      = {2023},
   publisher = {ACM},
-  doi       = {10.1145/3607199.3607242},
-  url       = {https://arxiv.org/abs/2304.00409},
-  note      = {arXiv:2304.00409}
+  doi       = {10.1145/3607199.3607242}
 }
 
 @inproceedings{ding2025primevul,
   author    = {Yangruibo Ding and Yanjun Fu and Omniyyah Ibrahim and Chawin Sitawarin and Xinyun Chen and Basel Alomair and David Wagner and Baishakhi Ray and Yizheng Chen},
   title     = {Vulnerability Detection with Code Language Models: How Far Are We?},
   booktitle = {Proceedings of the 47th IEEE/ACM International Conference on Software Engineering (ICSE)},
+  pages     = {469--481},
   year      = {2025},
-  publisher = {ACM/IEEE},
-  url       = {https://arxiv.org/abs/2403.18624},
+  publisher = {IEEE},
+  doi       = {10.1109/ICSE55347.2025.00038},
   note      = {arXiv:2403.18624}
 }
 
-@article{daoudi2024realvul,
-  author    = {Nafis Daoudi and Salah Sadou and Abdelhak-Djamel Seriai and C\'{e}dric Tedeschi},
+@inproceedings{fan2020bigvul,
+  author    = {Jiahao Fan and Yi Li and Shaohua Wang and Tien N. Nguyen},
+  title     = {A {C/C++} Code Vulnerability Dataset with Code Changes and {CVE} Summaries},
+  booktitle = {Proceedings of the 17th International Conference on Mining Software Repositories (MSR)},
+  pages     = {508--512},
+  year      = {2020},
+  publisher = {ACM},
+  doi       = {10.1145/3379597.3387501}
+}
+
+@article{chakraborty2024realvul,
+  author    = {Partha Chakraborty and Krishna Kanth Arumugam and Mahmoud Alfadel and Meiyappan Nagappan and Shane McIntosh},
   title     = {Revisiting the Performance of Deep Learning-Based Vulnerability Detection on Realistic Datasets},
   journal   = {IEEE Transactions on Software Engineering},
+  volume    = {50},
+  number    = {8},
+  pages     = {2163--2177},
   year      = {2024},
   doi       = {10.1109/TSE.2024.3423712},
-  url       = {https://arxiv.org/abs/2407.03093},
   note      = {arXiv:2407.03093}
 }
 
 @article{shereen2024sok,
-  author    = {Esma Shereen and Niklas Risse and Michael Schwarz},
+  author    = {Ezzeldin Shereen and Dan Ristea and Sanyam Vyas and Shae McFadden and Madeleine Dwyer and Chris Hicks and Vasilios Mavroudis},
   title     = {{SoK}: On Closing the Applicability Gap in Automated Vulnerability Detection},
   journal   = {arXiv preprint},
   year      = {2024},
-  url       = {https://arxiv.org/abs/2412.11194},
   note      = {arXiv:2412.11194}
+}
+
+@article{shimmi2025ai,
+  author    = {Samiha Shimmi and Hamed Okhravi and Mona Rahimi},
+  title     = {{AI}-Based Software Vulnerability Detection: A Systematic Literature Review},
+  journal   = {arXiv preprint},
+  year      = {2025},
+  note      = {arXiv:2506.10280}
 }
 
 % ============================================================
@@ -232,51 +239,47 @@
 % ============================================================
 
 @article{liu2022cdvuld,
-  author    = {Shangqing Liu and Chen Wu and Xiaofei Xie and Jingkai Siow and Yang Liu},
+  author    = {Shigang Liu and Guanjun Lin and Lizhen Qu and Jun Zhang and Olivier De Vel and Paul Montague and Yang Xiang},
   title     = {{CD-VulD}: Cross-Domain Vulnerability Discovery Based on Deep Domain Adaptation},
   journal   = {IEEE Transactions on Dependable and Secure Computing},
   volume    = {19},
   number    = {1},
   pages     = {438--451},
   year      = {2022},
-  doi       = {10.1109/TDSC.2020.2973664},
-  url       = {https://ieeexplore.ieee.org/document/9054952}
+  doi       = {10.1109/TDSC.2020.2984505}
 }
 
 @article{zhang2023cpvd,
-  author    = {Xin-Cheng Zhang and Yutao Chen and Cuiyun Gao and Mingwei Liu and Hao Zhang and Zhanqi Cui},
+  author    = {Chunyong Zhang and Bin Liu and Yang Xin and Liangwei Yao},
   title     = {{CPVD}: Cross Project Vulnerability Detection Based on Graph Attention Network and Domain Adaptation},
   journal   = {IEEE Transactions on Software Engineering},
   volume    = {49},
-  number    = {10},
-  pages     = {4738--4756},
+  number    = {8},
+  pages     = {4152--4168},
   year      = {2023},
-  doi       = {10.1109/TSE.2023.3285910},
-  url       = {https://ieeexplore.ieee.org/document/10159636}
+  doi       = {10.1109/TSE.2023.3285910}
 }
 
-@article{tian2024csvdtf,
-  author    = {Yue Tian and Bixin Li and Dongdong Li and Chen Luo},
+@article{cai2024csvdtf,
+  author    = {Zhilong Cai and Yongwei Cai and Xiang Chen and Guilong Lu and Wenlong Pei and Javier Zhao},
   title     = {{CSVD-TF}: Cross-project Software Vulnerability Detection with {TrAdaBoost} by Fusing Expert Metrics and Semantic Metrics},
-  journal   = {Information and Software Technology},
-  volume    = {170},
-  pages     = {107437},
+  journal   = {Journal of Systems and Software},
+  volume    = {213},
+  pages     = {112038},
   year      = {2024},
   publisher = {Elsevier},
-  doi       = {10.1016/j.infsof.2024.107437},
-  url       = {https://www.sciencedirect.com/science/article/abs/pii/S0164121224000815}
+  doi       = {10.1016/j.jss.2024.112038}
 }
 
 @article{li2023vulgda,
-  author    = {Zixi Liu and Yuanchao Liu and Jinchang Luo and Tao Wen},
+  author    = {Xin Li and Yang Xin and Hongliang Zhu and Yixian Yang and Yuling Chen},
   title     = {Cross-Domain Vulnerability Detection Using Graph Embedding and Domain Adaptation},
   journal   = {Computers \& Security},
-  volume    = {128},
-  pages     = {103139},
+  volume    = {125},
+  pages     = {103017},
   year      = {2023},
   publisher = {Elsevier},
-  doi       = {10.1016/j.cose.2022.103139},
-  url       = {https://www.sciencedirect.com/science/article/abs/pii/S0167404822004096}
+  doi       = {10.1016/j.cose.2022.103017}
 }
 
 % ============================================================
@@ -284,16 +287,14 @@
 % ============================================================
 
 @inproceedings{mcmahan2017fedavg,
-  author    = {H. Brendan McMahan and Eider Moore and Daniel Ramage and Seth Hampson and Blaise Ag\"{u}era y Arcas},
+  author    = {H. Brendan McMahan and Eider Moore and Daniel Ramage and Seth Hampson and Blaise Ag{\"u}era y Arcas},
   title     = {Communication-Efficient Learning of Deep Networks from Decentralized Data},
   booktitle = {Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)},
   series    = {Proceedings of Machine Learning Research},
   volume    = {54},
   pages     = {1273--1282},
   year      = {2017},
-  publisher = {PMLR},
-  url       = {https://arxiv.org/abs/1602.05629},
-  note      = {arXiv:1602.05629}
+  publisher = {PMLR}
 }
 
 @inproceedings{li2020fedprox,
@@ -302,9 +303,7 @@
   booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
   volume    = {2},
   pages     = {429--450},
-  year      = {2020},
-  url       = {https://arxiv.org/abs/1812.06127},
-  note      = {arXiv:1812.06127}
+  year      = {2020}
 }
 
 @inproceedings{karimireddy2020scaffold,
@@ -315,9 +314,7 @@
   volume    = {119},
   pages     = {5132--5143},
   year      = {2020},
-  publisher = {PMLR},
-  url       = {https://arxiv.org/abs/1910.06378},
-  note      = {arXiv:1910.06378}
+  publisher = {PMLR}
 }
 
 @inproceedings{he2021fedgraphnn,
@@ -325,232 +322,145 @@
   title     = {{FedGraphNN}: A Federated Learning System and Benchmark for Graph Neural Networks},
   booktitle = {Proceedings of the ICLR Workshop on Distributed and Private Machine Learning (DPML)},
   year      = {2021},
-  url       = {https://arxiv.org/abs/2104.07145},
   note      = {arXiv:2104.07145}
+}
+
+@inproceedings{tan2022fedproto,
+  author    = {Yue Tan and Guodong Long and Lu Liu and Tianyi Zhou and Qinghua Lu and Jing Jiang and Chengqi Zhang},
+  title     = {{FedProto}: Federated Prototype Learning across Heterogeneous Clients},
+  booktitle = {Proceedings of the 36th AAAI Conference on Artificial Intelligence},
+  pages     = {8432--8440},
+  year      = {2022},
+  doi       = {10.1609/aaai.v36i8.20819}
 }
 
 % ============================================================
 % 8. FEDERATED LEARNING FOR SOFTWARE ENGINEERING
 % ============================================================
 
-@inproceedings{shanbhag2022fl,
-  author    = {Aashish Shanbhag and Sridhar Chimalakonda},
+@inproceedings{shanbhag2022exploring,
+  author    = {Shriram Shanbhag and Sridhar Chimalakonda},
   title     = {Exploring the Under-Explored Terrain of Non-Open-Source Data for Software Engineering Through the Lens of Federated Learning},
-  booktitle = {Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE), New Ideas and Emerging Results},
-  pages     = {1543--1547},
+  booktitle = {Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering (ESEC/FSE), Ideas, Visions and Reflections},
+  pages     = {1610--1614},
   year      = {2022},
   publisher = {ACM},
-  doi       = {10.1145/3540250.3560879},
-  url       = {https://dl.acm.org/doi/10.1145/3540250.3560879}
+  doi       = {10.1145/3540250.3560883}
 }
 
-@article{yang2024flse,
-  author    = {Yuan Yang and Xiaofei Xie and Zhenchang Xing and Jiamou Sun and Chong Wang and Chunming Rong and Cen Chen},
+@article{yang2024federated,
+  author    = {Yanming Yang and Xing Hu and Zhipeng Gao and Jinfu Chen and Chao Ni and Xin Xia and David Lo},
   title     = {Federated Learning for Software Engineering: A Case Study of Code Clone Detection and Defect Prediction},
   journal   = {IEEE Transactions on Software Engineering},
   volume    = {50},
   number    = {2},
-  pages     = {356--375},
+  pages     = {296--321},
   year      = {2024},
-  doi       = {10.1109/TSE.2023.3336309},
-  url       = {https://ieeexplore.ieee.org/document/10310027}
+  doi       = {10.1109/TSE.2023.3347898}
 }
 
 @inproceedings{yamamoto2023flr,
-  author    = {Hiroki Yamamoto and Dong Wang and Gopi Krishna Rajbahadur and Satoru Kondo and Kenichi Matsumoto and Naoyasu Ubayashi},
+  author    = {Hiroki Yamamoto and Dong Wang and Gopi Krishna Rajbahadur and Masanari Kondo and Yasutaka Kamei and Naoyasu Ubayashi},
   title     = {Towards Privacy Preserving Cross Project Defect Prediction with Federated Learning},
   booktitle = {Proceedings of the 30th IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER)},
-  pages     = {525--536},
+  pages     = {485--496},
   year      = {2023},
   publisher = {IEEE},
-  doi       = {10.1109/SANER56733.2023.00058},
-  url       = {https://ieeexplore.ieee.org/document/10123655}
+  doi       = {10.1109/SANER56733.2023.00052}
 }
 
 @article{zhang2024flvul,
-  author    = {Xiaohu Zhang and Haipeng Yu and Xiao Liu and Yan Xin},
+  author    = {Chunyong Zhang and Tianxiang Yu and Bin Liu and Yang Xin},
   title     = {Vulnerability Detection Based on Federated Learning},
   journal   = {Information and Software Technology},
-  volume    = {166},
+  volume    = {167},
   pages     = {107371},
   year      = {2024},
   publisher = {Elsevier},
-  doi       = {10.1016/j.infsof.2023.107371},
-  url       = {https://www.sciencedirect.com/science/article/abs/pii/S0950584923002264}
+  doi       = {10.1016/j.infsof.2023.107371}
 }
 
 @article{hu2024vulfl,
-  author    = {Miao Hu and Xiaojia Quan and Ying Peng and Zibin Zheng and Michael R. Lyu},
+  author    = {Peiheng Zhang and Ming Hu and Xiaofei Xie and Yang Liu and Mingsong Chen},
   title     = {{VulFL}: An Empirical Study of Vulnerability Detection using Federated Learning},
   journal   = {arXiv preprint},
   year      = {2024},
-  url       = {https://arxiv.org/abs/2411.16099},
   note      = {arXiv:2411.16099}
+}
+
+@article{wang2025feddp,
+  author    = {Yichen Li and Dongwei Xiao and Zhihong Huang and Qi Wang and Xiaohui Wang},
+  title     = {{FedDP}: Better Knowledge Enhancement for Privacy-Preserving Cross-Project Defect Prediction},
+  journal   = {Journal of Software: Evolution and Process},
+  volume    = {37},
+  number    = {5},
+  year      = {2025},
+  doi       = {10.1002/smr.2761}
+}
+
+@article{cai2025fedmva,
+  author    = {Fengyu Cai and others},
+  title     = {{FedMVA}: Enhancing Software Vulnerability Assessment via Federated Multimodal Learning},
+  journal   = {Journal of Systems and Software},
+  volume    = {228},
+  pages     = {112448},
+  year      = {2025},
+  publisher = {Elsevier},
+  doi       = {10.1016/j.jss.2025.112448}
+}
+
+@inproceedings{wang2026feddense,
+  author    = {Lei Wang and Jieming Liu and Xianghan Gao and others},
+  title     = {{FedDense}: Tackling Non-{IID} Graphs via Decoupled Structure and Feature in Federated Graph Learning},
+  booktitle = {Database Systems for Advanced Applications (DASFAA), LNCS 15988},
+  year      = {2026},
+  publisher = {Springer},
+  doi       = {10.1007/978-981-95-3906-2_22}
 }
 
 % ============================================================
 % 9. PRIVACY-PRESERVING MECHANISMS
 % ============================================================
 
-@inproceedings{abadi2016dpsgd,
+@inproceedings{abadi2016deep,
   author    = {Martin Abadi and Andy Chu and Ian Goodfellow and H. Brendan McMahan and Ilya Mironov and Kunal Talwar and Li Zhang},
   title     = {Deep Learning with Differential Privacy},
   booktitle = {Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
   pages     = {308--318},
   year      = {2016},
   publisher = {ACM},
-  doi       = {10.1145/2976749.2978318},
-  url       = {https://dl.acm.org/doi/10.1145/2976749.2978318}
+  doi       = {10.1145/2976749.2978318}
 }
 
-@inproceedings{bonawitz2017secagg,
+@inproceedings{bonawitz2017practical,
   author    = {Keith Bonawitz and Vladimir Ivanov and Ben Kreuter and Antonio Marcedone and H. Brendan McMahan and Sarvar Patel and Daniel Ramage and Aaron Segal and Karn Seth},
   title     = {Practical Secure Aggregation for Privacy-Preserving Machine Learning},
   booktitle = {Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
   pages     = {1175--1191},
   year      = {2017},
   publisher = {ACM},
-  doi       = {10.1145/3133956.3133982},
-  url       = {https://dl.acm.org/doi/10.1145/3133956.3133982}
+  doi       = {10.1145/3133956.3133982}
+}
+
+@book{dwork2014algorithmic,
+  author    = {Cynthia Dwork and Aaron Roth},
+  title     = {The Algorithmic Foundations of Differential Privacy},
+  series    = {Foundations and Trends in Theoretical Computer Science},
+  volume    = {9},
+  number    = {3--4},
+  pages     = {211--407},
+  year      = {2014},
+  publisher = {Now Publishers},
+  doi       = {10.1561/0400000042}
 }
 
 @inproceedings{peters2015lace2,
-  author    = {Tim Menzies and Fayola Peters and Lucas Layman},
+  author    = {Fayola Peters and Tim Menzies and Lucas Layman},
   title     = {{LACE2}: Better Privacy-Preserving Data Sharing for Cross Project Defect Prediction},
   booktitle = {Proceedings of the 37th IEEE/ACM International Conference on Software Engineering (ICSE)},
   volume    = {1},
   pages     = {801--811},
   year      = {2015},
   publisher = {IEEE},
-  doi       = {10.1109/ICSE.2015.93},
-  url       = {https://ieeexplore.ieee.org/document/7194627}
-}
-
-
-@inproceedings{yamaguchi2014modeling,
-  title={Modeling and Discovering Vulnerabilities with Code Property Graphs},
-  author={Yamaguchi, Fabian and Golde, Nico and Arp, Daniel and Rieck, Konrad},
-  booktitle={2014 IEEE Symposium on Security and Privacy},
-  pages={590--604},
-  year={2014},
-  organization={IEEE}
-}
-
-@article{chakraborty2022deep,
-  title={Deep Learning based Vulnerability Detection: Are We There Yet?},
-  author={Chakraborty, Saikat and Krishna, Rahul and Ding, Yangruibo and Ray, Baishakhi},
-  journal={IEEE Transactions on Software Engineering},
-  volume={48},
-  number={9},
-  pages={3280--3296},
-  year={2022},
-  publisher={IEEE}
-}
-
-
-@article{toan2025detecting,
-  title={Detecting Code Vulnerabilities with Heterogeneous GNN Training (HAGNN)},
-  author={Toan, D and others},
-  journal={arXiv preprint arXiv:2502.16835},
-  year={2025}
-}
-
-@article{ufuktepe2026vulgnn,
-  title={VulGNN: Software Vulnerability Detection Using a Lightweight Graph Neural Network},
-  author={Ufuktepe, E and others},
-  journal={arXiv preprint arXiv:2603.29216},
-  year={2026}
-}
-
-
-@article{lekssays2025llmxcpg,
-  title={LLMxCPG: Context-Aware Vulnerability Detection Through Code Property Graph-Guided LLMs},
-  author={Lekssays, A and others},
-  journal={arXiv preprint arXiv:2507.16585},
-  year={2025}
-}
-
-@inproceedings{weissberg2026llm,
-  title={LLM-based Vulnerability Discovery through the Lens of Code Metrics},
-  author={Weissberg, F and Pirch, L and Imgrund, E and others},
-  booktitle={Proceedings of the 48th International Conference on Software Engineering (ICSE)},
-  year={2026}
-}
-
-
-@inproceedings{ding2025vulnerability,
-  title={Vulnerability Detection with Code Language Models: How Far Are We? (PrimeVul)},
-  author={Ding, Y and Fu, Y and Ibrahim, O and others},
-  booktitle={Proceedings of the 47th International Conference on Software Engineering (ICSE)},
-  year={2025}
-}
-
-@article{daoudi2024revisiting,
-  title={Revisiting the Performance of Deep Learning-Based Vulnerability Detection on Realistic Datasets},
-  author={Daoudi, N and others},
-  journal={IEEE Transactions on Software Engineering},
-  year={2024},
-  publisher={IEEE}
-}
-
-
-@article{shimmi2025ai,
-  title={AI-Based Software Vulnerability Detection: A Systematic Literature Review},
-  author={Shimmi, S and Okhravi, H and Rahimi, M},
-  journal={arXiv preprint arXiv:2506.10280},
-  year={2025}
-}
-
-
-
-@article{wang2025feddp,
-  title={FedDP: Better Knowledge Enhancement for Privacy-Preserving Cross-Project Defect Prediction},
-  author={Wang, Y and others},
-  journal={Journal of Software: Evolution and Process},
-  year={2025}
-}
-
-@article{zhang2024vulnerability,
-  title={Vulnerability Detection Based on Federated Learning},
-  author={Zhang, Xin and Yu, Zhiyuan and Liu, Xiaolei and Xin, Yang},
-  journal={Information and Software Technology},
-  volume={167},
-  pages={107371},
-  year={2024},
-  publisher={Elsevier}
-}
-
-
-@article{cai2025fedmva,
-  title={FedMVA: Enhancing Software Vulnerability Assessment via Federated Multimodal Learning},
-  author={Cai, F and others},
-  journal={Journal of Systems and Software},
-  year={2025},
-  publisher={Elsevier}
-}
-
-
-@inproceedings{abadi2016deep,
-  title={Deep Learning with Differential Privacy},
-  author={Abadi, Martin and Chu, Andy and Goodfellow, Ian and others},
-  booktitle={Proceedings of the 2016 ACM SIGSAC Conference on Computer and Communications Security},
-  pages={308--318},
-  year={2016}
-}
-
-@inproceedings{bonawitz2017practical,
-  title={Practical Secure Aggregation for Privacy-Preserving Machine Learning},
-  author={Bonawitz, Keith and Ivanov, Vladimir and Kreuter, Ben and others},
-  booktitle={Proceedings of the 2017 ACM SIGSAC Conference on Computer and Communications Security},
-  pages={1175--1191},
-  year={2017}
-}
-
-@inproceedings{mcmahan2017communication,
-  title={Communication-Efficient Learning of Deep Networks from Decentralized Data},
-  author={McMahan, Brendan and Moore, Eider and Ramage, Daniel and Hampson, Seth and y Arcas, Blaise Aguera},
-  booktitle={Artificial Intelligence and Statistics},
-  pages={1273--1282},
-  year={2017},
-  organization={PMLR}
+  doi       = {10.1109/ICSE.2015.93}
 }

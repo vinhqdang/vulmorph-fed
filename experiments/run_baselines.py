@@ -1,12 +1,26 @@
 """
-Centralised and Federated Baseline Runners for VulMorph-Fed.
+Centralised and Federated Baseline Runners for VulMorph-Fed (RQ1 / RQ2c).
 
-Baselines from plan.md §6:
-  §6.1 Centralised GNN: Devign (GGNN), GATBaseline (CPVD-style)
-  §6.3 Federated:       FedAvg + GAT (standard weight-averaging FL)
+Baseline suite (all trained with the same data, split, class weighting and
+budget as VulMorph-Fed, over the same seeds):
 
-All baselines use the same Devign data and cross-project split
-as VulMorph-Fed for a fair comparison.
+  Centralised (pooled data, no privacy):
+    - centralised_ggnn         GGNN on full lexical graphs  (Devign-style)
+    - centralised_gat          GAT  on full lexical graphs  (CPVD-style)
+    - centralised_transformer  Transformer encoder on token sequences
+                               (structure-free sequence-model family)
+    - centralised_ggnn_morph   GGNN on VCSA-abstracted (morphology) graphs
+                               → isolates the representation from the FL protocol
+    - centralised_vulmorph     Full VulMorph model, pooled data, no federation,
+                               no DP → the "centralised oracle" for our method
+
+  Federated:
+    - fedavg_gat               FedAvg + GAT on full lexical graphs
+    - fedavg_ggnn_morph        FedAvg + GGNN on VCSA-abstracted graphs
+                               → same backbone AND same representation as the
+                               strongest configuration, differing only in the
+                               aggregation mechanism (parameters vs prototypes)
+    - fedavg_transformer       FedAvg + Transformer on token sequences
 """
 
 import sys
@@ -20,21 +34,41 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch_geometric.loader import DataLoader as PyGDataLoader
-from tqdm import tqdm
 
-from data.loaders.real_datasets import (
-    load_devign, split_by_project, ListDataset
-)
+from data.loaders.real_datasets import split_by_project, ListDataset
 from models.baselines.gnn_baselines import DevignBaseline, GATBaseline
+from models.baselines.nlp_baselines import TransformerSeqBaseline
 from utils.metrics import compute_metrics
+from experiments.common import (make_args, run_seeded, add_common_cli,
+                                parse_seeds, load_graphs)
+from main import run_fl
 
 
-# ── Shared evaluation ─────────────────────────────────────────────────────
+# ── Shared helpers ────────────────────────────────────────────────────────
+
+def _make_model(name, vocab_size, embed_dim, hidden_dim, device):
+    if name == "ggnn":
+        return DevignBaseline(vocab_size, embed_dim, hidden_dim).to(device)
+    if name == "gat":
+        return GATBaseline(vocab_size, embed_dim, hidden_dim).to(device)
+    if name == "transformer":
+        return TransformerSeqBaseline(vocab_size, embed_dim, hidden_dim).to(device)
+    if name == "ggnn_morph":
+        return DevignBaseline(vocab_size, embed_dim, hidden_dim,
+                              input_mode="morph").to(device)
+    raise ValueError(f"Unknown model: {name}")
+
+
+def _bce_for(dataset, device):
+    n_pos = sum(1 for i in range(len(dataset)) if float(dataset[i].y[0]) == 1.0)
+    n_neg = len(dataset) - n_pos
+    w = torch.tensor([n_neg / max(1, n_pos)], device=device).clamp(max=20.0)
+    return nn.BCEWithLogitsLoss(pos_weight=w)
+
 
 def evaluate_model(model, loader, device):
     model.eval()
     all_y_true, all_y_pred = [], []
-    bce = nn.BCEWithLogitsLoss()
     with torch.no_grad():
         for batch in loader:
             batch = batch.to(device)
@@ -50,25 +84,13 @@ def evaluate_model(model, loader, device):
 def run_centralised(model_name, train_data, test_data,
                     vocab_size, embed_dim, hidden_dim,
                     epochs, batch_size, lr, device):
-    """
-    Train a centralised GNN on the full pooled training data.
-    Simulates the 'centralised oracle' and centralised baselines.
-    """
-    if model_name == "devign":
-        model = DevignBaseline(vocab_size=vocab_size, embed_dim=embed_dim,
-                               hidden_dim=hidden_dim).to(device)
-    elif model_name == "gat":
-        model = GATBaseline(vocab_size=vocab_size, embed_dim=embed_dim,
-                            hidden_dim=hidden_dim).to(device)
-    else:
-        raise ValueError(f"Unknown model: {model_name}")
-
+    model = _make_model(model_name, vocab_size, embed_dim, hidden_dim, device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
-    bce = nn.BCEWithLogitsLoss()
+    bce = _bce_for(train_data, device)
     train_loader = PyGDataLoader(train_data, batch_size=batch_size, shuffle=True)
-    test_loader  = PyGDataLoader(test_data,  batch_size=batch_size, shuffle=False)
+    test_loader = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
 
-    for epoch in tqdm(range(epochs), desc=f"Centralised {model_name}"):
+    for _ in range(epochs):
         model.train()
         for batch in train_loader:
             batch = batch.to(device)
@@ -83,30 +105,25 @@ def run_centralised(model_name, train_data, test_data,
     return metrics
 
 
-# ── FedAvg + GAT ──────────────────────────────────────────────────────────
+# ── FedAvg ────────────────────────────────────────────────────────────────
 
-def run_fedavg_gat(client_datasets, test_data,
-                   vocab_size, embed_dim, hidden_dim,
-                   rounds, local_epochs, batch_size, lr, device):
-    """
-    Standard FedAvg with GATBaseline — weight-averaging FL baseline.
-    Simulates VulFL-GNN / FedProx + GAT from plan.md §6.3.
-    """
-    # Initialise one global model
-    global_model = GATBaseline(vocab_size=vocab_size, embed_dim=embed_dim,
-                                hidden_dim=hidden_dim).to(device)
-    bce = nn.BCEWithLogitsLoss()
+def run_fedavg(model_name, client_datasets, test_data,
+               vocab_size, embed_dim, hidden_dim,
+               rounds, local_epochs, batch_size, lr, device):
+    global_model = _make_model(model_name, vocab_size, embed_dim, hidden_dim, device)
     test_loader = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
 
+    sizes = [len(ds) for ds in client_datasets]
+
     for r in range(rounds):
-        client_weights = []
+        client_weights, client_sizes = [], []
 
         for ds in client_datasets:
             if len(ds) == 0:
                 continue
-            # Clone global model to client
             local_model = copy.deepcopy(global_model)
             opt = torch.optim.Adam(local_model.parameters(), lr=lr)
+            bce = _bce_for(ds, device)
             loader = PyGDataLoader(ds, batch_size=batch_size, shuffle=True)
 
             local_model.train()
@@ -120,103 +137,125 @@ def run_fedavg_gat(client_datasets, test_data,
                     opt.step()
 
             client_weights.append(copy.deepcopy(local_model.state_dict()))
+            client_sizes.append(len(ds))
 
-        # FedAvg aggregation
         if not client_weights:
             continue
-        avg_w = copy.deepcopy(client_weights[0])
-        for key in avg_w:
-            for cw in client_weights[1:]:
-                avg_w[key] = avg_w[key] + cw[key]
-            if isinstance(avg_w[key], torch.Tensor):
-                avg_w[key] = torch.div(avg_w[key], len(client_weights))
-            else:
-                avg_w[key] /= len(client_weights)
+
+        # Sample-size-weighted FedAvg aggregation
+        total = sum(client_sizes)
+        avg_w = {}
+        for key in client_weights[0]:
+            acc = None
+            for w, n in zip(client_weights, client_sizes):
+                term = w[key].float() * (n / total)
+                acc = term if acc is None else acc + term
+            avg_w[key] = acc.to(client_weights[0][key].dtype)
         global_model.load_state_dict(avg_w)
 
-        metrics = evaluate_model(global_model, test_loader, device)
-        print(f"  FedAvg+GAT Round {r+1:>2} | F1={metrics['f1']:.4f} AUC={metrics['auc']:.4f}")
-
     final = evaluate_model(global_model, test_loader, device)
-    print(f"  FedAvg+GAT FINAL → F1={final['f1']:.4f} AUC={final['auc']:.4f}")
+    print(f"  FedAvg+{model_name} FINAL → F1={final['f1']:.4f} AUC={final['auc']:.4f}")
     return final
+
+
+# ── Centralised VulMorph (oracle) ─────────────────────────────────────────
+
+def run_centralised_vulmorph(args, seed):
+    """Full VulMorph model on pooled data: one client, no DP."""
+    run_args = make_args(
+        seed=seed, num_clients=1, rounds=args.rounds,
+        local_epochs=args.local_epochs, epsilon=float('inf'),
+        dataset=args.dataset, max_samples=args.max_samples,
+        test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
+        embed_dim=args.embed_dim, num_cwes=args.num_cwes,
+        taxonomy_size=args.taxonomy_size,
+    )
+    model_kwargs = dict(use_vcsa=True, use_mgmp=True, use_morphology=True,
+                        use_cwe_affinity=True, use_dp=False,
+                        federate=True, num_layers=2, dropout=0.3)
+    return run_fl(run_args, model_kwargs)
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────
 
+BASELINES = [
+    ("centralised_ggnn",        "centralised", "ggnn"),
+    ("centralised_gat",         "centralised", "gat"),
+    ("centralised_transformer", "centralised", "transformer"),
+    ("centralised_ggnn_morph",  "centralised", "ggnn_morph"),
+    ("fedavg_gat",              "fedavg",      "gat"),
+    ("fedavg_ggnn_morph",       "fedavg",      "ggnn_morph"),
+    ("fedavg_transformer",      "fedavg",      "transformer"),
+]
+
+
 def main():
     p = argparse.ArgumentParser(description="VulMorph-Fed Baseline Runner")
-    p.add_argument("--max_samples",  type=int,   default=8000)
-    p.add_argument("--num_clients",  type=int,   default=4)
-    p.add_argument("--rounds",       type=int,   default=10)
-    p.add_argument("--local_epochs", type=int,   default=2)
-    p.add_argument("--epochs",       type=int,   default=10,
+    add_common_cli(p)
+    p.add_argument("--epochs",     type=int,   default=10,
                    help="Epochs for centralised training")
-    p.add_argument("--vocab_size",   type=int,   default=10000)
-    p.add_argument("--embed_dim",    type=int,   default=64)
-    p.add_argument("--hidden_dim",   type=int,   default=128)
-    p.add_argument("--batch_size",   type=int,   default=64)
-    p.add_argument("--lr",           type=float, default=1e-3)
-    p.add_argument("--test_fraction",type=float, default=0.2)
-    p.add_argument("--device",       type=str,   default="cpu")
-    p.add_argument("--seed",         type=int,   default=42)
-    p.add_argument("--output",       type=str,   default="results/baselines.json")
+    p.add_argument("--vocab_size", type=int,   default=10000)
+    p.add_argument("--batch_size", type=int,   default=64)
+    p.add_argument("--lr",         type=float, default=1e-3)
+    p.add_argument("--device",     type=str,   default="cpu")
+    p.add_argument("--output",     type=str,   default="results/baselines.json")
+    p.add_argument("--only",       type=str,   default=None,
+                   help="Comma-separated subset of baseline names to run")
     args = p.parse_args()
+    seeds = parse_seeds(args.seeds)
 
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
-
-    # Load data
-    print("Loading Devign...")
-    data_list = load_devign(max_samples=args.max_samples)
-    client_buckets, test_raw = split_by_project(
-        data_list, num_clients=args.num_clients,
-        test_fraction=args.test_fraction, seed=args.seed
-    )
-    client_datasets = [ListDataset(b) for b in client_buckets]
-    test_dataset = ListDataset(test_raw)
-    all_train = ListDataset([d for b in client_buckets for d in b])
-
+    only = set(args.only.split(",")) if args.only else None
     results = {}
 
-    # Centralised baselines
-    for name in ["devign", "gat"]:
-        print(f"\n{'='*50}\nBaseline: Centralised {name.upper()}\n{'='*50}")
-        m = run_centralised(
-            name, all_train, test_dataset,
-            vocab_size=args.vocab_size, embed_dim=args.embed_dim,
-            hidden_dim=args.hidden_dim, epochs=args.epochs,
-            batch_size=args.batch_size, lr=args.lr, device=args.device
+    def load_split(seed):
+        data_list = load_graphs(args.dataset, args.max_samples,
+                                args.taxonomy_size)
+        client_buckets, test_raw = split_by_project(
+            data_list, num_clients=args.num_clients,
+            test_fraction=args.test_fraction, seed=seed,
         )
-        results[f"centralised_{name}"] = m
+        return ([ListDataset(b) for b in client_buckets],
+                ListDataset(test_raw),
+                ListDataset([d for b in client_buckets for d in b]))
 
-    # FedAvg + GAT
-    print(f"\n{'='*50}\nBaseline: FedAvg + GAT\n{'='*50}")
-    m = run_fedavg_gat(
-        client_datasets, test_dataset,
-        vocab_size=args.vocab_size, embed_dim=args.embed_dim,
-        hidden_dim=args.hidden_dim, rounds=args.rounds,
-        local_epochs=args.local_epochs, batch_size=args.batch_size,
-        lr=args.lr, device=args.device
-    )
-    results["fedavg_gat"] = m
+    for name, mode, model_name in BASELINES:
+        if only and name not in only:
+            continue
+        print(f"\n{'='*55}\nBaseline: {name}\n{'='*55}")
 
-    # Save
-    out = Path(args.output)
+        def run_one(seed, mode=mode, model_name=model_name):
+            client_datasets, test_dataset, all_train = load_split(seed)
+            if mode == "centralised":
+                return run_centralised(
+                    model_name, all_train, test_dataset,
+                    vocab_size=args.vocab_size, embed_dim=args.embed_dim,
+                    hidden_dim=args.hidden_dim, epochs=args.epochs,
+                    batch_size=args.batch_size, lr=args.lr, device=args.device)
+            return run_fedavg(
+                model_name, client_datasets, test_dataset,
+                vocab_size=args.vocab_size, embed_dim=args.embed_dim,
+                hidden_dim=args.hidden_dim, rounds=args.rounds,
+                local_epochs=args.local_epochs, batch_size=args.batch_size,
+                lr=args.lr, device=args.device)
+
+        results[name] = run_seeded(run_one, seeds)
+
+    if (only is None) or ("centralised_vulmorph" in only):
+        print(f"\n{'='*55}\nBaseline: centralised_vulmorph (oracle)\n{'='*55}")
+        results["centralised_vulmorph"] = run_seeded(
+            lambda s: run_centralised_vulmorph(args, s), seeds)
+
+    out = Path(__file__).parent / args.output
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nBaselines saved → {out}")
 
-    # Summary
-    print(f"\n{'='*55}")
-    print("BASELINE RESULTS SUMMARY")
-    print(f"{'='*55}")
-    print(f"{'Method':<30} | {'F1':>7} | {'AUC':>7} | {'Prec':>7} | {'Rec':>7}")
-    print(f"{'-'*30}-+-{'-'*7}-+-{'-'*7}-+-{'-'*7}-+-{'-'*7}")
+    print(f"\n{'='*70}\nBASELINE RESULTS (mean ± std)\n{'='*70}")
     for k, v in results.items():
-        print(f"{k:<30} | {v['f1']:>7.4f} | {v['auc']:>7.4f} | "
-              f"{v['precision']:>7.4f} | {v['recall']:>7.4f}")
+        f1, auc = v.get("f1", {}), v.get("auc", {})
+        print(f"{k:<28} | F1={f1.get('mean', 0):.4f}±{f1.get('std', 0):.4f} "
+              f"| AUC={auc.get('mean', 0):.4f}±{auc.get('std', 0):.4f}")
 
 
 if __name__ == "__main__":

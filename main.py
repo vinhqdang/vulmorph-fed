@@ -12,46 +12,71 @@ from fl.server import VulMorphServer
 from utils.metrics import compute_metrics
 from data.loaders.real_datasets import (
     load_devign, load_primevul, load_bigvul, load_diversevul,
-    split_by_project, ListDataset,
+    load_bigvul_hf, load_diversevul_hf, load_primevul_hf,
+    split_by_project, ListDataset, abstraction_stats, bucket_cwes,
 )
+from data.morphology import get_taxonomy
 from data.dataset import get_client_datasets
+from utils.privacy import composed_epsilon
 
 
 # ── Evaluation ───────────────────────────────────────────────────────────────
 
+def _client_probs(client, loader, global_prototypes):
+    """Predicted probabilities of one client model over a fixed loader."""
+    client.model.eval()
+    proto = (global_prototypes.to(client.device)
+             if global_prototypes is not None else None)
+    y_true, y_prob = [], []
+    with torch.no_grad():
+        for batch in loader:
+            batch = batch.to(client.device)
+            logits, _, _ = client.model(batch, prototypes=proto)
+            probs = torch.sigmoid(logits.squeeze(-1))
+            y_true.extend(batch.y.cpu().numpy())
+            y_prob.extend(probs.cpu().numpy())
+    return np.array(y_true), np.array(y_prob)
+
+
 def evaluate(clients, global_prototypes, test_dataset=None):
     """
-    Evaluate all local models.
-    If test_dataset is provided, only evaluates on held-out cross-project samples.
-    Otherwise evaluates on the local training data (used for ablation quick checks).
-    """
-    all_y_true, all_y_pred = [], []
+    Inference protocol (reported in the manuscript, Sec. Experimental Setup):
 
+    Every client ends each round with its own encoder plus the shared global
+    prototype bank. The *deployed* global detector is the uniform probability
+    ensemble of the K client models, each conditioned on the same global
+    prototype bank:  p(y|G) = (1/K) * sum_k sigmoid(f_k(G; P*)).
+
+    We report the ensemble metrics as the headline numbers and additionally
+    the per-client mean/std F1 to expose client-level variance.
+    """
     if test_dataset is not None:
         from torch_geometric.loader import DataLoader as PyGDataLoader
         loader = PyGDataLoader(test_dataset, batch_size=64, shuffle=False)
-        # Use the first client's model for evaluation (or ensemble — for now first)
-        client = clients[0]
-        client.model.eval()
-        proto = global_prototypes.to(client.device) if global_prototypes is not None else None
-        with torch.no_grad():
-            for batch in loader:
-                batch = batch.to(client.device)
-                logits, _, _ = client.model(batch, prototypes=proto)
-                probs = torch.sigmoid(logits.squeeze(-1))
-                all_y_true.extend(batch.y.cpu().numpy())
-                all_y_pred.extend(probs.cpu().numpy())
-    else:
+
+        per_client_metrics, prob_sum, y_true = [], None, None
         for client in clients:
-            client.model.eval()
-            proto = global_prototypes.to(client.device) if global_prototypes is not None else None
-            with torch.no_grad():
-                for batch in client.train_loader:
-                    batch = batch.to(client.device)
-                    logits, _, _ = client.model(batch, prototypes=proto)
-                    probs = torch.sigmoid(logits.squeeze(-1))
-                    all_y_true.extend(batch.y.cpu().numpy())
-                    all_y_pred.extend(probs.cpu().numpy())
+            yt, yp = _client_probs(client, loader, global_prototypes)
+            y_true = yt
+            prob_sum = yp if prob_sum is None else prob_sum + yp
+            per_client_metrics.append(compute_metrics(yt, yp))
+
+        if y_true is None or len(y_true) == 0:
+            return {"f1": 0.0, "auc": 0.5, "precision": 0.0, "recall": 0.0}
+
+        ensemble_probs = prob_sum / len(clients)
+        metrics = compute_metrics(y_true, ensemble_probs)
+        client_f1s = [m["f1"] for m in per_client_metrics]
+        metrics["client_f1_mean"] = float(np.mean(client_f1s))
+        metrics["client_f1_std"] = float(np.std(client_f1s))
+        return metrics
+
+    # No held-out set: evaluate each client on its local training data
+    all_y_true, all_y_pred = [], []
+    for client in clients:
+        yt, yp = _client_probs(client, client.train_loader, global_prototypes)
+        all_y_true.extend(yt)
+        all_y_pred.extend(yp)
 
     if not all_y_true:
         return {"f1": 0.0, "auc": 0.5, "precision": 0.0, "recall": 0.0}
@@ -66,20 +91,44 @@ def load_real_data(args):
     (client_datasets, test_dataset) with cross-project split.
     """
     data_list = []
+    tax = getattr(args, "taxonomy_size", 8)
 
     if args.dataset == "devign":
-        data_list = load_devign(max_samples=args.max_samples)
+        data_list = load_devign(max_samples=args.max_samples, taxonomy_size=tax)
     elif args.dataset == "primevul":
-        data_list = load_primevul(split="train", max_samples=args.max_samples)
+        data_list = load_primevul_hf(max_samples=args.max_samples,
+                                     taxonomy_size=tax)
     elif args.dataset == "bigvul":
-        data_list = load_bigvul(args.data_path, max_samples=args.max_samples)
+        if args.data_path:
+            data_list = load_bigvul(args.data_path, max_samples=args.max_samples,
+                                    taxonomy_size=tax)
+        else:
+            data_list = load_bigvul_hf(max_samples=args.max_samples,
+                                       taxonomy_size=tax)
     elif args.dataset == "diversevul":
-        data_list = load_diversevul(args.data_path, max_samples=args.max_samples)
+        if args.data_path:
+            data_list = load_diversevul(args.data_path,
+                                        max_samples=args.max_samples,
+                                        taxonomy_size=tax)
+        else:
+            data_list = load_diversevul_hf(max_samples=args.max_samples,
+                                           taxonomy_size=tax)
 
     if not data_list:
         print(f"Warning: could not load dataset '{args.dataset}'. "
               "Falling back to structured synthetic data.")
         return None, None
+
+    # Map raw CWE ids to the fixed prototype vocabulary:
+    # top (num_cwes - 1) most frequent CWEs + shared OTHER bucket.
+    bucket_cwes(data_list, args.num_cwes)
+
+    stats = abstraction_stats(data_list)
+    if stats:
+        print(f"Abstraction stats (|T|={tax}): "
+              f"typed_node_ratio={stats['typed_node_ratio']:.3f}, "
+              f"avg_nodes={stats['avg_nodes']:.1f}, "
+              f"avg_edges={stats['avg_edges']:.1f}")
 
     # Cross-project split: held-out test projects never seen during training
     client_buckets, test_raw = split_by_project(
@@ -127,6 +176,11 @@ def run_fl(args, model_kwargs=None):
 
     # Infer vocab_size from data if possible
     vocab_size = getattr(args, 'vocab_size', 10000)
+
+    # Morphology embedding table must match the taxonomy size (|T| + 1
+    # categories including UNKNOWN).
+    tax = getattr(args, 'taxonomy_size', 8)
+    model_kwargs.setdefault('num_morph_types', len(get_taxonomy(tax)[0]))
 
     clients = [
         VulMorphClient(
@@ -184,7 +238,13 @@ def run_fl(args, model_kwargs=None):
             f"P={metrics['precision']:.4f} R={metrics['recall']:.4f}"
         )
 
-    return history[-1] if history else {}
+    final = history[-1] if history else {}
+    if final and use_dp and federate:
+        # End-to-end privacy accounting under sequential composition:
+        # each round consumes ε_round, so T rounds consume T · ε_round.
+        final["epsilon_per_round"] = args.epsilon
+        final["epsilon_total"] = composed_epsilon(args.epsilon, args.rounds)
+    return final
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
@@ -214,6 +274,8 @@ def parse_args(argv=None):
     p.add_argument("--embed_dim",    type=int,   default=64)
     p.add_argument("--hidden_dim",   type=int,   default=128)
     p.add_argument("--num_cwes",     type=int,   default=150)
+    p.add_argument("--taxonomy_size", type=int,  default=8, choices=[8, 16, 32],
+                   help="Morphological taxonomy size |T| (RQ2b sensitivity)")
     p.add_argument("--num_layers",   type=int,   default=2)
     p.add_argument("--batch_size",   type=int,   default=64)
     p.add_argument("--lr",           type=float, default=1e-3)
@@ -225,7 +287,8 @@ def parse_args(argv=None):
 
     # Privacy
     p.add_argument("--epsilon",      type=float, default=2.0)
-    p.add_argument("--delta_f",      type=float, default=0.1)
+    p.add_argument("--delta_f",      type=float, default=1.0,
+                   help="L1 clipping radius R for per-sample embeddings (DP)")
 
     # Ablation flags
     p.add_argument("--no_vcsa",       action="store_true")

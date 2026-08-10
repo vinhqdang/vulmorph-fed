@@ -7,7 +7,7 @@ from typing import Optional
 
 from models.vulmorph import VulMorph
 from models.vcsa import structural_contrastive_loss
-from utils.privacy import add_laplace_noise
+from utils.privacy import add_calibrated_laplace_noise, clip_l1
 from data.dataset import StructuredCPGDataset as MockCPGDataset
 
 
@@ -54,7 +54,16 @@ class VulMorphClient:
         ).to(self.device)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
-        self.bce_loss = nn.BCEWithLogitsLoss()
+
+        # Class-weighted BCE: pos_weight = (#benign / #vulnerable) computed on
+        # the local training split. Prevents the degenerate all-negative
+        # classifier under class imbalance.
+        n_pos = sum(1 for i in range(len(dataset)) if float(dataset[i].y[0]) == 1.0)
+        n_neg = len(dataset) - n_pos
+        pos_weight = torch.tensor(
+            [n_neg / max(1, n_pos)], device=self.device
+        ).clamp(max=20.0)
+        self.bce_loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
         self.train_loader = PyGDataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -124,12 +133,17 @@ class VulMorphClient:
     # Prototype construction
     # ------------------------------------------------------------------
 
-    def compute_local_prototypes(self) -> torch.Tensor:
+    def compute_local_prototypes(self, clip_radius: float = 1.0):
         """
-        Compute CWE-conditioned local prototypes p_{c,k} from vulnerable samples.
+        Compute CWE-conditioned local prototypes p_{c,k} from vulnerable
+        samples. Each per-sample embedding is first projected onto the L1
+        ball of radius R = clip_radius, which bounds the sensitivity of the
+        prototype mean at 2R / N_{c,k} (see utils/privacy.py).
 
         Returns:
-            Tensor (num_cwes, hidden_dim).  Zero rows = no local data for that CWE.
+            (prototypes, counts): (num_cwes, hidden_dim) tensor whose zero
+            rows mean "no local data for that CWE", and the per-CWE sample
+            counts (num_cwes,).
         """
         self.model.eval()
 
@@ -142,12 +156,13 @@ class VulMorphClient:
             for batch in self.train_loader:
                 batch = batch.to(self.device)
                 _, graph_emb, _ = self.model(batch, prototypes=None)
+                graph_emb = clip_l1(graph_emb.detach(), clip_radius)
 
                 for i in range(batch.num_graphs):
                     if batch.y[i] == 1:
                         c = batch.cwe[i].item()
                         if 0 <= c < self.num_cwes:
-                            proto_sums[c] += graph_emb[i].detach()
+                            proto_sums[c] += graph_emb[i]
                             proto_counts[c] += 1
 
         protos = torch.zeros_like(proto_sums)
@@ -155,19 +170,21 @@ class VulMorphClient:
             if proto_counts[c] > 0:
                 protos[c] = proto_sums[c] / proto_counts[c]
 
-        return protos
+        return protos, proto_counts
 
     def get_noisy_prototypes(
-        self, epsilon: float, delta_f: float
+        self, epsilon: float, delta_f: float = 1.0
     ) -> torch.Tensor:
         """
-        Build local prototypes and optionally apply Laplace DP.
+        Build local prototypes and apply the calibrated Laplace mechanism.
 
         Args:
-            epsilon: Privacy budget ε (float('inf') disables DP).
-            delta_f: Global L2-sensitivity Δf of the prototype function.
+            epsilon: Per-round privacy budget ε (float('inf') disables DP).
+            delta_f: L1 clipping radius R applied to per-sample embeddings
+                     (the per-class noise scale is 2R / (N_{c,k} · ε)).
         """
-        protos = self.compute_local_prototypes()
+        protos, counts = self.compute_local_prototypes(clip_radius=delta_f)
         if self.use_dp:
-            protos = add_laplace_noise(protos, epsilon=epsilon, delta_f=delta_f)
+            protos = add_calibrated_laplace_noise(
+                protos, counts, epsilon=epsilon, clip_radius=delta_f)
         return protos

@@ -1,81 +1,109 @@
 \section{Experimental Evaluation}
 \label{sec:experiment}
+\label{sec:results}
 
-To rigorously evaluate the efficacy of VulMorph-Fed, we design experiments to answer the following Research Questions (RQs):
+We design the evaluation to answer five research questions:
 \begin{itemize}
-    \item \textbf{RQ1 (Cross-Project Generalisation):} How does VulMorph-Fed compare to state-of-the-art centralised and federated vulnerability detection baselines across large-scale, diverse, and rigorous cross-project evaluation benchmarks?
-    \item \textbf{RQ2 (Ablation Study):} What are the individual contributions of VCSA, MCFPA, and MGMP to the framework's overall detection performance?
-    \item \textbf{RQ3 (Privacy-Utility Trade-off):} How resilient is VulMorph-Fed to varying levels of Differential Privacy budgets ($\varepsilon$), and how does morphological abstraction benefit this trade-off?
-    \item \textbf{RQ4 (Scalability):} How does the framework perform and scale as the number of federated clients increases?
+    \item \textbf{RQ1 (Cross-Project Generalisation):} How does VulMorph-Fed compare to centralised and federated baselines --- including baselines that share its backbone or its input representation --- on held-out projects never seen by any client?
+    \item \textbf{RQ1b (Value of Federation):} What do private federated clients add on top of a model trained centrally on public data alone?
+    \item \textbf{RQ2 (Ablations):} What do VCSA, MCFPA and MGMP contribute individually, and how sensitive is the framework to the taxonomy size $|\mathcal{T}|$?
+    \item \textbf{RQ3 (Privacy-Utility):} How does detection quality degrade across per-round DP budgets $\varepsilon$, accounting for composition over rounds?
+    \item \textbf{RQ4 (Scalability):} How do performance and communication cost behave as the number of clients $K$ grows?
 \end{itemize}
 
 \subsection{Experimental Setup}
 
-\subsubsection{Datasets and Preprocessing}
-To ensure a robust evaluation of cross-project generalisation—the primary failure mode of current models \cite{daoudi2024realvul}—we evaluate VulMorph-Fed across eight distinct vulnerability datasets representing the state of the art in SVD benchmarking:
-\begin{enumerate}
-    \item \textbf{Devign} \cite{zhou2019devign}: The canonical C/C++ dataset derived from FFmpeg, QEMU, Wireshark, and Linux kernel.
-    \item \textbf{BigVul}: A massive C/C++ dataset mapping CVEs to GitHub commits.
-    \item \textbf{ReVeal} \cite{chakraborty2022reveal}: Chromium and Debian codebase functions exhibiting realistic vulnerability class imbalance ($\approx 9.85\%$).
-    \item \textbf{CVEfixes}: A multi-language dataset of vulnerabilities and fixes extracted directly from open-source CVE reports.
-    \item \textbf{DiverseVul} \cite{chen2023diversevul}: Contains functions spanning 150 CWE types from over 295 GitHub projects.
-    \item \textbf{MegaVul}: An extended variant of BigVul encompassing a broader historical timeframe.
-    \item \textbf{PrimeVul} \cite{ding2025primevul}: The most rigorous recent benchmark featuring paired vulnerable/patched functions and a strict temporal split to prevent data leakage.
-    \item \textbf{VulGate}: A synthetic/hybrid dataset designed to test adversarial robustness and extreme cross-domain transfer.
-\end{enumerate}
+\subsubsection{Datasets}
+\label{sec:datasets}
 
-For all datasets, we enforce a strict \emph{Cross-Project Federated Split}. Projects are partitioned such that the test set consists entirely of repositories unseen by any federated client during the training phase.
+We evaluate on four public C/C++ vulnerability corpora with complementary characteristics:
+\begin{enumerate}
+    \item \textbf{Devign}~\cite{zhou2019devign}: 21{,}854 manually labelled functions from FFmpeg and QEMU ($\approx$46\% vulnerable); no per-function CWE annotations.
+    \item \textbf{BigVul}~\cite{fan2020bigvul}: CVE-linked functions from 234 projects (in our sample), with CWE annotations; realistic class imbalance ($\approx$6\% vulnerable).
+    \item \textbf{DiverseVul}~\cite{chen2023diversevul}: the most project-diverse corpus (580 projects in our sample, 59 CWE types; $\approx$5.5\% vulnerable).
+    \item \textbf{PrimeVul}~\cite{ding2025primevul}: the strictest recent benchmark, with rigorous de-duplication and label verification.
+\end{enumerate}
+Devign is loaded from its public HuggingFace mirror, BigVul and DiverseVul from the \texttt{bstee615} mirrors, and PrimeVul from the \texttt{ASSERT-KTH} mirror (unpaired training split); exact dataset revisions are pinned in the released code. For computational tractability every experiment uses the first 8{,}000 functions of each corpus (after discarding functions shorter than three tokens); we report this cap explicitly since sampling affects absolute numbers.
+
+\subsubsection{Cross-project federated split}
+\label{sec:split}
+
+All splits are at \emph{project} granularity: every function of a repository is assigned to exactly one partition. Projects are sorted by sample count and the smallest projects are held out until they total $\approx$20\% of samples --- these held-out projects form the test set, and \emph{no function from any test project is ever seen by any client}. The remaining training projects are assigned round-robin (by project) to $K = 4$ clients, so each client holds a disjoint set of repositories, simulating per-organisation codebases. For BigVul, DiverseVul and PrimeVul this yields hundreds of held-out test projects; for Devign, which contains only two projects, the split degenerates to training on one project and testing on the other (a pure cross-project transfer task). Every experiment is repeated with three random seeds $\{42, 43, 44\}$, which control shuffling, client assignment, model initialisation, and DP noise; we report mean $\pm$ standard deviation throughout, and per-seed values feed the statistical tests below.
 
 \subsubsection{Baselines}
-We compare VulMorph-Fed against representative SOTA baselines:
+\label{sec:baselines_setup}
+
+The baseline suite is constructed to \emph{isolate} the two factors that could otherwise confound the comparison --- the input representation and the aggregation mechanism:
 \begin{itemize}
-    \item \textbf{Centralised GGNN} \cite{zhou2019devign}: The standard graph baseline trained on globally pooled data without privacy constraints.
-    \item \textbf{Centralised GAT} \cite{zhang2023cpvd}: A Graph Attention Network representative of modern domain-adaptation approaches.
-    \item \textbf{FedAvg + GAT} \cite{yamamoto2023flr, zhang2024flvul}: A standard federated learning baseline employing the canonical FedAvg parameter aggregation.
+    \item \textbf{Centralised GGNN / GAT (lexical graphs)}: Devign-style~\cite{zhou2019devign} and CPVD-style~\cite{zhang2023cpvd} backbones trained on pooled raw data with full lexical token features --- the standard non-private reference points.
+    \item \textbf{Centralised Transformer (sequence)}: a Transformer encoder over raw token sequences (structure-free sequence-model family, LineVul-style~\cite{fu2022linevul}). We note explicitly that this is a compact model trained from scratch, not a pre-trained code LM; pre-trained LM baselines require GPU budgets outside this study's scope and are left to future work.
+    \item \textbf{Centralised GGNN (VCSA graphs)}: the GGNN backbone consuming our abstracted representation --- isolating the contribution of the representation from that of the FL protocol.
+    \item \textbf{FedAvg + GAT (lexical graphs)}: the standard federated baseline.
+    \item \textbf{FedAvg + GGNN (VCSA graphs)}: FedAvg with the \emph{same} input representation as VulMorph-Fed --- so any difference to our method is attributable to the aggregation mechanism (parameters vs.\ DP prototypes) and MGMP, not the representation.
+    \item \textbf{FedAvg + Transformer (sequence)}: federated sequence-model baseline.
+    \item \textbf{Centralised VulMorph (oracle)}: our full model on pooled data without federation or DP --- the upper reference for our own architecture.
 \end{itemize}
+All baselines use the same data, splits, seeds, class-weighted loss, optimiser and training budget as VulMorph-Fed; FedAvg aggregation is sample-size weighted.
 
-\subsubsection{Implementation Details}
-All experiments are implemented using PyTorch and PyTorch Geometric. VulMorph-Fed employs a 2-layer GNN with a hidden dimension of 128 and an embedding dimension of 64. The global CWE vocabulary spans $C=10$ classes (to simulate diverse vulnerability distributions across clients). Federated training runs for 10 global communication rounds, with each client performing 2 local epochs per round using the Adam optimizer with a learning rate of $10^{-3}$ and a batch size of 64. The default privacy budget is set to $\varepsilon = 2.0$. For evaluation metrics, we report F1-Score, Area Under the ROC Curve (AUC), Precision, and Recall.
+\subsubsection{Implementation details}
 
-\subsection{Results and Analysis}
+All models are implemented in PyTorch~2.10 / PyTorch Geometric~2.7 and trained on CPU. VulMorph-Fed uses a 2-layer GNN, hidden dimension $d = 128$, embedding dimension 64, dropout 0.3, Adam with learning rate $10^{-3}$, batch size 64, $T = 10$ federated rounds with $E = 2$ local epochs, $|\mathcal{C}| = 10$ CWE buckets, taxonomy size $|\mathcal{T}| = 8$, per-round budget $\varepsilon = 2.0$ and clip radius $R = 1$ unless stated otherwise. Inference follows the ensemble protocol of Eq.~\eqref{eq:ensemble}; the decision threshold is fixed at 0.5 for all systems (no test-set threshold tuning).
 
-\subsubsection{RQ1: Cross-Project Generalisation}
-Table \ref{tab:rq1_main} and Figure \ref{fig:rq1_performance} present the cross-project F1-Scores of VulMorph-Fed compared to the baselines across all eight datasets.
+\subsubsection{Statistical testing}
 
-The results strongly corroborate recent findings by \cite{weissberg2026codemetrics} and \cite{widyasari2026vultrial} that models relying on raw lexical tokens fail to generalize to unseen projects. Centralised GGNN and Centralised GAT consistently struggle, achieving an average F1-Score of only $\approx 0.35$ to $0.45$. Performance is particularly abysmal on PrimeVul (F1 $\approx 0.15$), highlighting the extreme difficulty of this temporally-split benchmark. Furthermore, standard FedAvg + GAT exacerbates the issue by suffering from client drift under non-IID graph splits.
+For each baseline we pair the per-dataset, per-seed F1 values of VulMorph-Fed with those of the baseline (up to $4 \times 3 = 12$ pairs) and run a two-sided Wilcoxon signed-rank test with Cliff's $\delta$ effect size; we mark a comparison significant at $p < 0.05$. With three seeds per dataset the per-dataset tests are underpowered on their own, which is why we test across the pooled dataset--seed pairs and additionally release all raw per-seed values in the artifact.
 
-In contrast, \textbf{VulMorph-Fed significantly outperforms all baselines across every single dataset}. By abstracting away lexical tokens via VCSA and federating CWE-conditioned structural prototypes, VulMorph-Fed successfully isolates invariant vulnerability morphologies, effectively closing the cross-project generalisation gap.
+\subsubsection{Reproducibility}
+
+The complete implementation --- loaders, models, federated runners, baselines, and the scripts that regenerate every table and figure in this paper from scratch (\texttt{experiments/run\_all.sh}) --- is publicly available.\footnote{\url{https://github.com/vinhqdang/vulmorph-fed}} Every table in this paper is generated programmatically from the versioned result files; no number is entered by hand.
+
+\subsection{RQ1: Cross-Project Generalisation}
+
+Table~\ref{tab:rq1_main} and Figure~\ref{fig:rq1_performance} report cross-project F1 on the four corpora. Three observations stand out.
+
+First, VulMorph-Fed outperforms every privacy-preserving (federated) baseline on every dataset, including \emph{FedAvg + GGNN on the same VCSA representation}. Since that baseline shares our input representation, backbone family, data, and budget, the margin over it is attributable to the prototype-based aggregation and MGMP rather than to the representation --- directly addressing the representation/mechanism confound.
+
+Second, comparing the two centralised GGNN rows (lexical vs.\ VCSA input) quantifies the contribution of the representation alone under pooled data, while comparing the two FedAvg graph variants quantifies it under federation. The abstraction is most valuable precisely in the federated cross-project setting, consistent with our motivating claim: lexical features do not transfer across project boundaries, so removing them costs little generalisation while removing the main source of client drift.
+
+Third, absolute cross-project F1 remains far from the within-project levels reported in the older literature --- consistent with the replication studies~\cite{chakraborty2022deep, chakraborty2024realvul, ding2025primevul}. We deliberately do not claim to have ``closed'' the generalisation gap; we claim, and the data supports, a consistent improvement over comparable baselines under matched conditions. The pooled Wilcoxon tests against each baseline are released in \texttt{results/significance.json}; comparisons that do not reach $p < 0.05$ are stated as such rather than described as significant.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/rq1_performance.png}
-\caption{RQ1: F1-Score comparison across models on the cross-project test sets of 8 diverse datasets.}
+\caption{RQ1: Cross-project F1 (mean $\pm$ std over 3 seeds) across four corpora.}
 \label{fig:rq1_performance}
 \end{figure}
 
 \input{tables.tex}
 
-\subsubsection{RQ2: Ablation Study}
-To isolate the contributions of the proposed components, we evaluate several variants of VulMorph-Fed on a representative dataset (DiverseVul). As shown in Table \ref{tab:rq2_ablation}, removing the Vulnerability-Critical Subgraph Abstraction (VCSA) or the Morphological Abstraction mapping results in severe performance degradation (F1 drops from 0.582 to 0.412 and 0.395, respectively). This mathematically confirms that feeding full, lexically dense CPGs into the federated pipeline overwhelms the GNN encoders with project-specific noise.
+\subsection{RQ1b: What Does Federation Add Beyond Public Data?}
 
-Similarly, replacing MCFPA with a uniform average or substituting MGMP with standard GAT message passing degrades the F1 score. MCFPA is crucial for weighting client contributions by semantic relevance, while MGMP actively injects the global structural consensus back into the local feature representations. 
+A fair question is whether federation is needed at all when large public vulnerability corpora exist: if morphologies are project-invariant, a centralised model on public data might transfer to private codebases without any federation. Table~\ref{tab:rq1b_public} addresses this directly. We train (A) the full VulMorph model centrally on a ``public'' half of the training data, and (B) the same public partition joined by private clients holding the other half, participating only through DP prototype federation. Both are evaluated on the same held-out projects. The delta between (B) and (A) is the measured value of private participation: private clients contribute CWE-conditioned structural patterns whose prevalence or variants are under-represented in the public partition, without revealing code. We report this delta with its variance rather than asserting it; where it is small, that is itself an informative bound on the federation argument, and we discuss the implications honestly in Section~\ref{sec:discussion}.
 
-\subsubsection{RQ3: Privacy-Utility Trade-off}
-Table \ref{tab:rq3_privacy} and Figure \ref{fig:rq3_privacy} illustrate the impact of varying the Differential Privacy budget $\varepsilon$. Standard DP mechanisms applied to raw GNN parameters often destroy model utility at lower $\varepsilon$ values due to the massive dimension of the gradient vectors. However, VulMorph-Fed maintains highly competitive performance even under strict privacy constraints (e.g., F1=0.515 at $\varepsilon=0.5$). By reducing the local representation from thousands of unique vocabulary tokens down to just 8 abstract semantic types prior to prototype computation, VulMorph-Fed drastically limits the global sensitivity $\Delta f$, requiring exponentially less Laplace noise to satisfy DP guarantees.
+\subsection{RQ2: Ablations and Taxonomy Sensitivity}
+
+Table~\ref{tab:rq2_ablation} removes one component at a time on Devign. Removing the morphological abstraction (reverting to lexical node features) and removing VCSA's learned edge weighting both degrade cross-project F1, confirming that the representation carries a large share of the transfer signal. Replacing MCFPA's affinity weighting with a uniform average, or MGMP with plain message passing, yields intermediate drops. ``Local only'' (no federation) exposes the net value of federation under DP, and the ``w/o DP'' row quantifies the price of privacy at the default budget.
+
+Table~\ref{tab:rq2b_taxonomy} varies the taxonomy size $|\mathcal{T}| \in \{8, 16, 32\}$ using strictly nested refinements of the same rule set, addressing the concern that $|\mathcal{T}| = 8$ may be too coarse to separate vulnerability classes. Differences across taxonomy sizes are reported with seed variance so the reader can judge whether granularity matters within the studied range; we adopt $|\mathcal{T}| = 8$ as the default because larger taxonomies increase the feature dimensionality without a corresponding gain in our experiments.
+
+\subsection{RQ3: Privacy-Utility Trade-off}
+
+Table~\ref{tab:rq3_privacy} and Figure~\ref{fig:rq3_privacy} sweep the per-round budget $\varepsilon \in \{0.1, 0.5, 1.0, 2.0, 5.0, \infty\}$; the second column gives the composed end-to-end budget $\varepsilon_{\mathrm{tot}} = T\varepsilon$ (Proposition~\ref{prop:dp} and its corollary). The mechanism is the calibrated per-class Laplace mechanism of Eq.~\eqref{eq:laplace}, whose noise scale $2R / (N_{c,k}\varepsilon)$ shrinks with the local class support $N_{c,k}$: prototypes over well-populated CWE buckets are naturally robust, while sparsely supported buckets receive proportionally more noise --- exactly the rows that the affinity weighting of Eq.~\eqref{eq:mcfpa} attenuates. All four metrics (F1, AUC, Precision, Recall) are reported at every budget.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/rq3_privacy.png}
-\caption{RQ3: Trade-off between F1-Score and Privacy Budget ($\varepsilon$).}
+\caption{RQ3: F1 vs.\ per-round privacy budget $\varepsilon$ (mean $\pm$ std over 3 seeds).}
 \label{fig:rq3_privacy}
 \end{figure}
 
-\subsubsection{RQ4: Scalability}
-Table \ref{tab:rq4_scalability} and Figure \ref{fig:rq4_scalability} evaluate VulMorph-Fed's performance and communication overhead as the number of federated clients $K$ increases from 3 to 50. The F1 score actually improves slightly and stabilizes near 0.595 as the global prototype bank observes a wider variety of code morphologies. Crucially, the Communication Cost per Round (CCR) remains under 300 Kilobytes (KB). Because VulMorph-Fed transmits compact prototype vectors $(C \times d)$ rather than full neural network weights ($O(|\theta|)$), the communication footprint is orders of magnitude smaller than standard FedAvg implementations (which transmit hundreds of Megabytes per round). This extreme efficiency makes VulMorph-Fed highly practical for global scale deployment.
+\subsection{RQ4: Scalability}
+
+Table~\ref{tab:rq4_scalability} and Figure~\ref{fig:rq4_scalability} vary $K \in \{3, 5, 10, 20\}$ over a fixed data pool (so larger $K$ means smaller, more fragmented clients). Communication is reported precisely: each client exchanges $2|\mathcal{C}|d$ float32 values per round ($10$\,KB in our configuration) regardless of $K$ or model size, and total server traffic grows linearly to $200$\,KB per round at $K = 20$ --- orders of magnitude below weight-sharing FL for typical code models (Section~\ref{sec:comm}).
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/rq4_scalability.png}
-\caption{RQ4: Scalability evaluation comparing F1-Score stability and Communication Cost per Round (CCR) across varying numbers of clients $K$.}
+\caption{RQ4: F1 and total server traffic per round across $K$ clients (mean $\pm$ std over 3 seeds).}
 \label{fig:rq4_scalability}
 \end{figure}

@@ -32,6 +32,7 @@ class VulMorph(nn.Module):
         use_morphology: bool = True,
         num_layers: int = 2,
         dropout: float = 0.3,
+        num_morph_types: int = None,
     ):
         super().__init__()
         self.use_vcsa = use_vcsa
@@ -40,11 +41,18 @@ class VulMorph(nn.Module):
         self.num_layers = num_layers
 
         # ── Node embeddings ──────────────────────────────────────────────
+        # Morphological abstraction REPLACES lexical embeddings entirely:
+        # with use_morphology=True the model never sees project-specific
+        # tokens (the project-invariance property in Sec. 3.1 of the paper);
+        # the lexical embedding exists only for the w/o-morphology ablation.
         self.lexical_embedding = nn.Embedding(vocab_size, embed_dim)
-        self.morph_embedding = MorphologyEmbedding(embed_dim)
+        if num_morph_types is None:
+            from data.morphology import NUM_MORPHOLOGY_TYPES
+            num_morph_types = NUM_MORPHOLOGY_TYPES
+        self.morph_embedding = MorphologyEmbedding(embed_dim, num_types=num_morph_types)
 
         morph_dim = embed_dim if use_morphology else 0
-        self.node_dim = embed_dim + morph_dim          # concat of lex + morph (or lex only)
+        self.node_dim = embed_dim                      # morph-only OR lex-only
 
         # ── Component 1: VCSA ────────────────────────────────────────────
         if use_vcsa:
@@ -88,15 +96,14 @@ class VulMorph(nn.Module):
             graph_embeddings: (B, hidden_dim)  used for L_SCL & prototype construction.
             edge_mask:        (E,)  VCSA soft mask (or all-ones tensor when ablated).
         """
-        # 1. Node features
-        x_lex = self.lexical_embedding(data.x_lex)            # (N, embed_dim)
-
+        # 1. Node features — abstract types only (project-invariant), or raw
+        #    lexical tokens for the w/o-morphology ablation.
         if self.use_morphology:
             x_morph = self.morph_embedding(data.x_morph)      # (N, embed_dim)
-            x = torch.cat([x_lex, x_morph], dim=-1)           # (N, 2·embed_dim)
+            x = x_morph
         else:
             x_morph = None
-            x = x_lex
+            x = self.lexical_embedding(data.x_lex)            # (N, embed_dim)
 
         # 2. VCSA edge masking
         if self.use_vcsa:
