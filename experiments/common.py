@@ -105,6 +105,7 @@ def add_common_cli(p: argparse.ArgumentParser) -> argparse.ArgumentParser:
     p.add_argument("--taxonomy_size", type=int,   default=8, choices=[8, 16, 32])
     p.add_argument("--seeds",         type=str,   default="42,43,44",
                    help="Comma-separated random seeds")
+    p.add_argument("--device",        type=str,   default="cpu")
     return p
 
 

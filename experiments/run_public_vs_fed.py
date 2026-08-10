@@ -42,13 +42,13 @@ def _train_federation(client_datasets, test_dataset, args, use_dp=True,
         VulMorphClient(
             client_id=i, dataset=ds, vocab_size=10000,
             embed_dim=args.embed_dim, hidden_dim=args.hidden_dim,
-            num_cwes=args.num_cwes, device="cpu", batch_size=64, lr=1e-3,
+            num_cwes=args.num_cwes, device=args.device, batch_size=64, lr=1e-3,
             use_dp=use_dp, **model_kwargs,
         )
         for i, ds in enumerate(client_datasets)
     ]
     server = VulMorphServer(num_cwes=args.num_cwes, hidden_dim=args.hidden_dim,
-                            device="cpu", use_cwe_affinity=True)
+                            device=args.device, use_cwe_affinity=True)
 
     metrics = {}
     for _ in range(args.rounds):

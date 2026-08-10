@@ -168,7 +168,7 @@ def run_centralised_vulmorph(args, seed):
         dataset=args.dataset, max_samples=args.max_samples,
         test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
         embed_dim=args.embed_dim, num_cwes=args.num_cwes,
-        taxonomy_size=args.taxonomy_size,
+        taxonomy_size=args.taxonomy_size, device=args.device,
     )
     model_kwargs = dict(use_vcsa=True, use_mgmp=True, use_morphology=True,
                         use_cwe_affinity=True, use_dp=False,
@@ -197,7 +197,6 @@ def main():
     p.add_argument("--vocab_size", type=int,   default=10000)
     p.add_argument("--batch_size", type=int,   default=64)
     p.add_argument("--lr",         type=float, default=1e-3)
-    p.add_argument("--device",     type=str,   default="cpu")
     p.add_argument("--output",     type=str,   default="results/baselines.json")
     p.add_argument("--only",       type=str,   default=None,
                    help="Comma-separated subset of baseline names to run")

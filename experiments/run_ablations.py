@@ -48,7 +48,7 @@ def main():
                 dataset=args.dataset, max_samples=args.max_samples,
                 test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
                 embed_dim=args.embed_dim, num_cwes=args.num_cwes,
-                taxonomy_size=args.taxonomy_size,
+                taxonomy_size=args.taxonomy_size, device=args.device,
                 **{k: v for k, v in overrides.items()},
             )
             model_kwargs = dict(

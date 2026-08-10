@@ -9,7 +9,8 @@ set -u
 cd "$(dirname "$0")/.."
 
 SEEDS="${1:-42,43,44}"
-COMMON="--seeds $SEEDS --max_samples 8000 --num_clients 4 --rounds 10 --local_epochs 2 --num_cwes 10"
+DEVICE="${2:-cpu}"
+COMMON="--seeds $SEEDS --max_samples 8000 --num_clients 4 --rounds 10 --local_epochs 2 --num_cwes 10 --device $DEVICE"
 LOG_DIR=experiments/logs
 mkdir -p $LOG_DIR experiments/results
 

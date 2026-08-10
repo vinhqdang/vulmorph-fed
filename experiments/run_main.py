@@ -31,7 +31,7 @@ def main():
             dataset=args.dataset, max_samples=args.max_samples,
             test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
             embed_dim=args.embed_dim, num_cwes=args.num_cwes,
-            taxonomy_size=args.taxonomy_size,
+            taxonomy_size=args.taxonomy_size, device=args.device,
         )
         model_kwargs = dict(use_vcsa=True, use_mgmp=True, use_morphology=True,
                             use_cwe_affinity=True, use_dp=True,
