@@ -119,21 +119,21 @@ for (k = 0; k <= len; k++)
 Real vulnerability corpora have a many-to-many CVE--function--CWE structure, so we state our label model explicitly:
 \begin{itemize}
     \item \textbf{Detection is strictly binary.} The classification head predicts $\hat{y} \in [0,1]$ (vulnerable vs.\ benign); all reported Precision, Recall, F1 and AUC values are computed from this binary head at threshold $0.5$. CWE information never enters the detection head.
-    \item \textbf{CWE labels condition only the prototypes.} A vulnerable function annotated with several CWEs contributes to the prototype of its \emph{first-listed (primary)} CWE. Benign functions receive no prototype.
-    \item \textbf{CWE vocabulary.} The prototype bank has a fixed size $|\mathcal{C}| = 10$: the nine most frequent CWE types in the training corpus receive dedicated slots and all remaining types share an \texttt{OTHER} slot. This bucketing is computed once per dataset and reported with the released configurations. Datasets without per-function CWE annotations (Devign) degenerate gracefully to a single vulnerable-prototype slot.
+    \item \textbf{CWE labels condition only the prototypes.} A vulnerable function annotated with several CWEs contributes to the prototype of its \emph{first-listed (primary)} CWE. Benign functions contribute to a dedicated \emph{benign} prototype slot, giving the bank an explicit model of non-vulnerable morphology.
+    \item \textbf{CWE vocabulary.} The prototype bank has $|\mathcal{C}| + 1 = 11$ slots: the nine most frequent CWE types in the training corpus receive dedicated slots, all remaining types share an \texttt{OTHER} slot, and the eleventh slot is the benign prototype. This bucketing is computed once per dataset and reported with the released configurations. Datasets without per-function CWE annotations (Devign) degenerate gracefully to a single vulnerable-prototype slot plus the benign slot.
 \end{itemize}
 
 \subsection{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}
 \label{sec:mcfpa}
 
-FedAvg-style parameter averaging~\cite{mcmahan2017fedavg} assumes near-IID clients; vulnerability data is extremely non-IID in its CWE composition. MCFPA instead federates \emph{CWE-conditioned prototypes}. After local training, client $k$ computes, for each CWE bucket $c$ with local support $N_{c,k} > 0$,
+FedAvg-style parameter averaging~\cite{mcmahan2017fedavg} assumes near-IID clients; vulnerability data is extremely non-IID in its CWE composition. MCFPA instead federates \emph{class-conditioned prototypes} over the $|\mathcal{C}|+1$ bank slots of Section~\ref{sec:label_model} (CWE buckets plus the benign slot). After local training, client $k$ computes, for each slot $c$ with local support $N_{c,k} > 0$,
 \begin{equation}
     \mathbf{p}_c^{(k)} = \frac{1}{N_{c,k}} \sum_{\substack{G \in \mathcal{G}_k:\; y_G = 1,\; c_G = c}} \mathrm{clip}_R\!\left(f_{\theta_k}(\tilde{G})\right),
     \qquad
     \mathrm{clip}_R(\mathbf{z}) = \mathbf{z} \cdot \min\!\left(1, \tfrac{R}{\|\mathbf{z}\|_1}\right),
 \label{eq:prototype}
 \end{equation}
-i.e., the centroid of the $\ell_1$-clipped embeddings of its local vulnerable functions of type $c$. Buckets with $N_{c,k} = 0$ are transmitted as zero rows and carry no information.
+i.e., the centroid of the $\ell_1$-clipped embeddings of its local functions assigned to slot $c$ (vulnerable functions of the corresponding CWE bucket; all benign functions for the benign slot). Slots with $N_{c,k} = 0$ are transmitted as zero rows and carry no information.
 
 \subsubsection{Differential privacy}
 \label{sec:privacy}
@@ -150,7 +150,7 @@ Fix a client $k$ and let two neighbouring datasets differ in one function. Relea
 \end{proposition}
 
 \begin{proof}
-Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so replacing one function changes the class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm. The Laplace mechanism with scale $\Delta_1 / \varepsilon$ is therefore $\varepsilon$-DP for that row \cite{dwork2014algorithmic}. A function carries exactly one primary CWE (Section~\ref{sec:label_model}), so a record change affects exactly one row of the bank; by parallel composition across the disjoint buckets the entire release is $\varepsilon$-DP.
+Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so replacing one function changes the class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm. The Laplace mechanism with scale $\Delta_1 / \varepsilon$ is therefore $\varepsilon$-DP for that row \cite{dwork2014algorithmic}. Every record is assigned to exactly one slot --- its primary CWE bucket if vulnerable, the benign slot otherwise (Section~\ref{sec:label_model}) --- so a record change affects exactly one row of the bank; by parallel composition across the disjoint slots the entire release is $\varepsilon$-DP.
 \end{proof}
 
 \begin{corollary}[End-to-end budget]
@@ -189,6 +189,13 @@ and fuses the two signals through a per-node morphology gate $\beta_v = \sigma(\
 \label{eq:mgmp_fuse}
 \end{equation}
 Nodes whose abstract type is implicated in known vulnerability morphologies receive a higher gate $\beta_v$ and thus a stronger global signal. Even a client that has never observed CWE $c$ locally can recognise its structural morphology by attending to $\mathbf{p}_c^{\mathrm{glob}}$.
+
+The global bank additionally reaches the decision through two further channels. First, the graph-level readout is $[\mathbf{h}_G^{\mathrm{mean}} \,\|\, \mathbf{h}_G^{\mathrm{max}} \,\|\, \mathrm{cos}(\mathbf{h}_G^{\mathrm{mean}}, \mathbf{p}_c^{\mathrm{glob}})_{c \in \mathcal{C} \cup \{\mathrm{ben}\}}]$: the classifier directly sees how similar the current function is to every global morphology, including the benign one. Second, a prototype-alignment regulariser
+\begin{equation}
+    \mathcal{L}_{\mathrm{proto}} = \frac{1}{|B|} \sum_{i \in B} \big\| \mathbf{h}_{G_i} - \mathbf{p}_{s(i)}^{\mathrm{glob}} \big\|_2^2,
+\label{eq:proto_align}
+\end{equation}
+where $s(i)$ is sample $i$'s bank slot (its CWE bucket, or the benign slot), pulls each client's embedding space toward the shared global geometry --- the mechanism FedProto~\cite{tan2022fedproto} showed to be essential for prototype-based FL under non-IID clients. The total local objective becomes $\mathcal{L} = \mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}} + \mu \mathcal{L}_{\mathrm{proto}}$ with $\mu = 0.5$.
 
 \subsection{Training and Inference Protocol}
 \label{sec:protocol}
