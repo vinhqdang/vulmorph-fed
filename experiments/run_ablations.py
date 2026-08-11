@@ -32,12 +32,23 @@ def main():
     add_common_cli(p)
     p.add_argument("--epsilon", type=float, default=2.0)
     p.add_argument("--output",  type=str,   default="results/ablations.json")
+    p.add_argument("--resume",  action="store_true")
     args = p.parse_args()
     seeds = parse_seeds(args.seeds)
 
     results = {}
+    out_path = Path(__file__).parent / args.output
+    if args.resume and out_path.exists():
+        try:
+            results = json.load(open(out_path))
+            print(f"Resuming: {sorted(results)} already complete")
+        except Exception:
+            results = {}
 
     for name, overrides in ABLATION_VARIANTS.items():
+        if name in results:
+            print(f"Skipping {name} (already complete)")
+            continue
         print(f"\n{'='*55}\n  Variant: {name}\n{'='*55}")
 
         def run_one(seed, overrides=overrides):

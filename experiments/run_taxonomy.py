@@ -22,11 +22,22 @@ def main():
     add_common_cli(p)
     p.add_argument("--epsilon", type=float, default=2.0)
     p.add_argument("--output",  type=str,   default="results/taxonomy_size.json")
+    p.add_argument("--resume",  action="store_true")
     args = p.parse_args()
     seeds = parse_seeds(args.seeds)
 
     results = {}
+    out_path = Path(__file__).parent / args.output
+    if args.resume and out_path.exists():
+        try:
+            results = json.load(open(out_path))
+        except Exception:
+            results = {}
+
     for tax in [8, 16, 32]:
+        if str(tax) in results:
+            print(f"Skipping |T|={tax} (already complete)")
+            continue
         print(f"\n{'='*50}\nTaxonomy |T| = {tax}\n{'='*50}")
 
         def run_one(seed, tax=tax):

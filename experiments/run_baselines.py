@@ -224,18 +224,24 @@ def run_centralised_vulmorph(args, seed):
 
 # ── CLI ──────────────────────────────────────────────────────────────────
 
+# Ordered by importance to the paper's claims, so that a partially completed
+# run still yields the decisive comparisons:
+#   1. matched-privacy-budget peers (the headline claim),
+#   2. the same-representation federated reference,
+#   3. remaining non-private references.
 BASELINES = [
+    # Matched-privacy-budget peers (formal ε-DP per round, like VulMorph-Fed)
+    ("dp_fedavg_ggnn_morph",    "dp_fedavg",   "ggnn_morph"),
+    ("dp_fedavg_gat",           "dp_fedavg",   "gat"),
+    # Same-representation / same-backbone federated reference
+    ("fedavg_ggnn_morph",       "fedavg",      "ggnn_morph"),
+    ("fedavg_gat",              "fedavg",      "gat"),
     # Non-private references (raw data pooled, or parameters shared in clear)
     ("centralised_ggnn",        "centralised", "ggnn"),
     ("centralised_gat",         "centralised", "gat"),
-    ("centralised_transformer", "centralised", "transformer"),
     ("centralised_ggnn_morph",  "centralised", "ggnn_morph"),
-    ("fedavg_gat",              "fedavg",      "gat"),
-    ("fedavg_ggnn_morph",       "fedavg",      "ggnn_morph"),
+    ("centralised_transformer", "centralised", "transformer"),
     ("fedavg_transformer",      "fedavg",      "transformer"),
-    # Matched-privacy-budget peers (formal ε-DP per round, like VulMorph-Fed)
-    ("dp_fedavg_gat",           "dp_fedavg",   "gat"),
-    ("dp_fedavg_ggnn_morph",    "dp_fedavg",   "ggnn_morph"),
 ]
 
 
@@ -257,6 +263,8 @@ def main():
     p.add_argument("--output",     type=str,   default="results/baselines.json")
     p.add_argument("--only",       type=str,   default=None,
                    help="Comma-separated subset of baseline names to run")
+    p.add_argument("--resume",     action="store_true",
+                   help="Skip configurations already present in --output")
     p.add_argument("--dp_epsilon", type=float, default=2.0,
                    help="Per-round ε for the DP-FedAvg baselines (matches "
                         "VulMorph-Fed's per-round prototype budget)")
@@ -264,7 +272,16 @@ def main():
     seeds = parse_seeds(args.seeds)
 
     only = set(args.only.split(",")) if args.only else None
+
     results = {}
+    out_path = Path(__file__).parent / args.output
+    if args.resume and out_path.exists():
+        try:
+            results = json.load(open(out_path))
+            print(f"Resuming: {len(results)} configuration(s) already complete "
+                  f"→ {sorted(results)}")
+        except Exception:
+            results = {}
 
     def load_split(seed):
         data_list = load_graphs(args.dataset, args.max_samples,
@@ -281,6 +298,9 @@ def main():
 
     for name, mode, model_name in BASELINES:
         if only and name not in only:
+            continue
+        if name in results:
+            print(f"Skipping {name} (already complete)")
             continue
         print(f"\n{'='*55}\nBaseline: {name}\n{'='*55}")
 
@@ -304,7 +324,8 @@ def main():
         results[name] = run_seeded(run_one, seeds)
         _save(results, args.output)
 
-    if (only is None) or ("centralised_vulmorph" in only):
+    if ((only is None) or ("centralised_vulmorph" in only)) and \
+            "centralised_vulmorph" not in results:
         print(f"\n{'='*55}\nBaseline: centralised_vulmorph (oracle)\n{'='*55}")
         results["centralised_vulmorph"] = run_seeded(
             lambda s: run_centralised_vulmorph(args, s), seeds)
