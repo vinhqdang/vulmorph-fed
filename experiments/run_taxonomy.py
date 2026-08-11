@@ -45,6 +45,10 @@ def main():
             return run_fl(run_args, model_kwargs)
 
         results[str(tax)] = run_seeded(run_one, seeds)
+        out = Path(__file__).parent / args.output
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(results, f, indent=2)
 
     print(f"\n{'='*60}\nTAXONOMY SIZE SENSITIVITY (mean ± std)\n{'='*60}")
     for tax, m in results.items():

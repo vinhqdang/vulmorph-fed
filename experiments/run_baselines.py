@@ -239,6 +239,13 @@ BASELINES = [
 ]
 
 
+def _save(results, output):
+    out = Path(__file__).parent / output
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w") as f:
+        json.dump(results, f, indent=2)
+
+
 def main():
     p = argparse.ArgumentParser(description="VulMorph-Fed Baseline Runner")
     add_common_cli(p)
@@ -295,11 +302,13 @@ def main():
                 dp_epsilon=(args.dp_epsilon if mode == "dp_fedavg" else None))
 
         results[name] = run_seeded(run_one, seeds)
+        _save(results, args.output)
 
     if (only is None) or ("centralised_vulmorph" in only):
         print(f"\n{'='*55}\nBaseline: centralised_vulmorph (oracle)\n{'='*55}")
         results["centralised_vulmorph"] = run_seeded(
             lambda s: run_centralised_vulmorph(args, s), seeds)
+        _save(results, args.output)
 
     out = Path(__file__).parent / args.output
     out.parent.mkdir(parents=True, exist_ok=True)

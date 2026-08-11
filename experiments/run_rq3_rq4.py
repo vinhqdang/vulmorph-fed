@@ -57,6 +57,10 @@ def run_privacy_sweep(args, seeds):
             else composed_epsilon(eps, args.rounds)
         )
         results[key] = agg
+        out = Path(__file__).parent / args.output_privacy
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(results, f, indent=2)
 
     return results
 
@@ -89,6 +93,10 @@ def run_scalability_sweep(args, seeds):
         agg["ccr_server_total_kb"] = round(2 * bank_bytes * K / 1024, 2)
         agg["num_clients"] = K
         results[str(K)] = agg
+        out = Path(__file__).parent / args.output_scalability
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(results, f, indent=2)
 
     return results
 

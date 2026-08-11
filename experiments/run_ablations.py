@@ -63,6 +63,11 @@ def main():
             return run_fl(run_args, model_kwargs)
 
         results[name] = run_seeded(run_one, seeds)
+        if args.output:
+            out = Path(__file__).parent / args.output
+            out.parent.mkdir(parents=True, exist_ok=True)
+            with open(out, "w") as f:
+                json.dump(results, f, indent=2)
 
     # ── Print Summary Table ──────────────────────────────────────────────
     print(f"\n\n{'='*72}")
