@@ -31,7 +31,7 @@ Each node's feature vector is the sum of two embeddings, both drawn from \emph{p
 
 \begin{table}[t]
 \centering
-\caption{The complete $|\mathcal{T}| = 8$ morphological taxonomy (plus the reserved \texttt{UNKNOWN} fallback). Node features have $|\mathcal{T}|+1 = 9$ dimensions.}
+\caption{The complete $|\mathcal{T}| = 8$ morphological taxonomy (plus the reserved \texttt{UNKNOWN} fallback). A node takes one of $|\mathcal{T}|+1 = 9$ morphological \emph{categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding.}
 \label{tab:taxonomy}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{ll}
@@ -56,9 +56,10 @@ Abstract type & Covers \\
 
 The mapping $\phi_{\mathrm{type}}: \mathcal{V} \rightarrow \mathcal{T} \cup \{\texttt{UNKNOWN}\}$ is a deterministic rule set evaluated on the AST, in priority order:
 \begin{enumerate}
-    \item a \texttt{call\_expression} maps to the memory/string/IO API class if its callee name appears on a fixed allow-list (the full allow-lists ship with the code), and to \texttt{CALL\_SITE} otherwise --- \emph{user-defined functions, macros and unresolved calls all map to \texttt{CALL\_SITE}}; no name resolution is required;
+    \item a \texttt{call\_expression} is classified by its callee name in two stages: an exact match against fixed libc allow-lists (\texttt{malloc}, \texttt{memcpy}, \texttt{strcpy}, \dots), then a set of \emph{affix rules} that recognise project-wrapped equivalents. The affix stage is essential rather than cosmetic: production C code almost never calls libc allocators directly (FFmpeg uses \texttt{av\_malloc}, GLib \texttt{g\_malloc}, the Linux kernel \texttt{kmalloc}, OpenSSL \texttt{OPENSSL\_malloc}), so an exact-match list alone routes nearly every real allocation site to \texttt{CALL\_SITE}. We measured this: on Devign, exact matching alone assigns \texttt{MEMORY\_ACCESS} to only 0.23\% of AST nodes, rising to 0.72\% once affix rules are applied --- i.e.\ two thirds of the memory-safety signal the taxonomy is designed to capture is invisible without them. The rules test for the affixes \texttt{*alloc*}, \texttt{*free*}, \texttt{*memcpy*}, \texttt{*memset*}, \texttt{*str\{cpy,cat,len\}*} and are evaluated in an order that resolves \texttt{realloc} and \texttt{dealloc} before the generic \texttt{alloc} test. Only the matched \emph{class} is retained --- never the identifier --- so project invariance is preserved. Unmatched calls, including all user-defined functions, macros and unresolved calls, map to \texttt{CALL\_SITE}; no name resolution or build system is required;
     \item statement and expression kinds map directly: \texttt{subscript\_expression} $\to$ \texttt{ARRAY\_INDEX}; \texttt{field\_expression} and unary pointer expressions $\to$ \texttt{PTR\_DEREF}; \texttt{if}/\texttt{switch}/loop/jump statements and ternaries $\to$ \texttt{CONTROL\_BRANCH}; \texttt{assignment\_expression} and initialising declarators $\to$ \texttt{ASSIGN};
     \item a \texttt{binary\_expression} maps by its operator text to \texttt{ARITH\_OP} or \texttt{COMPARISON} (Table~\ref{tab:taxonomy});
+    \item three further kind rules complete the set: \texttt{cast\_expression} $\to$ \texttt{PTR\_DEREF} (a cast reinterprets a pointee type), \texttt{update\_expression} (\texttt{i++}, \texttt{i--}) $\to$ \texttt{ARITH\_OP}, and unary \texttt{!} $\to$ \texttt{COMPARISON} with the remaining unary operators $\to$ \texttt{ARITH\_OP};
     \item every remaining node maps to \texttt{UNKNOWN}.
 \end{enumerate}
 An equivalent token-context rule set (documented in the code) covers the rare parse-failure fallback graphs. The rules are implemented once at the finest ($|\mathcal{T}|=32$) granularity and projected onto the coarser taxonomies, so all three taxonomy sizes share a single rule set. $\phi_{\mathrm{type}}$ is a discrete label assignment and is \emph{not} differentiable; the only learned part of VCSA is the edge-weighting module below.
@@ -74,8 +75,8 @@ VCSA additionally learns a soft edge-importance mask. A two-layer MLP over conca
 \end{equation}
 which reweights messages during propagation (Eq.~\ref{eq:mgmp_local}); edges are softly down-weighted rather than hard-pruned, keeping the pipeline trainable end-to-end. Sparsity is encouraged by an $\ell_1$ penalty $\mathcal{L}_{\mathrm{sparse}} = \frac{1}{|\mathcal{E}|}\sum_e \varepsilon_e$. To align morphologies across clients we further use a structural contrastive loss over graph embeddings $\mathbf{h}_G$:
 \begin{equation}
-    \mathcal{L}_{SCL} = \!\!\sum_{(i,j) \in \mathcal{P}^+}\!\! \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2
-    + \!\!\sum_{(i,j) \in \mathcal{P}^-}\!\! \max\left(0, m - \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2\right),
+    \mathcal{L}_{SCL} = \frac{1}{|\mathcal{P}^+ \cup \mathcal{P}^-|} \left[ \sum_{(i,j) \in \mathcal{P}^+}\!\! \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2
+    + \!\!\sum_{(i,j) \in \mathcal{P}^-}\!\! \max\left(0, m - \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2\right) \right],
 \label{eq:scl}
 \end{equation}
 where $\mathcal{P}^+$ are same-CWE vulnerable pairs and $\mathcal{P}^-$ are (vulnerable, benign) pairs within a mini-batch, with margin $m = 1$. The total local objective is $\mathcal{L} = \mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}}$ with $\alpha = 0.1$, $\gamma = 0.01$; $\mathcal{L}_{BCE}$ is class-weighted binary cross-entropy with $\mathrm{pos\_weight} = \min(N^-/N^+, 20)$ computed on each client's local split.
@@ -106,10 +107,10 @@ for (k = 0; k <= len; k++)
 \begin{minipage}{\linewidth}
 \centering
 \footnotesize
-\textbf{Shared morphology (both fragments):}\\[2pt]
-\texttt{CALL\_SITE} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{MEMORY\_ACCESS} $\rightarrow$ \texttt{CONTROL\_BRANCH}(\texttt{LOOP}) $\rightarrow$ \texttt{COMPARISON}($\le$) $\rightarrow$ \texttt{ARRAY\_INDEX} $\rightarrow$ \texttt{ASSIGN}
+\textbf{Morphology sequence emitted by $\phi_{\mathrm{type}}$ --- identical for both fragments:}\\[2pt]
+\texttt{CONTROL\_BRANCH} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{COMPARISON} $\rightarrow$ \texttt{ARITH\_OP} $\rightarrow$ \texttt{CALL\_SITE} $\rightarrow$ \texttt{MEMORY\_ACCESS} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ARRAY\_INDEX} $\rightarrow$ \texttt{ARRAY\_INDEX}
 \end{minipage}
-\caption{Worked example of the VCSA abstraction. Two off-by-one buffer overflows (CWE-787) from different projects share no API or identifier tokens, yet $\phi_{\mathrm{type}}$ maps both onto the same morphological pattern: an allocation of $n$ bytes followed by a loop whose \emph{inclusive} bound ($\le$) drives an array write. The abstracted graphs --- and hence the prototypes built from them --- are indistinguishable across the two projects.}
+\caption{Worked example of the VCSA abstraction. Two off-by-one buffer overflows from different projects share no API or identifier token --- \texttt{av\_get\_size}/\texttt{BN\_num\_bytes}, \texttt{av\_malloc}/\texttt{OPENSSL\_malloc}, \texttt{buf}/\texttt{out} --- yet $\phi_{\mathrm{type}}$ maps both onto a byte-identical morphology: a size query (\texttt{CALL\_SITE}), an allocation (\texttt{MEMORY\_ACCESS}), and a loop whose \emph{inclusive} bound (\texttt{COMPARISON} on $\le$) drives an array write (\texttt{ARRAY\_INDEX}). The sequence shown is the literal output of the released \texttt{classify\_token}/\texttt{\_classify\_ast\_node} implementation on these two inputs (breadth-first over the AST, \texttt{UNKNOWN} nodes elided), not an idealisation; it is regenerated from the code so that figure and implementation cannot diverge. Note that recognising \texttt{av\_malloc} and \texttt{OPENSSL\_malloc} as allocations requires the affix rules of Section~\ref{sec:vcsa} --- an exact libc allow-list maps both to \texttt{CALL\_SITE} and the shared morphology is lost.}
 \label{fig:worked_example}
 \end{figure}
 
@@ -118,7 +119,7 @@ for (k = 0; k <= len; k++)
 
 Real vulnerability corpora have a many-to-many CVE--function--CWE structure, so we state our label model explicitly:
 \begin{itemize}
-    \item \textbf{Detection is strictly binary.} The classification head predicts $\hat{y} \in [0,1]$ (vulnerable vs.\ benign); all reported Precision, Recall, F1 and AUC values are computed from this binary head at threshold $0.5$. CWE information never enters the detection head.
+    \item \textbf{Detection is strictly binary.} The classification head predicts $\hat{y} \in [0,1]$ (vulnerable vs.\ benign); all reported Precision, Recall, F1 and AUC values are computed from this binary head. The decision threshold is calibrated on held-out training-project data as described in Section~\ref{sec:experiment}, never on the test set; AUC is threshold-free. CWE information never enters the detection head.
     \item \textbf{CWE labels condition only the prototypes.} A vulnerable function annotated with several CWEs contributes to the prototype of its \emph{first-listed (primary)} CWE. Benign functions contribute to a dedicated \emph{benign} prototype slot, giving the bank an explicit model of non-vulnerable morphology.
     \item \textbf{CWE vocabulary.} The prototype bank has $|\mathcal{C}| + 1 = 11$ slots: the nine most frequent CWE types in the training corpus receive dedicated slots, all remaining types share an \texttt{OTHER} slot, and the eleventh slot is the benign prototype. This bucketing is computed once per dataset and reported with the released configurations. Datasets without per-function CWE annotations (Devign) degenerate gracefully to a single vulnerable-prototype slot plus the benign slot.
 \end{itemize}
@@ -144,18 +145,21 @@ Before upload, each non-empty prototype row is perturbed with the Laplace mechan
 \label{eq:laplace}
 \end{equation}
 
-\begin{proposition}[Per-round privacy of the prototype bank]
+\begin{proposition}[Per-round privacy of the prototype release, conditional on the encoder]
 \label{prop:dp}
-Fix a client $k$ and let two neighbouring datasets differ in one function. Releasing the noisy bank $\{\hat{\mathbf{p}}_c^{(k)}\}_{c \in \mathcal{C}}$ of Eq.~\eqref{eq:laplace} satisfies $\varepsilon$-differential privacy.
+Fix a client $k$ and \emph{condition on its encoder} $f_{\theta_k}$. Let two neighbouring datasets differ in one function. Releasing the noisy bank $\{\hat{\mathbf{p}}_c^{(k)}\}$ of Eq.~\eqref{eq:laplace} satisfies $2\varepsilon$-differential privacy with respect to that record.
 \end{proposition}
 
 \begin{proof}
-Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so replacing one function changes the class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm. The Laplace mechanism with scale $\Delta_1 / \varepsilon$ is therefore $\varepsilon$-DP for that row \cite{dwork2014algorithmic}. Every record is assigned to exactly one slot --- its primary CWE bucket if vulnerable, the benign slot otherwise (Section~\ref{sec:label_model}) --- so a record change affects exactly one row of the bank; by parallel composition across the disjoint slots the entire release is $\varepsilon$-DP.
+Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so with $f_{\theta_k}$ held fixed, replacing one function changes the affected class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm; the Laplace mechanism with scale $\Delta_1/\varepsilon$ is $\varepsilon$-DP for that row~\cite{dwork2014algorithmic}. Under the replacement neighbouring relation a record change can affect \emph{two} rows --- it removes a record from the slot of the old label and adds one to the slot of the new label --- so parallel composition does not apply and the two affected rows compose sequentially, giving $2\varepsilon$.
 \end{proof}
 
 \begin{corollary}[End-to-end budget]
-Over $T$ federated rounds, sequential composition yields an end-to-end budget of $\varepsilon_{\mathrm{tot}} = T\varepsilon$. All privacy tables report both the per-round and the composed budget (e.g., $\varepsilon = 2$ per round over $T = 10$ rounds gives $\varepsilon_{\mathrm{tot}} = 20$).
+Over $T$ rounds, sequential composition yields $\varepsilon_{\mathrm{tot}} = 2T\varepsilon$. All privacy tables report both the per-round and the composed budget (e.g.\ $\varepsilon = 2$ per round over $T = 10$ rounds gives $\varepsilon_{\mathrm{tot}} = 40$).
 \end{corollary}
+
+\paragraph{What this guarantee does and does not cover.}
+We state the scope precisely, because it is easy to overclaim here. The conditioning in Proposition~\ref{prop:dp} is load-bearing: $\theta_k$ is trained on the client's raw data \emph{without} a privacy mechanism, so the map from dataset to embedding function is not itself differentially private. Changing one training record perturbs $\theta_k$, and hence every embedding, by an amount we do not bound. Consequently the guarantee is a statement about the \emph{release mechanism applied to the prototypes given a fixed encoder}, not an end-to-end DP guarantee over the training pipeline, and the deployed detector of Eq.~\eqref{eq:ensemble} --- which contains the raw-trained encoders --- carries no DP guarantee at all. Two further leakage channels remain outside the analysis: the noise scale $2R/(N_{c,k}\varepsilon)$ depends on the private count $N_{c,k}$, and the \emph{support pattern} of a client's occupied slots is transmitted unnoised, revealing which weakness classes a client possesses. Closing these gaps requires DP-SGD during local training (with its budget composed into $\varepsilon_{\mathrm{tot}}$), a count-independent noise scale, and padding or noising of the support pattern; we regard this as the principal item of future work rather than a solved problem, and we accordingly avoid the word ``private'' unqualified when describing the deployed system.
 
 We emphasise why the morphological abstraction matters here: because the encoder consumes only $|\mathcal{T}|+1$ abstract node types, the embeddings being clipped and averaged contain no project-specific lexical information to begin with. DP protects \emph{membership} of individual functions; the abstraction removes \emph{content} (identifiers, API names) categorically rather than statistically.
 
@@ -218,7 +222,7 @@ All headline metrics are computed from Eq.~\eqref{eq:ensemble} on the held-out c
 \FOR{$t = 1, \dots, T$}
     \FOR{each client $k$ \textbf{in parallel}}
         \STATE Retrieve $\mathcal{P}^{\mathrm{glob}, (t-1)}$; abstract graphs via VCSA ($\phi_{\mathrm{type}}$, Eq.~\ref{eq:edge_mask})
-        \STATE Train $\theta_k$ for $E$ local epochs with MGMP (Eqs.~\ref{eq:mgmp_local}--\ref{eq:mgmp_fuse}) and loss $\mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}}$
+        \STATE Train $\theta_k$ for $E$ local epochs with MGMP (Eqs.~\ref{eq:mgmp_local}--\ref{eq:mgmp_fuse}) and loss $\mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}} + \mu \mathcal{L}_{\mathrm{proto}}$ (Eq.~\ref{eq:proto_align})
         \STATE Build clipped prototypes $\mathbf{p}_c^{(k)}$ (Eq.~\ref{eq:prototype}); perturb via Eq.~\eqref{eq:laplace}
         \STATE Upload $\{\hat{\mathbf{p}}_c^{(k)}\}_{c \in \mathcal{C}}$ \COMMENT{$2|\mathcal{C}|d$ floats per round incl.\ download}
     \ENDFOR

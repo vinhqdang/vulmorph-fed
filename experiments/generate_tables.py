@@ -101,6 +101,7 @@ def table_rq1():
         "\\begin{tabular}{l" + "r" * len(ds_used) + "}",
         "\\toprule",
         "Model & " + " & ".join(DATASET_LABELS[d] for d in ds_used) + " \\\\",
+        "        & " + " & ".join("F1 / AUC" for _ in ds_used) + " \\\\",
         "\\midrule",
         "\\multicolumn{" + str(len(ds_used) + 1) +
         "}{l}{\\emph{Non-private references}} \\\\",
@@ -111,7 +112,8 @@ def table_rq1():
             continue
         row = [NONPRIVATE_LABELS[m]]
         for ds in ds_used:
-            row.append(fmt_ms(per_ds[ds][0].get(m), "f1"))
+            e = per_ds[ds][0].get(m)
+            row.append(fmt_ms(e, "f1") + " / " + fmt_ms(e, "auc"))
         lines.append(" & ".join(row) + " \\\\")
 
     lines.append("\\midrule")
@@ -123,12 +125,22 @@ def table_rq1():
             continue
         row = [PRIVATE_LABELS[m]]
         for ds in ds_used:
-            row.append(fmt_ms(per_ds[ds][0].get(m), "f1"))
+            e = per_ds[ds][0].get(m)
+            row.append(fmt_ms(e, "f1") + " / " + fmt_ms(e, "auc"))
         lines.append(" & ".join(row) + " \\\\")
 
+    # Bold only where our method actually leads its privacy class.
     row = ["\\textbf{VulMorph-Fed (ours)}"]
     for ds in ds_used:
-        row.append(fmt_ms(per_ds[ds][1], "f1", bold=True))
+        ours = per_ds[ds][1]
+        peers = [per_ds[ds][0].get(k) for k in PRIVATE_LABELS
+                 if per_ds[ds][0].get(k)]
+        best_peer_f1 = max([mean_of(p, "f1") or 0 for p in peers], default=0)
+        best_peer_auc = max([mean_of(p, "auc") or 0 for p in peers], default=0)
+        win_f1 = (mean_of(ours, "f1") or 0) >= best_peer_f1
+        win_auc = (mean_of(ours, "auc") or 0) >= best_peer_auc
+        row.append(fmt_ms(ours, "f1", bold=win_f1) + " / "
+                   + fmt_ms(ours, "auc", bold=win_auc))
     lines.append(" & ".join(row) + " \\\\")
 
     lines += ["\\bottomrule", "\\end{tabular}", "}", "\\end{table*}"]
