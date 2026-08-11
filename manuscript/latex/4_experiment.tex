@@ -98,7 +98,7 @@ Table~\ref{tab:rq3_privacy} and Figure~\ref{fig:rq3_privacy} sweep the per-round
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{figures/rq3_privacy.png}
+\IfFileExists{figures/rq3_privacy.png}{\includegraphics[width=\linewidth]{figures/rq3_privacy.png}}{\emph{(figure regenerated from results by generate\string_plots.py)}}
 \caption{RQ3: F1 vs.\ per-round privacy budget $\varepsilon$ (mean $\pm$ std over 3 seeds).}
 \label{fig:rq3_privacy}
 \end{figure}
@@ -109,7 +109,7 @@ Table~\ref{tab:rq4_scalability} and Figure~\ref{fig:rq4_scalability} vary $K \in
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=\linewidth]{figures/rq4_scalability.png}
+\IfFileExists{figures/rq4_scalability.png}{\includegraphics[width=\linewidth]{figures/rq4_scalability.png}}{\emph{(figure regenerated from results by generate\string_plots.py)}}
 \caption{RQ4: F1 and total server traffic per round across $K$ clients (mean $\pm$ std over 3 seeds).}
 \label{fig:rq4_scalability}
 \end{figure}
