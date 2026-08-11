@@ -34,9 +34,10 @@ def run_statistical_tests(model_a_scores, model_b_scores):
         stat, p_value = 0, 1.0
         
     delta = cliffs_delta(model_a_scores, model_b_scores)
-    
+
+    # Cast to native Python types so results serialise cleanly to JSON.
     return {
-        "wilcoxon_p": p_value,
-        "cliffs_delta": delta,
-        "significant": p_value < 0.05
+        "wilcoxon_p": float(p_value),
+        "cliffs_delta": float(delta),
+        "significant": bool(p_value < 0.05),
     }

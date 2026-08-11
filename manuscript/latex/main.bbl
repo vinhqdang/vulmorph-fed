@@ -60,7 +60,7 @@ H.~Yamamoto, D.~Wang, G.~K. Rajbahadur, M.~Kondo, Y.~Kamei, N.~Ubayashi,
   {\path{doi:10.1109/SANER56733.2023.00052}}.
 
 \bibitem{hu2024vulfl}
-P.~Zhang, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
+P.~Zhou, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
   vulnerability detection using federated learning, arXiv
   preprintArXiv:2411.16099 (2024).
 
@@ -222,6 +222,13 @@ C.~Dwork, A.~Roth, The Algorithmic Foundations of Differential Privacy, Vol.~9
   2014.
 \newblock \href {https://doi.org/10.1561/0400000042}
   {\path{doi:10.1561/0400000042}}.
+
+\bibitem{tan2022fedproto}
+Y.~Tan, G.~Long, L.~Liu, T.~Zhou, Q.~Lu, J.~Jiang, C.~Zhang, {FedProto}:
+  Federated prototype learning across heterogeneous clients, in: Proceedings of
+  the 36th AAAI Conference on Artificial Intelligence, 2022, pp. 8432--8440.
+\newblock \href {https://doi.org/10.1609/aaai.v36i8.20819}
+  {\path{doi:10.1609/aaai.v36i8.20819}}.
 
 \bibitem{fan2020bigvul}
 J.~Fan, Y.~Li, S.~Wang, T.~N. Nguyen, A {C/C++} code vulnerability dataset with
