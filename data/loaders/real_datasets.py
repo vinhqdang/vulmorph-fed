@@ -43,10 +43,10 @@ from data.morphology import get_taxonomy
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-CACHE_DIR = Path(".cache/datasets_v2")
+CACHE_DIR = Path(".cache/datasets_v3")
 
 # API allow-lists for the fine-grained (|T|=32) classification.
-from data.loaders.api_classes import API_CLASSES
+from data.loaders.api_classes import API_CLASSES, classify_api
 
 TYPE_KEYWORDS = {
     "int", "char", "float", "double", "long", "short", "unsigned", "signed",
@@ -138,9 +138,9 @@ def classify_token(tokens: List[str], i: int) -> str:
 
     if _IDENT_RE.match(tok):
         if nxt == "(":
-            for cls, names in API_CLASSES.items():
-                if tok in names:
-                    return cls
+            _cls = classify_api(tok)
+            if _cls is not None:
+                return _cls
             if tok == "if":
                 return "BRANCH_IF"
             if tok == "switch":
@@ -695,12 +695,15 @@ def split_by_project(
         proj = getattr(d, 'project', 'unknown')
         by_project.setdefault(proj, []).append(d)
 
-    # Deterministic holdout: smallest projects first (seed only breaks ties),
-    # so the held-out cross-project test set totals ~test_fraction of samples
-    # while the training pool keeps the larger repositories.
+    # Randomised project-level holdout. Projects are shuffled by the seed and
+    # accumulated into the test set until it reaches ~test_fraction of samples,
+    # so DIFFERENT SEEDS PRODUCE DIFFERENT SPLITS and the reported standard
+    # deviations capture split variance — the dominant source of variance in
+    # cross-project evaluation — not just initialisation noise.
+    # (A previous version sorted projects by size after shuffling, which made
+    # the split identical for every seed.)
     projects = sorted(by_project.keys())
     rng.shuffle(projects)
-    projects.sort(key=lambda p: len(by_project[p]))
 
     if len(projects) == 1:
         print("WARNING: single-project dataset — falling back to a random "

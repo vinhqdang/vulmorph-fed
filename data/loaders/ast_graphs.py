@@ -42,7 +42,7 @@ except Exception:                                     # pragma: no cover
 
 
 # API allow-lists shared with the token-level rules.
-from data.loaders.api_classes import API_CLASSES
+from data.loaders.api_classes import API_CLASSES, classify_api
 
 _BINOP_TO_FINE = {
     "+": "ARITH_ADD", "-": "ARITH_ADD",
@@ -85,9 +85,9 @@ def _classify_ast_node(node, src: bytes) -> str:
         name = src[fn.start_byte:fn.end_byte].decode("utf8", "replace") if fn else ""
         # strip member access:  obj->free / ns.malloc  → last component
         name = name.split("->")[-1].split(".")[-1].strip()
-        for cls, names in API_CLASSES.items():
-            if name in names:
-                return cls
+        cls = classify_api(name)
+        if cls is not None:
+            return cls
         return "CALL_SITE"
 
     if kind in _KIND_TO_FINE:
