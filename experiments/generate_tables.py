@@ -215,7 +215,7 @@ def table_rq2():
         return ""
     return _metric_table(
         data, VARIANT_ORDER,
-        "RQ2: Ablation study on Devign (mean $\\pm$ std over seeds). "
+        "RQ2: Ablation study on BigVul (mean $\\pm$ std over seeds). "
         "Each row removes one VulMorph-Fed component.",
         "tab:rq2_ablation")
 
