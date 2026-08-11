@@ -72,13 +72,36 @@ def run_condition(seed, args, public_fraction=0.5):
     client_buckets, test_raw = split_by_project(
         data_list, num_clients=1, test_fraction=args.test_fraction, seed=seed)
     train_all = [d for b in client_buckets for d in b]
-    rng.shuffle(train_all)
 
-    n_cal = max(1, int(0.1 * len(train_all)))
-    cal_raw, train_all = train_all[:n_cal], train_all[n_cal:]
+    # The public/private partition must be PROJECT-DISJOINT: if the two halves
+    # were IID samples of one pool they would be exchangeable by construction,
+    # and the measured delta could not represent "structural evidence the
+    # public corpus lacks". We therefore split whole repositories.
+    by_proj = {}
+    for d in train_all:
+        by_proj.setdefault(getattr(d, "project", "unknown"), []).append(d)
+    projs = sorted(by_proj)
+    rng.shuffle(projs)
 
-    n_public = int(len(train_all) * public_fraction)
-    public, private = train_all[:n_public], train_all[n_public:]
+    target = public_fraction * len(train_all)
+    public_projs, count = [], 0
+    for p in projs:
+        if count >= target and len(public_projs) < len(projs) - 1:
+            break
+        public_projs.append(p)
+        count += len(by_proj[p])
+    public_set = set(public_projs)
+    public = [d for p in public_projs for d in by_proj[p]]
+    private = [d for p in projs if p not in public_set for d in by_proj[p]]
+    print(f"    public: {len(public_projs)} projects / {len(public)} fns; "
+          f"private: {len(projs) - len(public_projs)} projects / {len(private)} fns")
+
+    # Calibration slice comes from the public partition (always available to
+    # the model owner) and keeps true prevalence.
+    rng.shuffle(public)
+    n_cal = max(1, int(0.1 * len(public)))
+    cal_raw, public = public[:n_cal], public[n_cal:]
+
     public = downsample_benign(public, 4.0, seed)
     private = downsample_benign(private, 4.0, seed)
 
@@ -91,9 +114,16 @@ def run_condition(seed, args, public_fraction=0.5):
     test_dataset = ListDataset(test_raw)
     cal_dataset = ListDataset(cal_raw)
 
-    # A: public-only centralised (single client, no DP needed — data is public)
-    print("  Condition A: public-only centralised")
-    m_public = _train_federation([ListDataset(public)], test_dataset, args,
+    # A: public-only. Sharded across the SAME number of clients as condition B
+    # and evaluated with the same ensemble protocol, so the measured delta
+    # reflects private participation rather than an ensembling artifact.
+    n_clients_b = 1 + len([b for b in private_buckets if b])
+    chunk = max(1, len(public) // n_clients_b)
+    public_shards = [public[i * chunk:(i + 1) * chunk] for i in range(n_clients_b)]
+    public_shards[-1].extend(public[n_clients_b * chunk:])
+    print(f"  Condition A: public-only, {n_clients_b} shards (no DP — data is public)")
+    m_public = _train_federation([ListDataset(s) for s in public_shards if s],
+                                 test_dataset, args,
                                  use_dp=False, epsilon=float('inf'),
                                  cal_dataset=cal_dataset)
 
