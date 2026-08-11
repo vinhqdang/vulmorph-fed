@@ -145,21 +145,79 @@ Before upload, each non-empty prototype row is perturbed with the Laplace mechan
 \label{eq:laplace}
 \end{equation}
 
-\begin{proposition}[Per-round privacy of the prototype release, conditional on the encoder]
+VulMorph-Fed applies two mechanisms, so that the guarantee covers the whole
+pipeline rather than only the released artefact.
+
+\paragraph{Mechanism 1: private encoder training.}
+Local training uses DP-SGD~\cite{abadi2016deep}: each per-example gradient is
+clipped to $\|g_i\|_2 \le C$ and the batch sum is perturbed with Gaussian noise
+of standard deviation $\sigma C$ before the optimiser step. The encoder
+$\theta_k$ is therefore itself a differentially private function of the
+client's data. This matters: without it, everything below would be conditional
+on an encoder that had seen the raw data unprotected, and changing one record
+could move every embedding by an unbounded amount.
+
+\paragraph{Mechanism 2: private prototype release.}
+Prototypes are built from $\ell_1$-clipped embeddings (Eq.~\ref{eq:prototype})
+and perturbed per class (Eq.~\ref{eq:laplace}).
+
+\begin{proposition}[Per-round privacy of the prototype release]
 \label{prop:dp}
-Fix a client $k$ and \emph{condition on its encoder} $f_{\theta_k}$. Let two neighbouring datasets differ in one function. Releasing the noisy bank $\{\hat{\mathbf{p}}_c^{(k)}\}$ of Eq.~\eqref{eq:laplace} satisfies $2\varepsilon$-differential privacy with respect to that record.
+Fix a client $k$ and condition on its (DP-trained) encoder. Let two
+neighbouring datasets differ in one function. Releasing the noisy bank
+$\{\hat{\mathbf{p}}_c^{(k)}\}$ of Eq.~\eqref{eq:laplace} satisfies
+$2\varepsilon$-differential privacy with respect to that record.
 \end{proposition}
 
 \begin{proof}
-Each per-sample embedding is projected onto the $\ell_1$ ball of radius $R$ (Eq.~\ref{eq:prototype}), so with $f_{\theta_k}$ held fixed, replacing one function changes the affected class mean by at most $\Delta_1 = 2R / N_{c,k}$ in $\ell_1$ norm; the Laplace mechanism with scale $\Delta_1/\varepsilon$ is $\varepsilon$-DP for that row~\cite{dwork2014algorithmic}. Under the replacement neighbouring relation a record change can affect \emph{two} rows --- it removes a record from the slot of the old label and adds one to the slot of the new label --- so parallel composition does not apply and the two affected rows compose sequentially, giving $2\varepsilon$.
+With the encoder fixed, each per-sample embedding lies in the $\ell_1$ ball of
+radius $R$, so replacing one record changes an affected class mean by at most
+$\Delta_1 = 2R/N_{c,k}$ in $\ell_1$ norm; the Laplace mechanism with scale
+$\Delta_1/\varepsilon$ is $\varepsilon$-DP for that row~\cite{dwork2014algorithmic}.
+Under the replacement neighbouring relation a record change can affect
+\emph{two} rows --- it leaves the slot of its old label and joins the slot of
+its new one --- so parallel composition across slots does not apply and the two
+affected rows compose sequentially, giving $2\varepsilon$. (A restricted
+neighbouring relation that preserves the label would give $\varepsilon$; we
+report the weaker, safer constant.)
 \end{proof}
 
-\begin{corollary}[End-to-end budget]
-Over $T$ rounds, sequential composition yields $\varepsilon_{\mathrm{tot}} = 2T\varepsilon$. All privacy tables report both the per-round and the composed budget (e.g.\ $\varepsilon = 2$ per round over $T = 10$ rounds gives $\varepsilon_{\mathrm{tot}} = 40$).
-\end{corollary}
+\begin{theorem}[End-to-end budget]
+\label{thm:total}
+Let $\varepsilon_{\mathrm{sgd}}$ be the budget consumed by DP-SGD over all local
+steps, accounted under R\'enyi differential privacy for the subsampled Gaussian
+mechanism~\cite{mironov2019rdp} at a target $\delta$. Then $T$ rounds of
+VulMorph-Fed satisfy
+\begin{equation}
+    \varepsilon_{\mathrm{tot}} = \varepsilon_{\mathrm{sgd}} + 2T\varepsilon
+\label{eq:total_eps}
+\end{equation}
+$(\varepsilon_{\mathrm{tot}}, \delta)$-differential privacy with respect to any
+single function in a client's dataset, covering both the transmitted prototypes
+and the locally trained encoder.
+\end{theorem}
 
-\paragraph{What this guarantee does and does not cover.}
-We state the scope precisely, because it is easy to overclaim here. The conditioning in Proposition~\ref{prop:dp} is load-bearing: $\theta_k$ is trained on the client's raw data \emph{without} a privacy mechanism, so the map from dataset to embedding function is not itself differentially private. Changing one training record perturbs $\theta_k$, and hence every embedding, by an amount we do not bound. Consequently the guarantee is a statement about the \emph{release mechanism applied to the prototypes given a fixed encoder}, not an end-to-end DP guarantee over the training pipeline, and the deployed detector of Eq.~\eqref{eq:ensemble} --- which contains the raw-trained encoders --- carries no DP guarantee at all. Two further leakage channels remain outside the analysis: the noise scale $2R/(N_{c,k}\varepsilon)$ depends on the private count $N_{c,k}$, and the \emph{support pattern} of a client's occupied slots is transmitted unnoised, revealing which weakness classes a client possesses. Closing these gaps requires DP-SGD during local training (with its budget composed into $\varepsilon_{\mathrm{tot}}$), a count-independent noise scale, and padding or noising of the support pattern; we regard this as the principal item of future work rather than a solved problem, and we accordingly avoid the word ``private'' unqualified when describing the deployed system.
+\begin{proof}
+DP-SGD over the local steps is $(\varepsilon_{\mathrm{sgd}}, \delta)$-DP by the
+R\'enyi accountant; the $T$ prototype releases are $2T\varepsilon$-DP by
+Proposition~\ref{prop:dp} and sequential composition. The two mechanisms
+observe the same private dataset, so their budgets add.
+\end{proof}
+
+We use the standard R\'enyi accountant (the binomial bound of
+Mironov et al.~\cite{mironov2019rdp} for the sampled Gaussian, converted to
+$(\varepsilon,\delta)$ over a grid of orders) rather than advanced composition,
+which would overstate $\varepsilon_{\mathrm{sgd}}$ by more than an order of
+magnitude; our implementation reproduces the reference regime of
+Abadi et al.~\cite{abadi2016deep} to within the expected margin.
+
+\paragraph{Residual leakage outside the analysis.}
+Two channels remain, and we state them rather than leaving them implicit. The
+noise scale $2R/(N_{c,k}\varepsilon)$ depends on the private count $N_{c,k}$,
+and the \emph{support pattern} of a client's occupied slots is transmitted
+unnoised, revealing which weakness classes a client possesses at all. Padding
+the bank to a fixed support and using a count-independent scale would close
+both at some utility cost; we quantify neither here.
 
 We emphasise why the morphological abstraction matters here: because the encoder consumes only $|\mathcal{T}|+1$ abstract node types, the embeddings being clipped and averaged contain no project-specific lexical information to begin with. DP protects \emph{membership} of individual functions; the abstraction removes \emph{content} (identifiers, API names) categorically rather than statistically.
 

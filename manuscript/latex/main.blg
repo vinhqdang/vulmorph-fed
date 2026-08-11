@@ -10,45 +10,46 @@ Warning--empty pages in weissberg2026codemetrics
 Warning--empty pages in widyasari2026vultrial
 Warning--empty pages in wang2026feddense
 Warning--can't use both volume and number fields in dwork2014algorithmic
-You've used 33 entries,
+Warning--empty pages in mironov2019rdp
+You've used 34 entries,
             2952 wiz_defined-function locations,
-            891 strings with 14369 characters,
-and the built_in function-call counts, 13774 in all, are:
-= -- 1265
-> -- 585
+            895 strings with 14503 characters,
+and the built_in function-call counts, 14063 in all, are:
+= -- 1288
+> -- 595
 < -- 15
-+ -- 217
-- -- 184
-* -- 1080
-:= -- 1800
-add.period$ -- 61
-call.type$ -- 33
-change.case$ -- 42
++ -- 221
+- -- 187
+* -- 1097
+:= -- 1835
+add.period$ -- 62
+call.type$ -- 34
+change.case$ -- 44
 chr.to.int$ -- 0
-cite$ -- 40
-duplicate$ -- 459
-empty$ -- 1476
-format.name$ -- 217
-if$ -- 3524
+cite$ -- 42
+duplicate$ -- 471
+empty$ -- 1518
+format.name$ -- 221
+if$ -- 3604
 int.to.chr$ -- 0
-int.to.str$ -- 33
-missing$ -- 34
-newline$ -- 135
-num.names$ -- 33
-pop$ -- 259
+int.to.str$ -- 34
+missing$ -- 35
+newline$ -- 138
+num.names$ -- 34
+pop$ -- 269
 preamble$ -- 1
 purify$ -- 0
 quote$ -- 0
-skip$ -- 895
+skip$ -- 918
 stack$ -- 0
-substring$ -- 698
+substring$ -- 700
 swap$ -- 192
 text.length$ -- 15
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 0
-warning$ -- 7
-while$ -- 87
-width$ -- 35
-write$ -- 352
-(There were 7 warnings)
+warning$ -- 8
+while$ -- 88
+width$ -- 36
+write$ -- 361
+(There were 8 warnings)

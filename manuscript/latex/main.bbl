@@ -223,6 +223,10 @@ C.~Dwork, A.~Roth, The Algorithmic Foundations of Differential Privacy, Vol.~9
 \newblock \href {https://doi.org/10.1561/0400000042}
   {\path{doi:10.1561/0400000042}}.
 
+\bibitem{mironov2019rdp}
+I.~Mironov, K.~Talwar, L.~Zhang, R\'enyi differential privacy of the sampled
+  gaussian mechanism, in: arXiv preprint, 2019, arXiv:1908.10530.
+
 \bibitem{tan2022fedproto}
 Y.~Tan, G.~Long, L.~Liu, T.~Zhou, Q.~Lu, J.~Jiang, C.~Zhang, {FedProto}:
   Federated prototype learning across heterogeneous clients, in: Proceedings of
