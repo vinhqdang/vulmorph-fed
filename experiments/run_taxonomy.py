@@ -48,6 +48,8 @@ def main():
                 test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
                 embed_dim=args.embed_dim, num_cwes=args.num_cwes,
                 taxonomy_size=tax, device=args.device,
+                dp_sgd=getattr(args, 'dp_sgd', False),
+                dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
             )
             model_kwargs = dict(use_vcsa=True, use_mgmp=True,
                                 use_morphology=True, use_cwe_affinity=True,

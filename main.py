@@ -18,7 +18,7 @@ from data.loaders.real_datasets import (
 )
 from data.morphology import get_taxonomy
 from data.dataset import get_client_datasets
-from utils.privacy import composed_epsilon
+from utils.privacy import composed_epsilon, total_epsilon
 
 
 # ── Evaluation ───────────────────────────────────────────────────────────────
@@ -215,6 +215,9 @@ def run_fl(args, model_kwargs=None):
             batch_size=args.batch_size,
             lr=args.lr,
             use_dp=use_dp,
+            dp_sgd=getattr(args, 'dp_sgd', False),
+            dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            dp_max_grad_norm=getattr(args, 'dp_max_grad_norm', 1.0),
             **model_kwargs,
         )
         for i in range(args.num_clients)
@@ -269,10 +272,21 @@ def run_fl(args, model_kwargs=None):
     else:
         final = history[-1] if history else {}
     if final and use_dp and federate:
-        # End-to-end privacy accounting under sequential composition:
-        # each round consumes ε_round, so T rounds consume T · ε_round.
+        # End-to-end accounting. The prototype releases cost 2·T·ε (a record
+        # change can move between two bank slots, so parallel composition does
+        # not apply). When DP-SGD is enabled the encoder training budget is
+        # added, giving a guarantee over the whole pipeline rather than one
+        # conditional on the encoder.
         final["epsilon_per_round"] = args.epsilon
-        final["epsilon_total"] = composed_epsilon(args.epsilon, args.rounds)
+        final["epsilon_prototypes"] = composed_epsilon(args.epsilon, args.rounds)
+        sgd_eps = 0.0
+        if getattr(args, 'dp_sgd', False):
+            eps_each = [c.accountant.epsilon() for c in clients
+                        if c.accountant is not None]
+            sgd_eps = max(eps_each) if eps_each else 0.0
+            final["epsilon_dpsgd"] = sgd_eps
+            final["dp_noise_multiplier"] = args.dp_noise_multiplier
+        final["epsilon_total"] = total_epsilon(args.epsilon, args.rounds, sgd_eps)
     return final
 
 
@@ -318,6 +332,11 @@ def parse_args(argv=None):
     p.add_argument("--epsilon",      type=float, default=2.0)
     p.add_argument("--delta_f",      type=float, default=1.0,
                    help="L1 clipping radius R for per-sample embeddings (DP)")
+    p.add_argument("--dp_sgd",       action="store_true",
+                   help="Train local encoders with DP-SGD so the encoder itself "
+                        "is differentially private (end-to-end guarantee)")
+    p.add_argument("--dp_noise_multiplier", type=float, default=1.0)
+    p.add_argument("--dp_max_grad_norm",    type=float, default=1.0)
 
     # Ablation flags
     p.add_argument("--no_vcsa",       action="store_true")

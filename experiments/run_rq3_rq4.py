@@ -47,6 +47,8 @@ def run_privacy_sweep(args, seeds):
                 test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
                 embed_dim=args.embed_dim, num_cwes=args.num_cwes,
                 taxonomy_size=args.taxonomy_size, device=args.device,
+            dp_sgd=getattr(args, 'dp_sgd', False),
+            dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
             )
             return run_fl(run_args, _model_kwargs(use_dp=(eps != float('inf'))))
 
@@ -82,6 +84,8 @@ def run_scalability_sweep(args, seeds):
                 test_fraction=args.test_fraction, hidden_dim=args.hidden_dim,
                 embed_dim=args.embed_dim, num_cwes=args.num_cwes,
                 taxonomy_size=args.taxonomy_size, device=args.device,
+            dp_sgd=getattr(args, 'dp_sgd', False),
+            dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
             )
             return run_fl(run_args, _model_kwargs(use_dp=True))
 

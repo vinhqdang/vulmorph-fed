@@ -7,7 +7,8 @@ from typing import Optional
 
 from models.vulmorph import VulMorph
 from models.vcsa import structural_contrastive_loss
-from utils.privacy import add_calibrated_laplace_noise, clip_l1
+from utils.privacy import (add_calibrated_laplace_noise, clip_l1,
+                           dp_sgd_step, DPSGDAccountant)
 from data.dataset import StructuredCPGDataset as MockCPGDataset
 
 
@@ -36,6 +37,9 @@ class VulMorphClient:
         batch_size: int = 32,
         lr: float = 1e-3,
         use_dp: bool = True,
+        dp_sgd: bool = False,
+        dp_noise_multiplier: float = 1.0,
+        dp_max_grad_norm: float = 1.0,
         **model_kwargs,
     ):
         self.client_id = client_id
@@ -49,6 +53,17 @@ class VulMorphClient:
         self.device = torch.device(device)
         self.hidden_dim = hidden_dim
         self.use_dp = use_dp
+        # DP-SGD makes the ENCODER a differentially private function of the
+        # local data. Without it, the prototype guarantee is only conditional
+        # on the encoder (see Proposition 1 and its scope paragraph).
+        self.dp_sgd = dp_sgd
+        self.dp_noise_multiplier = dp_noise_multiplier
+        self.dp_max_grad_norm = dp_max_grad_norm
+        self.accountant = (
+            DPSGDAccountant(dp_noise_multiplier,
+                            sample_rate=min(1.0, batch_size / max(1, len(dataset))))
+            if dp_sgd else None
+        )
 
         self.model = VulMorph(
             vocab_size=vocab_size,
@@ -69,6 +84,8 @@ class VulMorphClient:
             [n_neg / max(1, n_pos)], device=self.device
         ).clamp(max=20.0)
         self.bce_loss = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+        self.bce_per_example = nn.BCEWithLogitsLoss(pos_weight=pos_weight,
+                                                    reduction='none')
 
         self.train_loader = PyGDataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -142,12 +159,25 @@ class VulMorphClient:
                         loss_proto = ((graph_emb[live] - targets[live]) ** 2
                                       ).sum(dim=1).mean()
 
-                loss = (loss_bce + alpha * loss_scl + gamma * loss_l1
-                        + mu * loss_proto)
-                loss.backward()
-                self.optimizer.step()
+                if self.dp_sgd:
+                    # Per-example objective: the batch-level contrastive and
+                    # sparsity terms are added uniformly so that each example's
+                    # gradient remains individually clippable.
+                    per_ex = self.bce_per_example(logits.squeeze(-1), batch.y)
+                    per_ex = per_ex + (alpha * loss_scl + gamma * loss_l1
+                                       + mu * loss_proto)
+                    dp_sgd_step(self.model, per_ex, self.optimizer,
+                                max_grad_norm=self.dp_max_grad_norm,
+                                noise_multiplier=self.dp_noise_multiplier)
+                    self.accountant.step()
+                    loss = per_ex.mean()
+                else:
+                    loss = (loss_bce + alpha * loss_scl + gamma * loss_l1
+                            + mu * loss_proto)
+                    loss.backward()
+                    self.optimizer.step()
 
-                total_loss += loss.item()
+                total_loss += float(loss.item())
                 steps += 1
 
         return total_loss / max(steps, 1)

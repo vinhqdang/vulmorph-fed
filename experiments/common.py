@@ -50,6 +50,9 @@ def make_args(seed=42, num_clients=4, rounds=10, local_epochs=2,
         no_morphology=False,
         no_cwe_affinity=False,
         no_dp=(epsilon == float('inf')),
+        dp_sgd=False,
+        dp_noise_multiplier=1.0,
+        dp_max_grad_norm=1.0,
         local_only=False,
         device="cpu",
         seed=seed,
@@ -106,6 +109,9 @@ def add_common_cli(p: argparse.ArgumentParser) -> argparse.ArgumentParser:
     p.add_argument("--seeds",         type=str,   default="42,43,44",
                    help="Comma-separated random seeds")
     p.add_argument("--device",        type=str,   default="cpu")
+    p.add_argument("--dp_sgd",        action="store_true",
+                   help="End-to-end DP: train local encoders with DP-SGD")
+    p.add_argument("--dp_noise_multiplier", type=float, default=1.0)
     return p
 
 
