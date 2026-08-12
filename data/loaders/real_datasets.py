@@ -640,6 +640,36 @@ def load_diversevul_hf(max_samples: int = 10000, taxonomy_size: int = 8,
     )
 
 
+def dedupe_functions(data_list: List[Data]) -> List[Data]:
+    """
+    Remove exact and near-duplicate functions before any split.
+
+    BigVul and DiverseVul are documented to contain large fractions of
+    duplicated code, and vendored third-party sources appear under several
+    "project" names, which silently defeats project-disjoint evaluation: a
+    held-out function can have a twin in training. PrimeVul exists largely
+    because of this.
+
+    We normalise each function to its multiset of morphological node types in
+    sequence (the abstraction the model actually consumes, so this catches
+    renamed copies that exact text hashing would miss) and keep the first
+    occurrence of each signature.
+    """
+    seen, out, dropped = set(), [], 0
+    for d in data_list:
+        sig = (hash(tuple(d.x_morph.tolist())), hash(tuple(d.x_kind.tolist()))
+               if hasattr(d, "x_kind") else 0, int(d.num_nodes))
+        if sig in seen:
+            dropped += 1
+            continue
+        seen.add(sig)
+        out.append(d)
+    if dropped:
+        print(f"Deduplication: removed {dropped} near-duplicate functions "
+              f"({100*dropped/max(1,len(data_list)):.1f}%), {len(out)} remain")
+    return out
+
+
 def downsample_benign(bucket: List[Data], ratio: float = 4.0,
                       seed: int = 0) -> List[Data]:
     """
