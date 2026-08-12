@@ -46,84 +46,84 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Federated Learning in Software Engineering}{6}{subsection.2.3}\protected@file@percent }
 \citation{abadi2016deep}
 \citation{bonawitz2017practical}
-\citation{yamaguchi2014modeling}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Privacy-Preserving Mechanisms}{7}{subsection.2.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Methodology}{7}{section.3}\protected@file@percent }
 \newlabel{sec:method}{{3}{7}{Methodology}{section.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Graph Construction}{7}{subsection.3.1}\protected@file@percent }
-\newlabel{sec:graph_construction}{{3.1}{7}{Graph Construction}{subsection.3.1}{}}
+\citation{yamaguchi2014modeling}
 \citation{zhou2019devign}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Vulnerability-Critical Subgraph Abstraction (VCSA)}{8}{subsection.3.2}\protected@file@percent }
-\newlabel{sec:vcsa}{{3.2}{8}{Vulnerability-Critical Subgraph Abstraction (VCSA)}{subsection.3.2}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Morphological taxonomy}{8}{subsubsection.3.2.1}\protected@file@percent }
-\newlabel{sec:taxonomy}{{3.2.1}{8}{Morphological taxonomy}{subsubsection.3.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Graph Construction}{8}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:graph_construction}{{3.1}{8}{Graph Construction}{subsection.3.1}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The complete $|\mathcal  {T}| = 8$ morphological taxonomy (plus the reserved \texttt  {UNKNOWN} fallback). A node takes one of $|\mathcal  {T}|+1 = 9$ morphological \emph  {categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding.}}{9}{table.1}\protected@file@percent }
-\newlabel{tab:taxonomy}{{1}{9}{The complete $|\mathcal {T}| = 8$ morphological taxonomy (plus the reserved \texttt {UNKNOWN} fallback). A node takes one of $|\mathcal {T}|+1 = 9$ morphological \emph {categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Vulnerability-Critical Subgraph Abstraction (VCSA)}{9}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:vcsa}{{3.2}{9}{Vulnerability-Critical Subgraph Abstraction (VCSA)}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Morphological taxonomy}{9}{subsubsection.3.2.1}\protected@file@percent }
+\newlabel{sec:taxonomy}{{3.2.1}{9}{Morphological taxonomy}{subsubsection.3.2.1}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.2}The abstraction function $\phi _{\mathrm  {type}}$}{9}{subsubsection.3.2.2}\protected@file@percent }
 \def\@LN@column{1}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The complete $|\mathcal  {T}| = 8$ morphological taxonomy (plus the reserved \texttt  {UNKNOWN} fallback). A node takes one of $|\mathcal  {T}|+1 = 9$ morphological \emph  {categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding.}}{10}{table.1}\protected@file@percent }
+\newlabel{tab:taxonomy}{{1}{10}{The complete $|\mathcal {T}| = 8$ morphological taxonomy (plus the reserved \texttt {UNKNOWN} fallback). A node takes one of $|\mathcal {T}|+1 = 9$ morphological \emph {categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding}{table.1}{}}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.3}Learned edge weighting}{11}{subsubsection.3.2.3}\protected@file@percent }
 \newlabel{eq:edge_mask}{{1}{11}{Learned edge weighting}{equation.1}{}}
-\newlabel{eq:scl}{{2}{11}{Learned edge weighting}{equation.2}{}}
 \def\@LN@column{1}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Worked example of the VCSA abstraction. Two off-by-one buffer overflows from different projects share no API or identifier token --- \texttt  {av\_get\_size}/\texttt  {BN\_num\_bytes}, \texttt  {av\_malloc}/\texttt  {OPENSSL\_malloc}, \texttt  {buf}/\texttt  {out} --- yet $\phi _{\mathrm  {type}}$ maps both onto a byte-identical morphology: a size query (\texttt  {CALL\_SITE}), an allocation (\texttt  {MEMORY\_ACCESS}), and a loop whose \emph  {inclusive} bound (\texttt  {COMPARISON} on $\le $) drives an array write (\texttt  {ARRAY\_INDEX}). The sequence shown is the literal output of the released \texttt  {classify\_token}/\texttt  {\_classify\_ast\_node} implementation on these two inputs (breadth-first over the AST, \texttt  {UNKNOWN} nodes elided), not an idealisation; it is regenerated from the code so that figure and implementation cannot diverge. Note that recognising \texttt  {av\_malloc} and \texttt  {OPENSSL\_malloc} as allocations requires the affix rules of Section~\ref {sec:vcsa} --- an exact libc allow-list maps both to \texttt  {CALL\_SITE} and the shared morphology is lost.}}{12}{figure.1}\protected@file@percent }
 \newlabel{fig:worked_example}{{1}{12}{Worked example of the VCSA abstraction. Two off-by-one buffer overflows from different projects share no API or identifier token --- \texttt {av\_get\_size}/\texttt {BN\_num\_bytes}, \texttt {av\_malloc}/\texttt {OPENSSL\_malloc}, \texttt {buf}/\texttt {out} --- yet $\phi _{\mathrm {type}}$ maps both onto a byte-identical morphology: a size query (\texttt {CALL\_SITE}), an allocation (\texttt {MEMORY\_ACCESS}), and a loop whose \emph {inclusive} bound (\texttt {COMPARISON} on $\le $) drives an array write (\texttt {ARRAY\_INDEX}). The sequence shown is the literal output of the released \texttt {classify\_token}/\texttt {\_classify\_ast\_node} implementation on these two inputs (breadth-first over the AST, \texttt {UNKNOWN} nodes elided), not an idealisation; it is regenerated from the code so that figure and implementation cannot diverge. Note that recognising \texttt {av\_malloc} and \texttt {OPENSSL\_malloc} as allocations requires the affix rules of Section~\ref {sec:vcsa} --- an exact libc allow-list maps both to \texttt {CALL\_SITE} and the shared morphology is lost}{figure.1}{}}
+\newlabel{eq:scl}{{2}{12}{Learned edge weighting}{equation.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Label Model}{12}{subsection.3.3}\protected@file@percent }
 \newlabel{sec:label_model}{{3.3}{12}{Label Model}{subsection.3.3}{}}
 \citation{mcmahan2017fedavg}
-\citation{abadi2016deep}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}{13}{subsection.3.4}\protected@file@percent }
 \newlabel{sec:mcfpa}{{3.4}{13}{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}{subsection.3.4}{}}
 \newlabel{eq:prototype}{{3}{13}{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}{equation.3}{}}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Differential privacy}{13}{subsubsection.3.4.1}\protected@file@percent }
-\newlabel{sec:privacy}{{3.4.1}{13}{Differential privacy}{subsubsection.3.4.1}{}}
-\newlabel{eq:laplace}{{4}{13}{Differential privacy}{equation.4}{}}
-\@writefile{toc}{\contentsline {paragraph}{Mechanism 1: private encoder training.}{13}{section*.1}\protected@file@percent }
+\citation{abadi2016deep}
 \citation{dwork2014algorithmic}
 \citation{mironov2019rdp}
-\citation{mironov2019rdp}
-\citation{abadi2016deep}
 \def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.1}Differential privacy}{14}{subsubsection.3.4.1}\protected@file@percent }
+\newlabel{sec:privacy}{{3.4.1}{14}{Differential privacy}{subsubsection.3.4.1}{}}
+\newlabel{eq:laplace}{{4}{14}{Differential privacy}{equation.4}{}}
+\@writefile{toc}{\contentsline {paragraph}{Mechanism 1: private encoder training.}{14}{section*.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Mechanism 2: private prototype release.}{14}{section*.2}\protected@file@percent }
 \newlabel{prop:dp}{{1}{14}{Per-round privacy of the prototype release}{proposition.1}{}}
 \newlabel{thm:total}{{1}{14}{End-to-end budget}{theorem.1}{}}
-\newlabel{eq:total_eps}{{5}{14}{End-to-end budget}{equation.5}{}}
+\citation{mironov2019rdp}
+\citation{abadi2016deep}
 \def\@LN@column{1}
+\newlabel{eq:total_eps}{{5}{15}{End-to-end budget}{equation.5}{}}
 \@writefile{toc}{\contentsline {paragraph}{Residual leakage outside the analysis.}{15}{section*.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {3.4.2}Affinity-weighted aggregation}{15}{subsubsection.3.4.2}\protected@file@percent }
-\newlabel{eq:mcfpa}{{6}{15}{Affinity-weighted aggregation}{equation.6}{}}
 \citation{tan2022fedproto}
 \def\@LN@column{1}
+\newlabel{eq:mcfpa}{{6}{16}{Affinity-weighted aggregation}{equation.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Morphology-Guided Message Passing (MGMP)}{16}{subsection.3.5}\protected@file@percent }
 \newlabel{sec:mgmp}{{3.5}{16}{Morphology-Guided Message Passing (MGMP)}{subsection.3.5}{}}
 \newlabel{eq:mgmp_local}{{7}{16}{Morphology-Guided Message Passing (MGMP)}{equation.7}{}}
 \newlabel{eq:protoattn}{{8}{16}{Morphology-Guided Message Passing (MGMP)}{equation.8}{}}
 \newlabel{eq:mgmp_fuse}{{9}{16}{Morphology-Guided Message Passing (MGMP)}{equation.9}{}}
-\newlabel{eq:proto_align}{{10}{16}{Morphology-Guided Message Passing (MGMP)}{equation.10}{}}
 \def\@LN@column{1}
-\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces VulMorph-Fed}}{17}{algorithm.1}\protected@file@percent }
-\newlabel{alg:vulmorph_fed}{{1}{17}{Training and Inference Protocol}{algorithm.1}{}}
+\newlabel{eq:proto_align}{{10}{17}{Morphology-Guided Message Passing (MGMP)}{equation.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.6}Training and Inference Protocol}{17}{subsection.3.6}\protected@file@percent }
 \newlabel{sec:protocol}{{3.6}{17}{Training and Inference Protocol}{subsection.3.6}{}}
 \newlabel{eq:ensemble}{{11}{17}{Training and Inference Protocol}{equation.11}{}}
-\citation{zhou2019devign}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Communication Cost}{17}{subsection.3.7}\protected@file@percent }
+\newlabel{sec:comm}{{3.7}{17}{Communication Cost}{subsection.3.7}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7}Communication Cost}{18}{subsection.3.7}\protected@file@percent }
-\newlabel{sec:comm}{{3.7}{18}{Communication Cost}{subsection.3.7}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces VulMorph-Fed}}{18}{algorithm.1}\protected@file@percent }
+\newlabel{alg:vulmorph_fed}{{1}{18}{Training and Inference Protocol}{algorithm.1}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Experimental Evaluation}{18}{section.4}\protected@file@percent }
 \newlabel{sec:experiment}{{4}{18}{Experimental Evaluation}{section.4}{}}
 \newlabel{sec:results}{{4}{18}{Experimental Evaluation}{section.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Experimental Setup}{18}{subsection.4.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}Datasets}{18}{subsubsection.4.1.1}\protected@file@percent }
-\newlabel{sec:datasets}{{4.1.1}{18}{Datasets}{subsubsection.4.1.1}{}}
+\citation{zhou2019devign}
 \citation{fan2020bigvul}
 \citation{chen2023diversevul}
 \citation{ding2025primevul}
 \def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Experimental Setup}{19}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.1}Datasets}{19}{subsubsection.4.1.1}\protected@file@percent }
+\newlabel{sec:datasets}{{4.1.1}{19}{Datasets}{subsubsection.4.1.1}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}Cross-project federated split}{19}{subsubsection.4.1.2}\protected@file@percent }
 \newlabel{sec:split}{{4.1.2}{19}{Cross-project federated split}{subsubsection.4.1.2}{}}
 \citation{zhou2019devign}
@@ -140,69 +140,71 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}RQ1: Cross-Project Generalisation}{22}{subsection.4.2}\protected@file@percent }
 \citation{chakraborty2022deep,chakraborty2024realvul,ding2025primevul}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces RQ1: Cross-project F1 (mean $\pm $ std over 3 seeds) across four corpora.}}{23}{figure.2}\protected@file@percent }
-\newlabel{fig:rq1_performance}{{2}{23}{RQ1: Cross-project F1 (mean $\pm $ std over 3 seeds) across four corpora}{figure.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}RQ1b: What Does Federation Add Beyond Public Data?}{23}{subsection.4.3}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces RQ1: Cross-project vulnerability detection F1-score (mean $\pm $ std over 3 seeds). Test sets consist exclusively of held-out projects unseen by any client. The upper block gives non-private references (raw code pooled, or parameters exchanged in the clear); the lower block compares methods with a formal per-round $\varepsilon $-DP guarantee at the same budget ($\varepsilon = 2$/round). Best result within the privacy-preserving block in bold.}}{24}{table.2}\protected@file@percent }
-\newlabel{tab:rq1_main}{{2}{24}{RQ1: Cross-project vulnerability detection F1-score (mean $\pm $ std over 3 seeds). Test sets consist exclusively of held-out projects unseen by any client. The upper block gives non-private references (raw code pooled, or parameters exchanged in the clear); the lower block compares methods with a formal per-round $\varepsilon $-DP guarantee at the same budget ($\varepsilon = 2$/round). Best result within the privacy-preserving block in bold}{table.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces RQ1: Cross-project F1 (mean $\pm $ std over 3 seeds) across four corpora.}}{24}{figure.2}\protected@file@percent }
+\newlabel{fig:rq1_performance}{{2}{24}{RQ1: Cross-project F1 (mean $\pm $ std over 3 seeds) across four corpora}{figure.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}RQ2: Ablations and Taxonomy Sensitivity}{24}{subsection.4.4}\protected@file@percent }
 \def\@LN@column{1}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces RQ1: Cross-project vulnerability detection F1-score (mean $\pm $ std over 5 seeds). Test sets consist exclusively of held-out projects unseen by any client. The upper block gives non-private references (raw code pooled, or parameters exchanged in the clear); the lower block compares methods with a formal per-round $\varepsilon $-DP guarantee at the same budget ($\varepsilon = 2$/round). Best result within the privacy-preserving block in bold.}}{25}{table.2}\protected@file@percent }
+\newlabel{tab:rq1_main}{{2}{25}{RQ1: Cross-project vulnerability detection F1-score (mean $\pm $ std over 5 seeds). Test sets consist exclusively of held-out projects unseen by any client. The upper block gives non-private references (raw code pooled, or parameters exchanged in the clear); the lower block compares methods with a formal per-round $\varepsilon $-DP guarantee at the same budget ($\varepsilon = 2$/round). Best result within the privacy-preserving block in bold}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces RQ2: Ablation study on BigVul (mean $\pm $ std over seeds). Each row removes one VulMorph-Fed component.}}{25}{table.3}\protected@file@percent }
+\newlabel{tab:rq2_ablation}{{3}{25}{RQ2: Ablation study on BigVul (mean $\pm $ std over seeds). Each row removes one VulMorph-Fed component}{table.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.5}RQ3: Privacy-Utility Trade-off}{25}{subsection.4.5}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces RQ3: F1 vs.\ per-round privacy budget $\varepsilon $ (mean $\pm $ std over 3 seeds).}}{25}{figure.3}\protected@file@percent }
-\newlabel{fig:rq3_privacy}{{3}{25}{RQ3: F1 vs.\ per-round privacy budget $\varepsilon $ (mean $\pm $ std over 3 seeds)}{figure.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}RQ4: Scalability}{25}{subsection.4.6}\protected@file@percent }
 \def\@LN@column{1}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces RQ3: F1 vs.\ per-round privacy budget $\varepsilon $ (mean $\pm $ std over 3 seeds).}}{26}{figure.3}\protected@file@percent }
+\newlabel{fig:rq3_privacy}{{3}{26}{RQ3: F1 vs.\ per-round privacy budget $\varepsilon $ (mean $\pm $ std over 3 seeds)}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}RQ4: Scalability}{26}{subsection.4.6}\protected@file@percent }
 \@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces RQ4: F1 and total server traffic per round across $K$ clients (mean $\pm $ std over 3 seeds).}}{26}{figure.4}\protected@file@percent }
 \newlabel{fig:rq4_scalability}{{4}{26}{RQ4: F1 and total server traffic per round across $K$ clients (mean $\pm $ std over 3 seeds)}{figure.4}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Discussion and Limitations}{26}{section.5}\protected@file@percent }
 \newlabel{sec:discussion}{{5}{26}{Discussion and Limitations}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Why Does Morphological Abstraction Transfer?}{26}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Federated Prototypes vs.\ Parameter Averaging}{26}{subsection.5.2}\protected@file@percent }
 \def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Federated Prototypes vs.\ Parameter Averaging}{27}{subsection.5.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3}On the Motivation for Federation}{27}{subsection.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations and Threats to Validity}{27}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:limitations}{{5.4}{27}{Limitations and Threats to Validity}{subsection.5.4}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{28}{section.6}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{28}{Conclusion}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations and Threats to Validity}{28}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:limitations}{{5.4}{28}{Limitations and Threats to Validity}{subsection.5.4}{}}
 \bibdata{ref}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{29}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{29}{Conclusion}{section.6}{}}
 \bibcite{chakraborty2022deep}{{1}{}{{}}{{}}}
 \bibcite{chakraborty2024realvul}{{2}{}{{}}{{}}}
 \bibcite{ding2025primevul}{{3}{}{{}}{{}}}
 \bibcite{mcmahan2017fedavg}{{4}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{abadi2016deep}{{5}{}{{}}{{}}}
 \bibcite{he2021fedgraphnn}{{6}{}{{}}{{}}}
 \bibcite{yamamoto2023flr}{{7}{}{{}}{{}}}
+\def\@LN@column{1}
 \bibcite{hu2024vulfl}{{8}{}{{}}{{}}}
 \bibcite{li2018vuldeepecker}{{9}{}{{}}{{}}}
 \bibcite{zhou2019devign}{{10}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{li2022sysevr}{{11}{}{{}}{{}}}
 \bibcite{yamaguchi2014modeling}{{12}{}{{}}{{}}}
 \bibcite{cheng2021deepwukong}{{13}{}{{}}{{}}}
 \bibcite{li2021ivdetect}{{14}{}{{}}{{}}}
+\def\@LN@column{1}
 \bibcite{sun2024vullmgnns}{{15}{}{{}}{{}}}
 \bibcite{luo2025hagnn}{{16}{}{{}}{{}}}
 \bibcite{fu2022linevul}{{17}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{lekssays2025llmxcpg}{{18}{}{{}}{{}}}
 \bibcite{weissberg2026codemetrics}{{19}{}{{}}{{}}}
 \bibcite{widyasari2026vultrial}{{20}{}{{}}{{}}}
 \bibcite{liu2022cdvuld}{{21}{}{{}}{{}}}
+\def\@LN@column{1}
 \bibcite{li2023vulgda}{{22}{}{{}}{{}}}
 \bibcite{zhang2023cpvd}{{23}{}{{}}{{}}}
 \bibcite{cai2024csvdtf}{{24}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{shanbhag2022exploring}{{25}{}{{}}{{}}}
 \bibcite{yang2024federated}{{26}{}{{}}{{}}}
 \bibcite{zhang2024flvul}{{27}{}{{}}{{}}}
 \bibcite{wang2026feddense}{{28}{}{{}}{{}}}
+\def\@LN@column{1}
 \bibcite{bonawitz2017practical}{{29}{}{{}}{{}}}
 \bibcite{dwork2014algorithmic}{{30}{}{{}}{{}}}
 \bibcite{mironov2019rdp}{{31}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{tan2022fedproto}{{32}{}{{}}{{}}}
 \bibcite{fan2020bigvul}{{33}{}{{}}{{}}}
 \bibcite{chen2023diversevul}{{34}{}{{}}{{}}}

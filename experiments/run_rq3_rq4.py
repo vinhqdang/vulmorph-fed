@@ -49,6 +49,7 @@ def run_privacy_sweep(args, seeds):
                 taxonomy_size=args.taxonomy_size, device=args.device,
             dp_sgd=getattr(args, 'dp_sgd', False),
             dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            batch_size=getattr(args, 'batch_size', 64),
             )
             return run_fl(run_args, _model_kwargs(use_dp=(eps != float('inf'))))
 
@@ -86,6 +87,7 @@ def run_scalability_sweep(args, seeds):
                 taxonomy_size=args.taxonomy_size, device=args.device,
             dp_sgd=getattr(args, 'dp_sgd', False),
             dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            batch_size=getattr(args, 'batch_size', 64),
             )
             return run_fl(run_args, _model_kwargs(use_dp=True))
 

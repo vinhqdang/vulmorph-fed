@@ -11,7 +11,11 @@
 # Usage: colab_safe.sh <session> <colab args...>
 set -u
 VM=$1; shift
-CFG=/tmp/colabcfg_$VM.json
+# COLAB_HOME lets several Google accounts be driven concurrently: the CLI keeps
+# its OAuth token and session records under $HOME/.config/colab-cli, so pointing
+# HOME at a per-account directory gives each account fully isolated state.
+if [ -n "${COLAB_HOME:-}" ]; then export HOME="$COLAB_HOME"; fi
+CFG=/tmp/colabcfg_${COLAB_ACCT:-a}_$VM.json
 BAK=$CFG.bak
 
 valid() { python -c "

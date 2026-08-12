@@ -62,6 +62,7 @@ def main():
                 taxonomy_size=args.taxonomy_size, device=args.device,
             dp_sgd=getattr(args, 'dp_sgd', False),
             dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            batch_size=getattr(args, 'batch_size', 64),
                 **{k: v for k, v in overrides.items()},
             )
             model_kwargs = dict(

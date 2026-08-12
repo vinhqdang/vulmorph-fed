@@ -21,7 +21,7 @@ def make_args(seed=42, num_clients=4, rounds=10, local_epochs=2,
               epsilon=2.0, total_graphs=5000, num_cwes=10,
               hidden_dim=128, embed_dim=64, dataset="devign",
               max_samples=8000, test_fraction=0.2, taxonomy_size=8,
-              **kwargs) -> argparse.Namespace:
+              batch_size=64, **kwargs) -> argparse.Namespace:
     """Build a full args namespace for main.run_fl."""
     ns = argparse.Namespace(
         dataset=dataset,
@@ -38,7 +38,7 @@ def make_args(seed=42, num_clients=4, rounds=10, local_epochs=2,
         num_cwes=num_cwes,
         taxonomy_size=taxonomy_size,
         num_layers=2,
-        batch_size=64,
+        batch_size=batch_size,
         lr=1e-3,
         dropout=0.3,
         alpha=0.1,
@@ -112,6 +112,7 @@ def add_common_cli(p: argparse.ArgumentParser) -> argparse.ArgumentParser:
     p.add_argument("--dp_sgd",        action="store_true",
                    help="End-to-end DP: train local encoders with DP-SGD")
     p.add_argument("--dp_noise_multiplier", type=float, default=1.0)
+    p.add_argument("--batch_size",    type=int,   default=64)
     return p
 
 

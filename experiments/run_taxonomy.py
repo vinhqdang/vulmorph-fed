@@ -50,6 +50,7 @@ def main():
                 taxonomy_size=tax, device=args.device,
                 dp_sgd=getattr(args, 'dp_sgd', False),
                 dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            batch_size=getattr(args, 'batch_size', 64),
             )
             model_kwargs = dict(use_vcsa=True, use_mgmp=True,
                                 use_morphology=True, use_cwe_affinity=True,

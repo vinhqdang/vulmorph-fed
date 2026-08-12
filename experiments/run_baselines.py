@@ -217,6 +217,7 @@ def run_centralised_vulmorph(args, seed):
         taxonomy_size=args.taxonomy_size, device=args.device,
             dp_sgd=getattr(args, 'dp_sgd', False),
             dp_noise_multiplier=getattr(args, 'dp_noise_multiplier', 1.0),
+            batch_size=getattr(args, 'batch_size', 64),
     )
     model_kwargs = dict(use_vcsa=True, use_mgmp=True, use_morphology=True,
                         use_cwe_affinity=True, use_dp=False,
@@ -260,7 +261,6 @@ def main():
     p.add_argument("--epochs",     type=int,   default=10,
                    help="Epochs for centralised training")
     p.add_argument("--vocab_size", type=int,   default=10000)
-    p.add_argument("--batch_size", type=int,   default=64)
     p.add_argument("--lr",         type=float, default=1e-3)
     p.add_argument("--output",     type=str,   default="results/baselines.json")
     p.add_argument("--only",       type=str,   default=None,
