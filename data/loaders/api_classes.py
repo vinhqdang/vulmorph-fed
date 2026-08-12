@@ -11,12 +11,18 @@ API_CLASSES = {
     "MEMORY_SET":     {"memset", "bzero", "explicit_bzero"},
     "STRING_COPY":    {"strcpy", "strncpy", "strlcpy", "wcscpy", "strdup", "strndup"},
     "STRING_CONCAT":  {"strcat", "strncat", "strlcat", "wcscat"},
+    # Buffer-writing formatters only. printf/fprintf/vprintf write to a
+    # stream, carry no caller-buffer overflow semantics, and belong in
+    # IO_CALL; classifying them here made them project to MEMORY_ACCESS,
+    # which the gold-set annotation exposed (fprintf alone is 462 call
+    # sites in Devign).
     "STRING_FORMAT":  {"sprintf", "snprintf", "vsprintf", "vsnprintf",
-                       "scanf", "sscanf", "fscanf", "printf", "fprintf", "vprintf"},
+                       "scanf", "sscanf", "fscanf"},
     "STRING_LENGTH":  {"strlen", "strnlen", "wcslen"},
     "IO_CALL":        {"read", "write", "pread", "pwrite", "fread", "fwrite",
                        "recv", "recvfrom", "send", "sendto", "fgets", "gets",
-                       "fopen", "open", "close", "fclose"}
+                       "fopen", "open", "close", "fclose",
+                       "printf", "fprintf", "vprintf", "vfprintf", "puts"}
 }
 
 
