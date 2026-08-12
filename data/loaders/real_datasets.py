@@ -349,6 +349,24 @@ def _parse_cwe(raw) -> int:
         return -1
 
 
+_FITTED_CWE_MAP: Dict[int, int] = {}
+
+
+def bucket_cwes_apply(data_list: List[Data], num_cwes: int) -> None:
+    """
+    Apply a previously fitted CWE->slot mapping (see bucket_cwes) to held-out
+    data. CWE types never seen during training map to the shared OTHER slot,
+    so no test-set label information influences the prototype vocabulary.
+    """
+    other = num_cwes - 1
+    for d in data_list:
+        raw = int(d.cwe[0])
+        if float(d.y[0]) == 1.0 and raw >= 0:
+            d.cwe = torch.tensor([_FITTED_CWE_MAP.get(raw, other)], dtype=torch.long)
+        else:
+            d.cwe = torch.tensor([-1], dtype=torch.long)
+
+
 def bucket_cwes(data_list: List[Data], num_cwes: int) -> Dict[int, int]:
     """
     Map raw CWE ids to a fixed vocabulary of `num_cwes` buckets:
@@ -374,8 +392,10 @@ def bucket_cwes(data_list: List[Data], num_cwes: int) -> Dict[int, int]:
         else:
             d.cwe = torch.tensor([-1], dtype=torch.long)
 
-    print(f"CWE bucketing: {len(counts)} distinct CWEs → {num_cwes} buckets "
-          f"(top {len(top)} dedicated + OTHER); "
+    global _FITTED_CWE_MAP
+    _FITTED_CWE_MAP = mapping
+    print(f"CWE bucketing (fitted on training projects): {len(counts)} distinct "
+          f"CWEs → {num_cwes} buckets (top {len(top)} dedicated + OTHER); "
           f"top CWEs: {[f'CWE-{c}' for c in top[:10]]}")
     return mapping
 

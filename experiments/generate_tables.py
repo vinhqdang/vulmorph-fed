@@ -221,15 +221,24 @@ def _metric_table(data, order, caption, label, first_col="Variant"):
 
 
 def table_rq2():
-    data = load_json("ablations.json")
-    if not data:
-        print("Warning: ablations.json not found, skipping Table 2.")
-        return ""
-    return _metric_table(
-        data, VARIANT_ORDER,
-        "RQ2: Ablation study on BigVul (mean $\\pm$ std over seeds). "
-        "Each row removes one VulMorph-Fed component.",
-        "tab:rq2_ablation")
+    """
+    Ablation table. Reads the per-dataset 5-seed files and labels the caption
+    with the dataset actually used — a previous version read a Devign run under
+    a caption claiming BigVul, which is exactly the kind of provenance error
+    this generator exists to prevent.
+    """
+    for ds, label in (("bigvul", "BigVul"), ("diversevul", "DiverseVul"),
+                      ("devign", "Devign")):
+        data = load_json(f"ablations5_{ds}.json")
+        if data:
+            return _metric_table(
+                data, VARIANT_ORDER,
+                f"RQ2: Ablation study on {label} (mean $\\pm$ std over "
+                f"{data.get('Full VulMorph-Fed', {}).get('num_seeds', '?')} "
+                "seeds). Each row removes one VulMorph-Fed component.",
+                "tab:rq2_ablation")
+    print("Warning: no ablations5_*.json found, skipping Table 2.")
+    return ""
 
 
 def table_rq2b():

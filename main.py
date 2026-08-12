@@ -14,6 +14,7 @@ from data.loaders.real_datasets import (
     load_devign, load_primevul, load_bigvul, load_diversevul,
     load_bigvul_hf, load_diversevul_hf, load_primevul_hf,
     split_by_project, ListDataset, abstraction_stats, bucket_cwes,
+    bucket_cwes_apply,
     carve_calibration,
 )
 from data.morphology import get_taxonomy
@@ -135,10 +136,6 @@ def load_real_data(args):
               "Falling back to structured synthetic data.")
         return None, None, None
 
-    # Map raw CWE ids to the fixed prototype vocabulary:
-    # top (num_cwes - 1) most frequent CWEs + shared OTHER bucket.
-    bucket_cwes(data_list, args.num_cwes)
-
     stats = abstraction_stats(data_list)
     if stats:
         print(f"Abstraction stats (|T|={tax}): "
@@ -153,6 +150,16 @@ def load_real_data(args):
         test_fraction=args.test_fraction,
         seed=args.seed,
     )
+
+    # CWE bucketing must be fitted on TRAINING projects only: choosing the
+    # prototype vocabulary from the full corpus lets the held-out projects'
+    # label distribution decide which weaknesses get a dedicated slot, which
+    # is test-set leakage into the model's structural vocabulary.
+    train_only = [d for b in client_buckets for d in b]
+    bucket_cwes(train_only, args.num_cwes)
+    # Test/calibration samples are mapped with the same fitted vocabulary;
+    # any CWE unseen in training falls into the shared OTHER slot.
+    bucket_cwes_apply(test_raw, args.num_cwes)
 
     # Calibration slice (true prevalence, training projects only), then
     # benign downsampling of the remaining training samples (4:1 cap).
