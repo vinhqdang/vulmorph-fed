@@ -70,6 +70,7 @@ python experiments/analyze_information.py | tee "$LOG/analyze_information.log"
 
 echo "=== Tables and figures ==="
 python experiments/emit_tables.py
+python experiments/check_manuscript.py
 python experiments/make_figures.py
 
 echo "=== Manuscript ==="
