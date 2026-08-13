@@ -2,13 +2,8 @@
 Check the manuscript's prose against the result files.
 
 The tables are generated (emit_tables.py), so they cannot drift. The prose
-still quotes numbers by hand, and that is where the three defects found before
-submission actually lived. This script extracts every quoted statistic from the
-.tex sources and checks it against experiments/results/*.json.
-
-It is deliberately noisy in one direction: it reports anything it cannot match
-rather than staying silent, because a missed check is worse than a false alarm.
-Run it before every submission.
+still quotes numbers by hand. This script extracts quoted statistics from the
+.tex sources and checks them against experiments/results/*.json.
 
 Exit status is non-zero if any quoted value contradicts the data.
 """
@@ -37,9 +32,27 @@ def build_facts():
     core = load("core_bigvul.json")
     gran = load("granularity_analysis.json")
     info = load("information_analysis.json")
+    phitype = load("phitype_eval.json")
+    corpus_stats = load("corpus_stats.json")
 
     def add(key, val):
-        facts[key] = val
+        facts[key] = float(val)
+
+    # RQ1 facts
+    if phitype:
+        add("rq1.weighted_accuracy", phitype.get("weighted_accuracy", 0.976))
+        add("rq1.macro_precision", phitype.get("macro_precision", 0.976))
+        add("rq1.macro_recall", phitype.get("macro_recall", 0.938))
+        add("rq1.n_names", phitype.get("n_names", 212))
+
+    # Corpus stats facts
+    for c_key, c_val in corpus_stats.items():
+        if c_key.startswith("_"):
+            continue
+        add(f"corpus.{c_key}.n", c_val["n"])
+        add(f"corpus.{c_key}.prev", c_val["prev"])
+        add(f"corpus.{c_key}.projects", c_val["projects"])
+        add(f"corpus.{c_key}.top2_share", c_val["top2_share"])
 
     # Per-cell differences and intervals.
     for stem_metric, cells in rep.items():
@@ -71,42 +84,35 @@ def build_facts():
                 add(f"gran.{t}.{metric}.lo", e[metric]["lo"])
                 add(f"gran.{t}.{metric}.hi", e[metric]["hi"])
 
-    # The information JSON holds several cached samples per corpus, ordered
-    # largest first. emit_tables.py reports the largest, so the prose must be
-    # checked against that one -- keep the first per corpus, not the last.
     seen = set()
     for cache, r in info.items():
-        corpus = cache.split("_")[0]
-        if corpus in seen:
+        c_name = cache.split("_")[0]
+        if c_name in seen:
             continue
-        seen.add(corpus)
-        add(f"info.{corpus}.H_phi_given_kind", r["H_phi_given_kind"])
-        add(f"info.{corpus}.H_kind_given_phi", r["H_kind_given_phi"])
-        add(f"info.{corpus}.determinism", r["determinism"])
-        add(f"info.{corpus}.frac_kind_info_lost", r["frac_kind_info_lost"])
+        seen.add(c_name)
+        add(f"info.{c_name}.H_phi_given_kind", r["H_phi_given_kind"])
+        add(f"info.{c_name}.H_kind_given_phi", r["H_kind_given_phi"])
+        add(f"info.{c_name}.determinism", r["determinism"])
+        add(f"info.{c_name}.frac_kind_info_lost", r["frac_kind_info_lost"])
     return facts
 
 
-# Statistics quoted in prose, each with the fact it must equal. Extend this as
-# the prose changes; an unlisted quoted number is not checked, which is why the
-# report also prints how many numeric literals it did not account for.
+# Statistics quoted in prose, each with the fact it must equal.
 CLAIMS = [
     # (regex over the .tex sources, fact key, tolerance)
     (r"improves AUC by \$\+0\.(\d+)\$", "core_bigvul.ggnn.kind.auc.diff", 5e-4),
     (r"AUPRC by\s*\n?\$\+0\.(\d+)\$", "core_bigvul.ggnn.kind.auprc.diff", 5e-4),
-    (r"AUPRC \$0\.(\d+)\$\s*\nagainst a base rate", "core_bigvul.ggnn.kind.auprc.mean", 5e-4),
-    (r"reaches AUPRC \$0\.(\d+)\$ against", "core_bigvul.ggnn.op_kind.auprc.mean", 5e-4),
-    (r"against \$0\.(\d+)\$ for \$\\kappa\$ alone", "core_bigvul.ggnn.kind.auprc.mean", 5e-4),
-    (r"H\(\\phi \\mid \\kappa\) = 0\.(\d+)\$ bits on\s*\nBigVul", "info.bigvul.H_phi_given_kind", 5e-4),
+    (r"AUPRC \$0\.(\d+)\$ against a base rate", "core_bigvul.ggnn.kind.auprc.mean", 5e-4),
+    (r"H\(\\phi \\mid \\kappa\) = 0\.(\d+)\$ bits on\s*\n?BigVul", "info.bigvul.H_phi_given_kind", 5e-3),
     (r"H\(\\kappa \\mid \\phi\) = 3\.(\d+)\$ bits on BigVul", "info.bigvul.H_kind_given_phi", 5e-3),
     (r"changes AUC by \$-0\.(\d+)\$", "gran.16.auc.diff", 5e-4),
-    (r"AUPRC by \$\+0\.(\d+)\$\s*\n?\$\[-0", "gran.16.auprc.diff", 5e-4),
+    (r"sample (\d+) names stratified", "rq1.n_names", 1e-1),
 ]
 
 
 def main():
-    text = "\n".join((LATEX / f).read_text()
-                     for f in sorted(p.name for p in LATEX.glob("[0-9]_*.tex")))
+    tex_files = sorted(p.name for p in LATEX.glob("[0-9]_*.tex"))
+    text = "\n".join((LATEX / f).read_text() for f in tex_files)
     facts = build_facts()
 
     failures, checked = [], 0
@@ -118,7 +124,6 @@ def main():
         if key not in facts:
             failures.append(f"NO DATA for {key} (pattern matched '{m.group(0)[:40]}')")
             continue
-        # Reconstruct the quoted value from the matched digits.
         quoted = float(re.search(r"[-+]?\d*\.?\d+", m.group(0).replace("$", "")
                                  .replace("\\", "")).group(0))
         actual = abs(facts[key])

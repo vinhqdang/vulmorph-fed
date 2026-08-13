@@ -1,63 +1,53 @@
-# VulMorph-Fed
+# Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection
 
-> **Cross-Project Software Vulnerability Detection via Federated Vulnerability Morphology Learning**
->
-> Research prototype with a fully reproducible experiment pipeline: every table
-> and figure in the manuscript is generated programmatically from the result
-> files produced by `experiments/run_all.sh`. No number is entered by hand.
+> Research prototype with a fully reproducible experiment pipeline: every table and figure in the manuscript is generated programmatically from result files produced by `experiments/run_all.sh`. No number is entered by hand.
 
 ---
 
 ## Overview
 
-**VulMorph-Fed** is a privacy-preserving federated learning framework for
-detecting software vulnerabilities across heterogeneous projects. It has three
-components:
+This repository contains the official implementation for **"Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection"** (under revision for *Journal of Computer Languages*).
 
-| Component | What it does |
-|---|---|
-| **VCSA** (Vulnerability-Critical Subgraph Abstraction) | Functions are parsed with tree-sitter into real AST graphs (parent-child + sibling-order + def-use edges). Nodes carry two project-invariant features: the grammar kind (364 categories fixed by the C grammar) and a morphological operation type (8/16/32-type taxonomy + `UNKNOWN`) assigned by deterministic rules, plus a learned soft edge-importance mask. Node features contain **no project-specific tokens**. |
-| **MCFPA** (Morphology-Conditioned Federated Prototype Aggregation) | Clients share CWE-conditioned prototype vectors instead of model parameters. Per-sample embeddings are L1-clipped (radius `R`) and each prototype row is perturbed with a per-class-calibrated Laplace mechanism → provable per-round ε-DP with sequential composition over rounds (ε_tot = T·ε). |
-| **MGMP** (Morphology-Guided Message Passing) | Custom PyG layer fusing edge-weighted local aggregation with scaled-dot-product attention over the global prototype bank, gated per node by its morphological type. |
-
-**Inference protocol**: the deployed detector is the uniform probability
-ensemble of the K client models conditioned on the final global prototype bank.
+### Core Finding
+Learned vulnerability detectors generalize poorly across projects primarily because of the **node representation** rather than model architecture. Substituting project-specific lexical source tokens with project-invariant **grammar node kinds** ($\kappa$, fixed by the C grammar via `tree-sitter`) improves cross-project ranking performance by $+0.049$ to $+0.106$ AUC across datasets and backbones. Furthermore, an exact information-theoretic analysis demonstrates that an engineered operation taxonomy ($\phi$) is $98.2\%$ redundant with grammar kinds ($H(\phi \mid \kappa) = 0.06$ bits), proving that parser node kinds carry the entire effect at zero design cost.
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 vulmorph-fed/
 ├── data/
-│   ├── morphology.py             # Nested 8/16/32-type taxonomies + embedding
+│   ├── morphology.py             # Taxonomic definitions (|T| ∈ {8, 16, 32}) & MorphologyEmbedding
 │   └── loaders/
-│       ├── ast_graphs.py         # tree-sitter AST graph construction (primary)
-│       ├── api_classes.py        # API allow-lists for phi_type
-│       └── real_datasets.py      # Dataset loaders, splits, calibration, downsampling
+│       ├── ast_graphs.py         # tree-sitter C parse tree construction (AST + SIB + DU edges)
+│       ├── api_classes.py        # API allow-lists & identifier-component callee classifier
+│       └── real_datasets.py      # Dataset loaders (BigVul, DiverseVul, Devign) & GroupKFold splits
 ├── models/
-│   ├── vcsa.py                   # Edge-mask MLP + structural contrastive loss
+│   ├── vulmorph.py               # VulMorph GNN model (kind + morph embeddings)
+│   ├── vcsa.py                   # VCSA soft edge-mask MLP & Structural Contrastive Loss
 │   ├── mgmp.py                   # MGMP message-passing layer
-│   ├── vulmorph.py               # Full local client model (morphology-only features)
-│   └── baselines/                # GGNN/GAT (lex or morph input), Transformer-seq
+│   ├── encoders.py               # GNN backbones (GGNN, GAT, GIN)
+│   └── baselines/                # Baseline architectures
 ├── fl/
-│   ├── client.py                 # Local training, clipped prototypes, calibrated DP
-│   └── server.py                 # MCFPA affinity-weighted aggregation
+│   ├── client.py                 # Client local training & prototype extraction
+│   └── server.py                 # Prototype aggregation server
 ├── utils/
-│   ├── metrics.py                # F1/AUC/P/R (fixed threshold 0.5)
-│   ├── privacy.py                # L1 clipping, calibrated Laplace, composition
-│   └── stats.py                  # Wilcoxon signed-rank + Cliff's delta
+│   ├── metrics.py                # AUC, AUPRC, F1 metric computations
+│   ├── privacy.py                # Differential privacy utilities
+│   └── stats.py                  # Wilcoxon signed-rank + Cliff's delta statistics
 ├── experiments/
-│   ├── run_all.sh                # ← regenerates EVERYTHING (tables + figures)
-│   ├── run_main.py               # Full model per dataset (RQ1)
-│   ├── run_baselines.py          # 8-baseline suite (RQ1)
-│   ├── run_public_vs_fed.py      # Public-only vs public+federated (RQ1b)
-│   ├── run_ablations.py          # Component ablations (RQ2)
-│   ├── run_taxonomy.py           # |T| ∈ {8,16,32} sensitivity (RQ2b)
-│   ├── run_rq3_rq4.py            # Privacy sweep + scalability (RQ3/RQ4)
-│   ├── generate_tables.py        # JSON results → LaTeX tables (mean ± std)
-│   └── generate_plots.py         # JSON results → figures with error bars
-├── manuscript/latex/             # Paper sources (tables.tex is auto-generated)
+│   ├── run_all.sh                # ← Master script: runs experiments, emits tables & checks prose
+│   ├── compute_corpus_stats.py   # Computes exact corpus properties & node distributions
+│   ├── build_phitype_goldset.py  # Builds Devign callee goldset sample
+│   ├── annotate_goldset.py       # Evaluates phi_type static analysis against ground truth
+│   ├── run_representation.py     # Main representation comparison (RQ2, RQ3, RQ4)
+│   ├── analyze_representation.py # Computes cluster-bootstrap CIs for representation comparisons
+│   ├── analyze_information.py    # Computes H(phi|kappa) and H(kappa|phi) conditional entropies
+│   ├── emit_tables.py            # Converts JSON result files to manuscript LaTeX tables
+│   ├── check_manuscript.py       # Verifies all quoted prose statistics against JSON data
+│   └── make_figures.py           # Generates manuscript figures (redundancy & forest plots)
+├── manuscript/latex/             # Manuscript LaTeX sources (tables are auto-generated)
 └── main.py                       # Single-run CLI entry point
 ```
 
@@ -66,63 +56,37 @@ vulmorph-fed/
 ## Reproducing the Paper
 
 ```bash
-conda activate py313          # Python 3.13, torch 2.10, torch_geometric 2.7
+# Install dependencies
 pip install -r requirements.txt
 
-# Everything (4 datasets × 8 baselines + full model, ablations, taxonomy,
-# privacy sweep, scalability, public-vs-fed; 3 seeds each; several hours on CPU):
-bash experiments/run_all.sh 42,43,44
+# Run the master pipeline (runs analysis, emits LaTeX tables, checks manuscript facts, builds PDF):
+bash experiments/run_all.sh cpu
 
-# Results land in experiments/results/*.json;
-# tables.tex and figures are regenerated and copied into manuscript/.
+# Or generate tables & check manuscript facts directly from existing result files:
+bash experiments/run_all.sh --tables-only
 ```
 
-Datasets are streamed automatically from public HuggingFace mirrors and cached
-under `.cache/datasets/`:
-
-| Dataset | Source | Split notes |
-|---|---|---|
-| Devign | `DetectVul/devign` | 2 projects (FFmpeg/QEMU) → train one, test the other |
-| BigVul | `bstee615/bigvul` | 234 projects, CWE-annotated |
-| DiverseVul | `bstee615/diversevul` | 580 projects, CWE lists (first = primary) |
-| PrimeVul | `ASSERT-KTH/PrimeVul` (`train_unpaired`) | strictest recent benchmark |
-
-**Cross-project split**: project-level partition; smallest projects held out
-until ≈20% of samples form the test set; no function from a test project is
-ever seen by any client. Remaining projects are assigned round-robin to K=4
-clients. Seeds {42,43,44} control shuffling, initialisation and DP noise.
-
-### Single runs
+### Key Commands
 
 ```bash
-python main.py --dataset devign --max_samples 8000 --num_clients 4 \
-               --rounds 10 --local_epochs 2 --num_cwes 10 --epsilon 2.0
+# 1. Compute corpus properties (Table 1 & Table 2):
+python experiments/compute_corpus_stats.py
 
-# Ablation flags: --no_vcsa --no_morphology --no_cwe_affinity --no_mgmp --no_dp --local_only
-# Taxonomy size:  --taxonomy_size {8,16,32}
-# Privacy budget: --epsilon {0.1,...,inf}; clip radius: --delta_f (default 1.0)
+# 2. Evaluate phi_type as a static analysis (Table 3 & Table 3b):
+python experiments/annotate_goldset.py --output experiments/results/phitype_eval.json
+
+# 3. Compute information-theoretic redundancy (Table 5):
+python experiments/analyze_information.py
+
+# 4. Generate all LaTeX tables programmatically:
+python experiments/emit_tables.py
+
+# 5. Verify prose facts against JSON result artifacts:
+python experiments/check_manuscript.py
 ```
-
----
-
-## Label model (explicit)
-
-- Detection is **strictly binary**; the decision threshold is calibrated on a
-  training-project calibration slice (never the test set); AUC is threshold-free.
-- Training splits cap benign:vulnerable at 4:1 (test/calibration keep true prevalence).
-- CWE annotations condition **only** the prototype bank; multi-CWE functions use their first-listed (primary) CWE; benign functions get no prototype.
-- The bank has |C| = 10 slots: top-9 most frequent training CWEs + shared `OTHER`.
-
-## Privacy accounting (explicit)
-
-- Per round: each non-empty prototype row is the mean of L1-clipped (radius R=1)
-  embeddings; Laplace scale = 2R/(N_c·ε) → the released bank is ε-DP
-  (parallel composition across disjoint CWE buckets).
-- Across T rounds: sequential composition, ε_total = T·ε (reported in all tables).
 
 ---
 
 ## Citation
 
-> VulMorph-Fed: Cross-Project Software Vulnerability Detection via Federated
-> Vulnerability Morphology Learning. (Under revision.)
+> Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection. (Under revision.)

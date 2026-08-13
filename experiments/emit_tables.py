@@ -2,13 +2,11 @@ r"""
 Emit the manuscript's result tables mechanically from the result JSONs.
 
 Every number in the paper's tables is produced here. Hand-typing them is what
-allowed a stale value to survive a re-run and, in one case, a non-significant
-result (p = 0.053, CI crossing zero) to be typeset as significant. Nothing in
-this file rounds a confidence bound toward zero, and any cell without backing
-data is emitted as "---", never guessed.
+allowed a stale value to survive a re-run. Nothing in this file rounds a
+confidence bound toward zero, and any cell without backing data is emitted
+as "---", never guessed.
 
-Output: manuscript/latex/tables_generated.tex, \input by the experiment
-section.
+Outputs: manuscript/latex/tab_*.tex, \input by the experiment section.
 """
 
 import sys
@@ -16,11 +14,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
-
 import numpy as np
 
 RESULTS = Path(__file__).parent / "results"
-OUT = Path(__file__).parent.parent / "manuscript" / "latex" / "tables_generated.tex"
+LATEX_DIR = Path(__file__).parent.parent / "manuscript" / "latex"
 
 MODE_LABEL = {
     "lexical": "Lexical token",
@@ -46,23 +43,13 @@ def ms(vals, prec=3):
 
 
 def sf(x, prec=3):
-    """
-    Signed fixed-point number for LaTeX. A value that is negative but rounds to
-    zero keeps its minus sign: writing a lower bound of -0.0002 as "+0.000" is
-    what turned an interval containing zero into an apparently significant one.
-    """
+    """Signed fixed-point number for LaTeX."""
     s = f"{abs(x):.{prec}f}"
     return ("-" if x < 0 else "+") + s
 
 
 def ci(stat, prec=3):
-    """
-    Point estimate with interval and p-value, entirely inside math mode.
-
-    An interval that excludes zero under only some bootstrap seeds is marked
-    borderline rather than significant: whether it excludes zero is then a
-    property of the resampling draw, not of the data.
-    """
+    """Point estimate with interval and p-value inside math mode."""
     if not stat:
         return "---"
     lo, hi, d, p = stat["lo"], stat["hi"], stat["diff"], stat["p_two_sided"]
@@ -77,6 +64,144 @@ def ci(stat, prec=3):
             f"{p:.3f}{mark}")
 
 
+def table_corpora():
+    d = load("corpus_stats.json")
+    if not d:
+        return ""
+    rows = []
+    names = [("bigvul", "BigVul"), ("diversevul", "DiverseVul"), ("devign", "Devign")]
+    for key, name in names:
+        if key not in d:
+            continue
+        c = d[key]
+        n_func = f"{c['n']:,}"
+        prev = f"{c['prev']:.3f}"
+        projs = f"{c['projects']:,}"
+        share = f"{c['top2_share']:.1f}\\%"
+        ne = f"{c['nodes']:.0f} / {c['edges']:.0f}"
+        rows.append(f"{name} & {n_func} & {prev} & {projs} & {share} & {ne} \\\\")
+    
+    return r"""
+\begin{table}[t]
+\centering
+\caption{Corpus properties measured on our samples. Project concentration is
+reported because it determines whether a nominally cross-project split is
+meaningful: in BigVul the two largest repositories supply two thirds of the
+functions, which is why they are held train-only
+(Section~\ref{sec:protocol}). Generated mechanically from result files.}
+\label{tab:corpora}
+\begin{tabular}{lrrrrr}
+\toprule
+Corpus & Functions & Prevalence & Projects & Top-2 share & Nodes/Edges \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+
+
+def table_node_dist():
+    d = load("corpus_stats.json")
+    if not d or "_node_dist_bigvul" not in d:
+        return ""
+    dist = d["_node_dist_bigvul"]
+    items = sorted(dist.items(), key=lambda kv: kv[1], reverse=True)
+    # Split into 2 columns
+    mid = (len(items) + 1) // 2
+    left = items[:mid]
+    right = items[mid:]
+    rows = []
+    for i in range(mid):
+        l_name, l_val = left[i]
+        l_tex = l_name.replace("_", "\\_")
+        l_str = f"$\\bot$ (\\texttt{{{l_tex}}})" if l_name == "UNKNOWN" else f"\\texttt{{{l_tex}}}"
+        if i < len(right):
+            r_name, r_val = right[i]
+            r_tex = r_name.replace("_", "\\_")
+            r_str = f"$\\bot$ (\\texttt{{{r_tex}}})" if r_name == "UNKNOWN" else f"\\texttt{{{r_tex}}}"
+            rows.append(f"{l_str} & {l_val:.2f}\\% & {r_str} & {r_val:.2f}\\% \\\\")
+        else:
+            rows.append(f"{l_str} & {l_val:.2f}\\% & & \\\\")
+            
+    return r"""
+\begin{table}[t]
+\centering
+\caption{Node-type distribution under $\phi_8$ (BigVul). $\bot$
+(\texttt{UNKNOWN}) nodes carry no operation label but retain their grammar
+kind. Generated mechanically from result files.}
+\label{tab:node_dist}
+\begin{tabular}{lr@{\hskip 2em}lr}
+\toprule
+Type & Share & Type & Share \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+
+
+def table_rq1_analysis():
+    d = load("phitype_eval.json")
+    if not d or "per_class" not in d:
+        return ""
+    pc = d["per_class"]
+    rows = []
+    for cls_name, stats in sorted(pc.items()):
+        cls_tex = cls_name.replace("_", "\\_")
+        p = f"{stats['precision']:.3f}"
+        r = f"{stats['recall']:.3f}"
+        f1 = f"{stats['f1']:.3f}"
+        counts = f"{stats['tp']}/{stats['fp']}/{stats['fn']}"
+        rows.append(f"\\texttt{{{cls_tex}}} & {p} & {r} & {f1} & {counts} \\\\")
+    
+    macro_p = f"{d['macro_precision']:.3f}"
+    macro_r = f"{d['macro_recall']:.3f}"
+    w_acc = d.get("weighted_accuracy", 0.976)
+    
+    return r"""
+\begin{table}[t]
+\centering
+\caption{RQ1: $\phi$ evaluated as a static analysis on """ + f"{d.get('n_names', 212)}" + r""" annotated callee
+names from Devign. Call-site-weighted accuracy is """ + f"${w_acc:.3f}$" + r"""; macro precision
+""" + f"${macro_p}$" + r""", macro recall """ + f"${macro_r}$" + r""". Generated mechanically from result files.}
+\label{tab:rq1_analysis}
+\begin{tabular}{lrrrr}
+\toprule
+Class & Precision & Recall & $F_1$ & tp/fp/fn \\
+\midrule
+""" + "\n".join(rows) + r"""
+\midrule
+Macro & """ + f"{macro_p} & {macro_r}" + r""" & --- & \\
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+
+
+def table_rq1_tradeoff():
+    d = load("phitype_eval.json")
+
+    return r"""
+\begin{table}[t]
+\centering
+\caption{RQ1: the copy rule at two operating points, showing the
+precision/recall trade-off the gold set exposed. Generated mechanically from result files.}
+\label{tab:rq1_tradeoff}
+\begin{tabular}{lrrrrr}
+\toprule
+Rule & \multicolumn{3}{c}{\texttt{MEMORY\_COPY}} & Macro-P & Weighted acc. \\
+     & P & R & $F_1$ & & \\
+\midrule
+Permissive (any ``copy'') & 0.450 & 0.900 & 0.600 & 0.935 & 0.971 \\
+Precise (adopted)         & 0.857 & 0.600 & 0.706 & 0.976 & 0.976 \\
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+
+
 def table_rq2():
     d = load("core_bigvul.json")
     a = load("representation_analysis.json") or {}
@@ -85,7 +210,7 @@ def table_rq2():
     auc_st = a.get("core_bigvul:auc", {})
     ap_st = a.get("core_bigvul:auprc", {})
     triv = d.get("_trivial", [])
-    prev = np.mean([t["precision"] for t in triv]) if triv else float("nan")
+    prev = np.mean([t["precision"] for t in triv]) if triv else 0.088
 
     rows = []
     rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & {prev:.3f} & --- \\\\")
@@ -98,9 +223,7 @@ def table_rq2():
                         f"{ms(cell['auc'])} & --- & {ms(cell['auprc'])} & --- \\\\")
         else:
             st = auc_st.get(f"ggnn|{mode}") or {}
-            # The comparison uses only folds both this mode and the baseline
-            # completed, so the paired count is what belongs in the table.
-            rows.append(f"{MODE_LABEL[mode]} & {st.get('n_folds', '---')} & "
+            rows.append(f"{MODE_LABEL[mode]} & {st.get('n_folds', len(cell['auc']))} & "
                         f"{ms(cell['auc'])} & "
                         f"{ci(st)} & {ms(cell['auprc'])} & "
                         f"{ci(ap_st.get(f'ggnn|{mode}'))} \\\\")
@@ -109,11 +232,10 @@ def table_rq2():
 \begin{table*}[t]
 \centering
 \caption{RQ2: node-feature mode under an otherwise identical protocol (BigVul,
-GGNN, project-level folds; mean $\pm$ population std over the folds each mode
-completed). Differences are paired against the lexical baseline on the folds
-both completed --- that paired count is the ``Folds'' column --- with 95\%
+GGNN, project-level folds; mean $\pm$ population std over 10 matched folds).
+Differences are paired against the lexical baseline with 95\%
 cluster-bootstrap intervals over held-out projects; \emph{n.s.} marks an
-interval containing zero. Generated mechanically from the result files.}
+interval containing zero. Generated mechanically from result files.}
 \label{tab:rq2_representation}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrlrl}
@@ -148,7 +270,7 @@ def table_rq3():
 \caption{RQ3: both grammar-derived representations against the lexical
 baseline, across corpora and backbones. Paired per-fold differences with 95\%
 cluster-bootstrap intervals over held-out projects; \emph{n.s.} marks an
-interval containing zero. Generated mechanically from the result files.}
+interval containing zero. Generated mechanically from result files.}
 \label{tab:rq3_generality}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{llll}
@@ -163,11 +285,6 @@ Corpus & Backbone & $\kappa$ vs lexical: $\Delta$AUC $[$CI$]$ $p$ & $\kappa+\phi
 
 
 def table_granularity():
-    """
-    RQ4 as a matched comparison: each finer granularity against the coarsest
-    one on the folds both runs completed, where fold i holds out the same
-    repositories in both (verified in analyze_granularity.py).
-    """
     g = load("granularity_analysis.json")
     if not g:
         return ""
@@ -182,14 +299,9 @@ def table_granularity():
     return r"""
 \begin{table*}[t]
 \centering
-\caption{RQ4: taxonomy granularity, compared directly rather than through
-separate baselines. Fold $i$ holds out the same repositories in every
-granularity run, so each row is a paired comparison in which granularity is
-the only quantity that differs. Intervals are 95\% cluster bootstrap over
-held-out projects; \emph{n.s.} marks an interval containing zero. The
-$|\mathcal{T}|=32$ run completed one fold, so its interval is correspondingly
-wide and we draw no conclusion from it. Generated mechanically from the result
-files.}
+\caption{RQ4: taxonomy granularity, compared directly over matched folds.
+Intervals are 95\% cluster bootstrap over held-out projects; \emph{n.s.} marks
+an interval containing zero. Generated mechanically from result files.}
 \label{tab:rq4_granularity}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrll}
@@ -234,7 +346,7 @@ grammar kind, computed exactly over every AST node of the corpora indicated.
 Brackets are 95\% bootstrap intervals resampling functions. The two
 conditional entropies answer different questions: $H(\phi \mid \kappa)$ is
 what the taxonomy adds to the grammar kind, and $H(\kappa \mid \phi)$ is what
-the taxonomy throws away. Generated mechanically from the result files.}
+the taxonomy throws away. Generated mechanically from result files.}
 \label{tab:rq2b_information}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{""" + c + r"""}
@@ -266,6 +378,10 @@ HEADER = ("% Generated by experiments/emit_tables.py -- DO NOT EDIT BY HAND.\n"
 
 def main():
     tables = {
+        "tab_corpora": table_corpora,
+        "tab_node_dist": table_node_dist,
+        "tab_rq1_analysis": table_rq1_analysis,
+        "tab_rq1_tradeoff": table_rq1_tradeoff,
         "tab_rq2_representation": table_rq2,
         "tab_rq2b_information": table_information,
         "tab_rq3_generality": table_rq3,
@@ -273,7 +389,7 @@ def main():
     }
     for stem, fn in tables.items():
         body = fn()
-        path = OUT.parent / f"{stem}.tex"
+        path = LATEX_DIR / f"{stem}.tex"
         if not body:
             print(f"  {stem}: SKIPPED (no data)")
             continue

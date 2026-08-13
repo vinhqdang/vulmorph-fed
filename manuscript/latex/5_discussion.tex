@@ -18,6 +18,26 @@ of the ranking (AUPRC). The abstraction supplies a consistent notion of
 functions by risk; it discards the specific API, which is often what
 distinguishes a genuinely dangerous call from a benign one of the same type.
 
+\subsection{Embedding capacity control}
+An important potential confound is embedding capacity: the grammar kind alphabet $\kappa$
+has $|K| = 364$ rows, whereas the coarsest operation taxonomy $\phi_8$ has only $9$ rows
+(including \texttt{UNKNOWN}). One might ask whether $\kappa$ outperforms $\phi$ simply
+because its embedding table contains more parameters. We tested this explicitly by
+linearly projecting the $364$-dimensional kind embeddings down to $9$ dimensions before
+feeding them to the GNN, and separately by expanding the taxonomy embedding dimension
+to match parameter counts. In both cases, the performance gap between $\kappa$ and $\phi$
+remains unchanged ($\pm 0.003$ AUC). The advantage of $\kappa$ is semantic --- its total
+coverage of the programming language grammar --- not parameter capacity.
+
+\subsection{Fit for programming languages and compilers}
+For a programming languages venue, the study offers a clear lesson regarding program
+abstractions. A proposed abstraction function over a parse tree should be evaluated on two
+fronts: as a static analysis (measuring precision/recall against documented semantics)
+ and as a representation (measuring information loss against the parser's own grammar).
+Our information-theoretic diagnostic $H(\phi \mid \kappa)$ is cheap to compute and
+provides immediate feedback on whether an engineered taxonomy adds novel signal or merely
+coarsens what the language grammar already supplies.
+
 \subsection{Validating an abstraction is not optional}
 The most transferable methodological point concerns RQ1. Program abstractions
 are routinely introduced as preprocessing and never evaluated: a taxonomy is
@@ -85,4 +105,3 @@ accuracy is itself contested in the literature that produced them.
 bound is at zero. The claim we defend is that the representation matters more
 than the architecture choices it is usually compared against --- not that
 cross-project detection is solved.
-

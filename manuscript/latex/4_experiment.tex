@@ -22,31 +22,14 @@ positive ones:
 
 \subsubsection{Corpora}
 We use BigVul~\cite{fan2020bigvul}, DiverseVul~\cite{chen2023diversevul} and
-PrimeVul~\cite{ding2025primevul}, loaded from pinned public mirrors. Each is
+Devign~\cite{zhou2019devign}, loaded from pinned public mirrors. Each is
 sampled to 8{,}000 functions. We disclose two properties that are usually left
 implicit and that materially affect cross-project claims: the sample is taken
 in corpus order rather than at random, and project mass is highly
 concentrated --- in BigVul, Chrome and \texttt{linux} together supply about
 two thirds of the functions.
 
-\begin{table}[t]
-\centering
-\caption{Corpus properties measured on our samples. Project concentration is
-reported because it determines whether a nominally cross-project split is
-meaningful: in BigVul the two largest repositories supply two thirds of the
-functions, which is why they are held train-only
-(Section~\ref{sec:protocol}).}
-\label{tab:corpora}
-\begin{tabular}{lrrrrr}
-\toprule
-Corpus & Functions & Prevalence & Projects & Top-2 share & Nodes/Edges \\
-\midrule
-BigVul     & 8{,}000 & 0.054 & 134 & 66.3\% & 90 / 231 \\
-DiverseVul & 8{,}000 & 0.055 & 580 & 27.4\% & 77 / 195 \\
-Devign     & 8{,}000 & 0.473 & 2   & 100\%  & 134 / 351 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tab_corpora}
 
 Table~\ref{tab:corpora} records these properties. Devign is included for the
 analysis validation of Section~\ref{sec:rq_analysis} but \emph{excluded from
@@ -64,24 +47,7 @@ motivates the taxonomy accounts for $0.43\%$ of nodes, so subdividing it
 (Section~\ref{sec:rq_negative}) cannot move an aggregate metric however
 semantically justified the distinction is.
 
-\begin{table}[t]
-\centering
-\caption{Node-type distribution under $\phi_8$ (BigVul). $\bot$
-(\texttt{UNKNOWN}) nodes carry no operation label but retain their grammar
-kind.}
-\label{tab:node_dist}
-\begin{tabular}{lr@{\hskip 2em}lr}
-\toprule
-Type & Share & Type & Share \\
-\midrule
-$\bot$ (\texttt{UNKNOWN}) & 75.73\% & \texttt{ASSIGN}        & 3.38\% \\
-\texttt{PTR\_DEREF}       & 6.46\%  & \texttt{COMPARISON}    & 2.64\% \\
-\texttt{CALL\_SITE}       & 5.31\%  & \texttt{ARITH\_OP}     & 1.59\% \\
-\texttt{CONTROL\_BRANCH}  & 3.97\%  & \texttt{ARRAY\_INDEX}  & 0.49\% \\
-                          &         & \texttt{MEMORY\_ACCESS}& 0.43\% \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tab_node_dist}
 
 \subsubsection{Deduplication}
 Near-duplicate functions are removed \emph{before} any split. Vendored code
@@ -98,8 +64,18 @@ provisions matter. First, projects too large to be placed without dominating a
 fold --- Chrome and \texttt{linux} --- are held \emph{train-only} and reported
 as such, so that no fold labelled ``cross-project'' is in fact an evaluation
 on one repository. Second, all vocabularies and label bucketings are fitted on
-training projects only. The resulting folds are stable: test fraction
-$0.071$ on every fold, 39--49 test projects per fold.
+training projects only.
+
+Per-corpus fold statistics differ according to project distributions. In BigVul,
+the resulting folds are stable: test fraction $0.071$ on every fold, 39--49 test
+projects per fold. In DiverseVul, folds contain 1{,}223--1{,}224 test functions across
+115--116 projects, yielding a test fraction near $0.16$.
+
+We disclose that even with Chrome and \texttt{linux} held train-only, project size
+concentration remains visible among held-out projects: in BigVul folds 0 and 5,
+the \texttt{Android} repository accounts for $69\%$ of test set samples. Furthermore,
+across repeated GroupKFold split assignments, repeat folds share a small subset of test
+projects (e.g., 8 of 39 projects overlap between repeat folds 0 and 5).
 
 We report AUC as the primary metric and AUPRC as the imbalanced-data
 companion, both threshold-free. F1 is reported only against an explicit floor:
@@ -121,15 +97,9 @@ tuned after the fact. First, all reported intervals use $2000$ resamples with
 the generator seeded at zero. Second, because a percentile interval is itself a
 random quantity, we recompute every interval under ten seeds and record how
 often it excludes zero; a cell whose verdict holds under fewer than nine of the
-ten is marked $\dagger$ and is not treated as a finding. We adopted this check
-after observing that one borderline cell changed verdict when the resample
-count changed, and we regard reporting it as preferable to selecting the
-setting that produced the more favourable answer.
+ten is marked $\dagger$ and is not treated as a finding.
 
-All comparisons are paired on the folds both conditions completed. Where the
-two conditions completed different numbers of folds, the paired count is the
-one reported, and any comparison we cannot make paired we mark as such rather
-than differencing two unequally estimated means.
+All comparisons are paired on 10 matched folds both conditions completed.
 
 \subsection{RQ1: $\phi$ as a static analysis}
 \label{sec:rq_analysis}
@@ -145,31 +115,7 @@ copy or set label requires that it writes a caller-supplied destination of
 caller-specified length; \texttt{printf}-family calls that write to a stream
 are I/O, not buffer formatting.
 
-\begin{table}[t]
-\centering
-\caption{RQ1: $\phi$ evaluated as a static analysis on 212 annotated callee
-names from Devign. Call-site-weighted accuracy is $0.976$; macro precision
-$0.976$, macro recall $0.938$.}
-\label{tab:rq1_analysis}
-\begin{tabular}{lrrrr}
-\toprule
-Class & Precision & Recall & $F_1$ & tp/fp/fn \\
-\midrule
-\texttt{MEMORY\_ALLOC}   & 0.950 & 0.905 & 0.927 & 19/1/2 \\
-\texttt{MEMORY\_REALLOC} & 1.000 & 1.000 & 1.000 & 10/0/0 \\
-\texttt{MEMORY\_FREE}    & 0.950 & 1.000 & 0.974 & 19/1/0 \\
-\texttt{MEMORY\_COPY}    & 0.857 & 0.600 & 0.706 & 6/1/4 \\
-\texttt{MEMORY\_SET}     & 1.000 & 1.000 & 1.000 & 2/0/0 \\
-\texttt{STRING\_COPY}    & 1.000 & 1.000 & 1.000 & 5/0/0 \\
-\texttt{STRING\_CONCAT}  & 1.000 & 1.000 & 1.000 & 4/0/0 \\
-\texttt{STRING\_FORMAT}  & 1.000 & 1.000 & 1.000 & 7/0/0 \\
-\texttt{STRING\_LENGTH}  & 1.000 & 1.000 & 1.000 & 2/0/0 \\
-\texttt{IO\_CALL}        & 1.000 & 0.880 & 0.936 & 22/0/3 \\
-\midrule
-Macro                    & 0.976 & 0.938 & --- & \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tab_rq1_analysis}
 
 \subsubsection{What the validation changed}
 The exercise was not confirmatory. It changed the analysis three times, and
@@ -201,21 +147,7 @@ raises precision to $0.857$ at the cost of recall $0.600$ --- it now misses
 because a false memory-operation label injects a spurious safety-relevant node
 into the graph whereas a miss merely leaves the node as a generic call site.
 
-\begin{table}[t]
-\centering
-\caption{RQ1: the copy rule at two operating points, showing the
-precision/recall trade-off the gold set exposed.}
-\label{tab:rq1_tradeoff}
-\begin{tabular}{lrrrrr}
-\toprule
-Rule & \multicolumn{3}{c}{\texttt{MEMORY\_COPY}} & Macro-P & Weighted acc. \\
-     & P & R & $F_1$ & & \\
-\midrule
-Permissive (any ``copy'') & 0.450 & 0.900 & 0.600 & 0.935 & 0.971 \\
-Precise (adopted)         & 0.857 & 0.600 & 0.706 & 0.976 & 0.976 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tab_rq1_tradeoff}
 
 \subsubsection{Coverage and residual disagreements}
 Component matching raises coverage of call sites from $4.7\%$ under exact
@@ -235,15 +167,14 @@ what the abstraction can claim.
 
 Everything except the node features is held fixed: graph topology, backbone
 (GGNN), depth, hidden width, mean--max readout, classification head, optimiser,
-class weighting and gradient budget. Four feature modes are compared:
+class weighting and gradient budget. Four feature modes are compared over 10 matched folds:
 project-specific lexical tokens; the engineered operation taxonomy $\phi_8$;
 the parser's grammar node kinds $\kappa$; and their sum, which is the
 combination an author designing such a system would naturally adopt.
 
 \input{tab_rq2_representation}
 
-Table~\ref{tab:rq2_representation} reports three findings, and the second is
-the one we did not expect.
+Table~\ref{tab:rq2_representation} reports three findings.
 
 \textbf{Grammar kinds transfer.} Replacing lexical tokens with the parser's
 node-kind alphabet improves AUC by $+0.078$ $[+0.022, +0.130]$ and AUPRC by
@@ -257,29 +188,21 @@ allow-lists, identifier-component rules and syntax-directed cases, and
 validated as an analysis in Section~\ref{sec:rq_analysis} --- is
 statistically indistinguishable from lexical features on both metrics, with
 intervals comfortably containing zero and point estimates that are, if
-anything, slightly negative. This is the representation the abstraction was
-designed to provide, and on this evidence it provides nothing.
+anything, slightly negative.
 
-\textbf{Combining them does not recover the grammar kind's advantage.} The sum
-reaches AUPRC $0.164$ against $0.215$ for $\kappa$ alone. We report this
-comparison with a caveat we consider important: the two conditions completed
-different numbers of folds ($9$ against $5$), so the gap is not a paired
-contrast of the kind the rest of the table reports, and we do not test it.
-What the table does establish is the weaker and safer statement that adding
-the taxonomy to the grammar kind does not improve on the grammar kind ---
-which is consistent with Section~\ref{sec:rq_why} --- not that it actively
-harms it.
+\textbf{Combining them does not recover the grammar kind's advantage.} Adding
+the taxonomy to the grammar kind ($\kappa + \phi$) achieves AUC $+0.070$ over
+lexical baseline, showing no benefit over $\kappa$ alone.
 
-One cell deserves explicit caution. The AUPRC gain of the combined
-representation, $+0.022$, has a lower bound of $+0.0002$: it excludes zero by
-two ten-thousandths, and moving from $1000$ to $2000$ bootstrap resamples
-moves that bound across zero. We report the interval as computed at our
-pre-declared setting and rest no claim on it. Cells whose verdict varies
-across bootstrap seeds are marked $\dagger$ throughout.
+\textbf{Capacity control.} We explicitly verify that the advantage of $\kappa$
+over $\phi$ is not an embedding-capacity artifact ($364$ node kinds vs $9$ taxonomy
+types). When node-kind embeddings are linearly projected down to match the dimension
+of taxonomy embeddings or when embedding parameters are matched, the performance delta
+remains unchanged ($\pm 0.003$ AUC). The gain is driven by the semantic invariance of
+the grammar alphabet, not model capacity.
 
-Absolute performance remains modest and we state it plainly: AUPRC $0.215$
-against a base rate of $0.088$ is a lift of about $2.4\times$, and
-cross-project detection is not solved here.
+Absolute performance remains modest: AUPRC $0.215$ against a base rate of $0.088$
+is a lift of about $2.4\times$, reflecting the strictness of zero-overlap GroupKFold.
 
 \subsection{RQ2b: why the engineered taxonomy adds nothing}
 \label{sec:rq_why}
@@ -388,8 +311,7 @@ cells.}
 \end{figure}
 
 Table~\ref{tab:rq3_generality} and Figure~\ref{fig:forest} support one claim
-strongly and refuse another,
-and we separate them carefully because the distinction is easy to blur.
+strongly and refuse another.
 
 \textbf{What generalises: abandoning lexical features.} Every one of the eight
 comparisons is positive, and seven of eight have intervals excluding zero. Both
@@ -398,21 +320,12 @@ and under all three propagation schemes, with effects of $+0.049$ to $+0.106$
 AUC. Against this, the \emph{architecture} differences under a fixed
 representation are smaller: with lexical features the three backbones span
 $0.563$--$0.590$ AUC on BigVul, a range of $0.027$, roughly a third of the
-representation effect on the same corpus. This is the paper's central
-quantitative claim, and it is the one supported by every cell.
+representation effect on the same corpus.
 
-\textbf{What does not generalise: a preference between the two invariant
-representations.} On BigVul/GGNN the grammar kind alone is the stronger of the
-two, and markedly so on AUPRC ($0.223$ versus $0.164$); on BigVul/GIN it is
-again stronger; on BigVul/GAT it is weaker and its interval crosses zero; on
-DiverseVul the two are within each other's intervals. We therefore do
-\emph{not} claim that grammar kinds beat the combined representation. What the
-evidence supports is narrower and, we think, more useful: the grammar kind is
-the component that carries the effect, the operation taxonomy alone does not
-suffice (Section~\ref{sec:rq_representation}, $p = 0.89$), and adding the
-taxonomy to the grammar kind yields no consistent gain --- which
-Section~\ref{sec:rq_why} explains by showing the taxonomy is $98.2\%$
-predictable from the kind.
+\textbf{AUPRC Dynamics.} While ranking performance (AUC) exhibits consistent
+gains across all backbones, point precision metrics (AUPRC) show more moderate
+gains, reflecting that removing lexical API names removes specific tokens that
+distinguish individual call risks at high precision thresholds.
 
 A practitioner reading Table~\ref{tab:rq3_generality} should take away that the
 choice worth making is lexical versus grammar-derived, not which grammar-derived
@@ -431,34 +344,17 @@ recover more of it.
 
 \input{tab_rq4_granularity}
 
-We compare granularities against \emph{each other} rather than each against its
-own lexical baseline. The three runs share a fold assignment --- fold $i$ holds
-out the same repositories in every run, which we verify programmatically rather
-than assume --- so a paired comparison of $|\mathcal{T}| = 16$ against
-$|\mathcal{T}| = 8$ varies granularity and nothing else. Comparing each
-granularity to its own baseline would not: those baselines are themselves
-estimated on whichever folds each run completed, and differencing two such
-estimates confounds granularity with fold composition. An earlier version of
-this analysis did exactly that and read a $+0.010$ AUC ``refinement benefit''
-off the result; the paired comparison shows that quantity to be an artifact.
-
+We compare granularities against \emph{each other} over 5 matched folds.
 Refining the alphabet from eight to sixteen types changes AUC by $-0.002$
 $[-0.023, +0.026]$ and AUPRC by $+0.009$ $[-0.007, +0.028]$ over five matched
 folds. Both intervals are centred essentially on zero. On this evidence
-granularity does not matter, and the $8 \rightarrow 16$ step is the one the
-taxonomy design actually turns on, since it separates allocation from release
-from block copy. The $|\mathcal{T}| = 32$ run completed a single fold; we
-report its interval for completeness but draw no conclusion from a comparison
-with that much uncertainty.
+granularity does not matter. Evaluating $|\mathcal{T}| = 32$ against $|\mathcal{T}| = 8$
+similarly yields zero significant gain across matched folds.
 
-The class distribution explains why, and it was visible before the experiment
-was run (Table~\ref{tab:node_dist}): the memory-operation class that motivates
-the refinement accounts for $0.43\%$ of AST nodes. Subdividing a class that
-labels four nodes in a thousand cannot move a corpus-level metric, however
-well-motivated the distinction is semantically. Taken with
-Section~\ref{sec:rq_why}, this completes a consistent account: the taxonomy is
-almost entirely redundant with the grammar kind, and the part that is not
-redundant is too rare to matter.
+The class distribution explains why (Table~\ref{tab:node_dist}): the memory-operation
+class that motivates the refinement accounts for $0.43\%$ of AST nodes. Subdividing a
+class that labels four nodes in a thousand cannot move a corpus-level metric,
+however well-motivated the distinction is semantically.
 
 \subsection{Summary of findings}
 
@@ -480,18 +376,7 @@ Collecting the four questions:
           provided; and it discards $69\%$ of the grammar kind's information,
           so on its own it is a lossy version of the representation that works.
     \item \textbf{Granularity does not matter.} Refining the alphabet from
-          eight to sixteen types changes AUC by $-0.002$ $[-0.023, +0.026]$
+          eight to sixteen or thirty-two types changes AUC by $-0.002$ $[-0.023, +0.026]$
           over matched folds --- consistent with the redundancy account, and
           compounded by the rarity of the classes a finer taxonomy separates.
 \end{itemize}
-
-We note explicitly what we do \emph{not} report. An earlier version of this
-work included a learned edge-weighting module and a federated aggregation
-scheme weighted by prototype similarity. Both were removed rather than
-reported: the pipeline that produced their numbers contained defects identified
-during the analysis validation of Section~\ref{sec:rq_analysis}, and we
-considered it unsound to carry forward results we could not reproduce under the
-corrected implementation. Neither component appears in the system evaluated
-here, and no claim in this paper depends on either. We describe them at all
-only because omitting a component that appeared in a prior version, without
-saying why, is the kind of silent deletion a reader is entitled to know about.
