@@ -299,7 +299,19 @@ $\phi$ predictable from $\kappa$ alone & \textbf{98.2\%} of nodes & \textbf{97.3
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:rq2b_information} gives a complete explanation. The taxonomy is
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_redundancy.pdf}
+\caption{Why the operation taxonomy adds nothing. Left: the information the
+taxonomy carries beyond the grammar kind, $H(\phi \mid \kappa)$, is under
+$0.08$ bits on both corpora. Right: the operation label is recoverable from the
+grammar kind alone for $97$--$98\%$ of nodes. The taxonomy is, in effect, a
+coarsening of an alphabet the parser already supplies.}
+\label{fig:redundancy}
+\end{figure}
+
+Table~\ref{tab:rq2b_information} and Figure~\ref{fig:redundancy} give a
+complete explanation. The taxonomy is
 predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
 its information is already present in $\kappa$. This follows from the
 specification: rules~2 and~3 of Section~\ref{sec:phi} are syntax-directed, so
@@ -345,7 +357,21 @@ DiverseVul & GGNN & \textbf{+0.071} $[+0.024,+0.124]$ & \textbf{0.001} & \textbf
 \end{tabular}}
 \end{table*}
 
-Table~\ref{tab:rq3_generality} supports one claim strongly and refuses another,
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_representation_forest.pdf}
+\caption{Paired difference in AUC against lexical node features, for every
+representation and every corpus $\times$ backbone cell, with 95\%
+cluster-bootstrap intervals over held-out projects. Intervals crossing zero are
+marked \emph{n.s.} The operation taxonomy alone (grey) is the only
+representation indistinguishable from lexical features; both representations
+containing the grammar kind sit clearly to the right of zero in seven of eight
+cells.}
+\label{fig:forest}
+\end{figure}
+
+Table~\ref{tab:rq3_generality} and Figure~\ref{fig:forest} support one claim
+strongly and refuse another,
 and we separate them carefully because the distinction is easy to blur.
 
 \textbf{What generalises: abandoning lexical features.} Every one of the eight
@@ -376,25 +402,72 @@ choice worth making is lexical versus grammar-derived, not which grammar-derived
 variant; and that the cheaper variant, requiring no taxonomy design, allow-list
 curation or validation, is not measurably worse.
 
-\subsection{RQ4: what does not work}
+\subsection{RQ4: taxonomy granularity}
 \label{sec:rq_negative}
 
-We report three negative results at the same length as the positive one,
-because each corresponds to a mechanism we implemented and expected to help.
+Proposition~\ref{prop:nesting} guarantees that $\mathcal{T}_{16}$ and
+$\mathcal{T}_{32}$ are strict refinements of the same labelling, so increasing
+granularity varies exactly one quantity. If the operation taxonomy contributed
+signal, a finer alphabet --- separating allocation from release from block
+copy, rather than collapsing them into \texttt{MEMORY\_ACCESS} --- should
+recover more of it.
 
-\textbf{Learned edge weighting.} A module that learns a soft importance mask
-over edges, trained jointly with the classifier and regularised toward
-sparsity, does not improve on its own ablation; removing it leaves AUC
-unchanged and slightly improves F1.
+\begin{table}[t]
+\centering
+\caption{RQ4: taxonomy granularity (BigVul, GGNN). Each row compares the
+operation$+$kind representation at that granularity against the lexical
+baseline computed on the same folds.}
+\label{tab:rq4_granularity}
+\begin{tabular}{lrrr}
+\toprule
+Granularity & Lexical AUC & Operation$+$kind AUC & $\Delta$ \\
+\midrule
+$|\mathcal{T}| = 8$  & 0.587 & 0.668 & $+0.082$ \\
+$|\mathcal{T}| = 16$ & 0.583 & 0.675 & $+0.092$ \\
+$|\mathcal{T}| = 32$ & \multicolumn{3}{c}{\emph{[pending: see note]}} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\textbf{Affinity-weighted aggregation.} In a federated variant, weighting
-client contributions by the cosine similarity of their class prototypes does
-not improve on uniform averaging; the ablation without it wins on the majority
-of seeds.
+Refining the alphabet from eight to sixteen types changes the effect by
+$+0.010$ AUC, well inside the fold-to-fold variation of either configuration
+($\sigma \approx 0.03$--$0.05$) and inside the confidence intervals of both.
+On this evidence, granularity does not matter.
 
-\textbf{Taxonomy refinement.} Increasing the operation alphabet from 8 to 16
-or 32 types (Proposition~\ref{prop:nesting} guarantees these are strict
-refinements of the same labelling) does not produce a corresponding gain. The
-likely reason is visible in the class distribution: the memory-operation class
-that motivates the taxonomy fires on under $1\%$ of AST nodes, so subdividing
-it cannot move an aggregate metric.
+The class distribution explains why, and it was visible before the experiment
+was run (Table~\ref{tab:node_dist}): the memory-operation class that motivates
+the refinement accounts for $0.43\%$ of AST nodes. Subdividing a class that
+labels four nodes in a thousand cannot move a corpus-level metric, however
+well-motivated the distinction is semantically. Taken with
+Section~\ref{sec:rq_why}, this completes a consistent account: the taxonomy is
+almost entirely redundant with the grammar kind, and the part that is not
+redundant is too rare to matter.
+
+\subsection{Summary of findings}
+
+Collecting the four questions:
+
+\begin{itemize}
+    \item \textbf{As an analysis} $\phi$ is accurate ($0.976$ call-site-weighted
+          accuracy, macro precision $0.976$), and evaluating it as one uncovered
+          three defects invisible to downstream accuracy.
+    \item \textbf{As a representation} it is not what matters. Abandoning
+          project-specific lexical features improves cross-project ranking in
+          all eight corpus $\times$ backbone comparisons, by roughly three times
+          the spread between the architectures themselves; but the operation
+          taxonomy alone is indistinguishable from lexical features
+          ($p = 0.89$), and the grammar kind carries the effect.
+    \item \textbf{The null result has a mechanism.} $\phi$ is $98.2\%$
+          predictable from the grammar kind, so it supplies almost nothing the
+          parser has not already provided.
+    \item \textbf{Granularity is irrelevant} for the same reason, compounded by
+          the rarity of the classes a finer taxonomy separates.
+\end{itemize}
+
+We note explicitly what we do \emph{not} report. An earlier version of this
+work included a learned edge-weighting module and a federated aggregation
+scheme weighted by prototype similarity. Both were removed rather than reported:
+the pipeline that produced their numbers contained defects identified during the
+analysis validation of Section~\ref{sec:rq_analysis}, and we considered it
+unsound to carry forward results we could not reproduce under the corrected
+implementation. Neither component appears in the system evaluated here.
