@@ -424,15 +424,20 @@ Granularity & Lexical AUC & Operation$+$kind AUC & $\Delta$ \\
 \midrule
 $|\mathcal{T}| = 8$  & 0.587 & 0.668 & $+0.082$ \\
 $|\mathcal{T}| = 16$ & 0.583 & 0.675 & $+0.092$ \\
-$|\mathcal{T}| = 32$ & \multicolumn{3}{c}{\emph{[pending: see note]}} \\
+$|\mathcal{T}| = 32$ & \multicolumn{3}{c}{not run to completion --- see note} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Refining the alphabet from eight to sixteen types changes the effect by
 $+0.010$ AUC, well inside the fold-to-fold variation of either configuration
-($\sigma \approx 0.03$--$0.05$) and inside the confidence intervals of both.
-On this evidence, granularity does not matter.
+($\sigma \approx 0.03$--$0.05$) and inside the confidence intervals of both. On
+this evidence, granularity does not matter. We report the $|\mathcal{T}| = 32$
+configuration as not run to completion rather than quoting a partial result: a
+single fold yields no interval, and the comparison we would draw from it is not
+one we would defend. The claim we make is therefore restricted to the
+$8 \rightarrow 16$ refinement, which is the step the taxonomy design actually
+turns on (it separates allocation from release from block copy).
 
 The class distribution explains why, and it was visible before the experiment
 was run (Table~\ref{tab:node_dist}): the memory-operation class that motivates
