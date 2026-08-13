@@ -62,7 +62,13 @@ COMPONENT_RULES = [
     (("realloc", "reallocz"), "MEMORY_REALLOC"),
     (("malloc", "kmalloc", "vmalloc", "kzalloc", "zalloc", "calloc",
       "alloc", "memalign", "alloca"), "MEMORY_ALLOC"),
-    (("memcpy", "memmove", "memdup", "bcopy", "copy", "strdup"), "MEMORY_COPY"),
+    # "copy" alone is too permissive: it matches SIMD lane extraction
+    # (__msa_copy_u_w) and pixel-format macros (COPY16TO9_OR_10), which read a
+    # value rather than writing a caller-supplied buffer. Gold-set validation
+    # measured MEMORY_COPY precision at 0.45 with the bare needle. We therefore
+    # require an explicit copy primitive, or "copy" adjacent to a direction
+    # word, which retains copy_to_user / copy_from_user_timeval.
+    (("memcpy", "memmove", "memdup", "bcopy", "strdup"), "MEMORY_COPY"),
     (("memset", "bzero"), "MEMORY_SET"),
     (("strcpy", "strncpy", "strlcpy", "wcscpy"), "STRING_COPY"),
     (("strcat", "strncat", "strlcat", "wcscat"), "STRING_CONCAT"),
@@ -88,10 +94,18 @@ def classify_api(name: str):
     for cls, names in API_CLASSES.items():
         if name in names:
             return cls
-    comps = set(identifier_components(name))
-    if not comps:
+    comps = identifier_components(name)
+    cset = set(comps)
+    if not cset:
         return None
     for needles, cls in COMPONENT_RULES:
-        if comps.intersection(needles):
+        if cset.intersection(needles):
             return cls
+    # Directional copies: "copy" immediately followed or preceded by a
+    # direction word denotes a bounded transfer into a caller buffer.
+    for i, c in enumerate(comps):
+        if c == "copy":
+            nbrs = set(comps[max(0, i - 1):i] + comps[i + 1:i + 2])
+            if nbrs & {"to", "from", "in", "out", "user", "target", "guest"}:
+                return "MEMORY_COPY"
     return None

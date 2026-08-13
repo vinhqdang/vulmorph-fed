@@ -1,213 +1,213 @@
 name	occurrences	predicted	true	note
-monitor_printf	77	IO_CALL		
-close	60	IO_CALL		
-avio_printf	45	IO_CALL		
-cpu_fprintf	28	IO_CALL		
-write	23	IO_CALL		
-open	20	IO_CALL		
-read	17	IO_CALL		
-fclose	14	IO_CALL		
-fopen	13	IO_CALL		
-fwrite	9	IO_CALL		
-fgets	2	IO_CALL		
-pwrite	2	IO_CALL		
-send	5	IO_CALL		
-fread	5	IO_CALL		
-pread	2	IO_CALL		
-mon_printf	3	IO_CALL		
-xen_be_printf	3	IO_CALL		
-PCIE_DEV_PRINTF	1	IO_CALL		
-sendto	1	IO_CALL		
-error_printf	4	IO_CALL		
-av_malloc	120	MEMORY_ALLOC		
-g_malloc	59	MEMORY_ALLOC		
-qemu_malloc	17	MEMORY_ALLOC		
-qemu_ram_alloc	17	MEMORY_ALLOC		
-malloc	11	MEMORY_ALLOC		
-alloca	11	MEMORY_ALLOC		
-av_frame_alloc	10	MEMORY_ALLOC		
-avcodec_alloc_frame	9	MEMORY_ALLOC		
-av_fifo_alloc	8	MEMORY_ALLOC		
-av_fast_malloc	6	MEMORY_ALLOC		
-trace_xics_alloc_block	1	MEMORY_ALLOC		
-av_hwdevice_ctx_alloc	1	MEMORY_ALLOC		
-calloc	2	MEMORY_ALLOC		
-checkasm_malloc	1	MEMORY_ALLOC		
-png_malloc	1	MEMORY_ALLOC		
-ff_alloc_packet	2	MEMORY_ALLOC		
-alloc	1	MEMORY_ALLOC		
-bios_linker_loader_alloc	2	MEMORY_ALLOC		
-qemu_chr_alloc	1	MEMORY_ALLOC		
-gencb_alloc	1	MEMORY_ALLOC		
-memcpy	337	MEMORY_COPY		
-g_strdup	55	MEMORY_COPY		
-memmove	22	MEMORY_COPY		
-AV_COPY32	21	MEMORY_COPY		
-__msa_copy_u_w	20	MEMORY_COPY		
-g_strdup_printf	18	MEMORY_COPY		
-__msa_copy_u_h	16	MEMORY_COPY		
-av_strdup	14	MEMORY_COPY		
-copy_from_user_timeval	7	MEMORY_COPY		
-av_dict_copy	6	MEMORY_COPY		
-memcpy_to_target	4	MEMORY_COPY		
-__msa_copy_s_w	2	MEMORY_COPY		
-COPY16TO8	2	MEMORY_COPY		
-init_thread_copy	2	MEMORY_COPY		
-COPY16TO9_OR_10	4	MEMORY_COPY		
-COPY	2	MEMORY_COPY		
-avfilter_copy_frame_props	2	MEMORY_COPY		
-copy_chapters	2	MEMORY_COPY		
-copy	2	MEMORY_COPY		
-copy_bits	2	MEMORY_COPY		
-tcg_temp_free_i32	267	MEMORY_FREE		
-av_freep	240	MEMORY_FREE		
-g_free	222	MEMORY_FREE		
-av_free	170	MEMORY_FREE		
-tcg_temp_free_i64	169	MEMORY_FREE		
-tcg_temp_free	82	MEMORY_FREE		
-qemu_free	40	MEMORY_FREE		
-free	37	MEMORY_FREE		
-av_frame_free	30	MEMORY_FREE		
-av_free_packet	27	MEMORY_FREE		
-qapi_free_AltStrBool	2	MEMORY_FREE		
-scsi_req_free	1	MEMORY_FREE		
-guest_phys_blocks_free	1	MEMORY_FREE		
-ff_nut_free_sp	1	MEMORY_FREE		
-g_ptr_array_new_with_free_func	4	MEMORY_FREE		
-v9fs_string_free	10	MEMORY_FREE		
-tcg_temp_free_internal	3	MEMORY_FREE		
-qapi_free_MemoryDeviceInfoList	1	MEMORY_FREE		
-error_free	18	MEMORY_FREE		
-frame_thread_free	1	MEMORY_FREE		
-av_realloc	29	MEMORY_REALLOC		
-realloc	6	MEMORY_REALLOC		
-g_realloc	5	MEMORY_REALLOC		
-av_fast_realloc	4	MEMORY_REALLOC		
-av_buffer_realloc	2	MEMORY_REALLOC		
-av_realloc_array	2	MEMORY_REALLOC		
-swri_realloc_audio	2	MEMORY_REALLOC		
-realloc_texture	1	MEMORY_REALLOC		
-av_audio_fifo_realloc	1	MEMORY_REALLOC		
-qemu_realloc	1	MEMORY_REALLOC		
-memset	244	MEMORY_SET		
-qemu_iovec_memset	2	MEMORY_SET		
-tcg_out_sxt	3	NONE		
-append_option_parameters	4	NONE		
-path_combine	3	NONE		
-vnc_client_error	14	NONE		
-pci_vga_init	5	NONE		
-pxa2xx_i2s_init	1	NONE		
-drive_get_by_blockdev	4	NONE		
-cpu_exit	4	NONE		
-bytestream2_get_be16	7	NONE		
-monitor_resume	1	NONE		
-cpu_breakpoint_remove	1	NONE		
-avcodec_find_encoder	10	NONE		
-qemu_set_fd_handler	11	NONE		
-gen_logic_imm	3	NONE		
-envlist_unsetenv	1	NONE		
-gen_op_mfc0_mvpconf1	1	NONE		
-tcg_gen_qemu_ld_i32	9	NONE		
-gen_helper_aaa	3	NONE		
-reset_on_second_timeout	1	NONE		
-SPAPR_CPU_CORE	3	NONE		
-__msa_asub_u_b	8	NONE		
-denoise_spatial	1	NONE		
-tpm_tis_prep_abort	3	NONE		
-glDrawPixels	1	NONE		
-vreader_get_id	5	NONE		
-GROW_ARRAY	1	NONE		
-virtio_scsi_handle_cmd_req_submit	1	NONE		
-qemu_in_coroutine	3	NONE		
-mov_write_source_reference_tag	1	NONE		
-qdev_init	10	NONE		
-av_mul_q	2	NONE		
-AVC_LOOP_FILTER_P0Q0	3	NONE		
-virtio_scsi_bad_req	1	NONE		
-fill_colmap	4	NONE		
-qxl_create_memslots	3	NONE		
-ROUNDED_DIV	5	NONE		
-SPAPR_DR_CONNECTOR_GET_CLASS	5	NONE		
-object_child_foreach	5	NONE		
-av_log2	25	NONE		
-SE_16BIT	4	NONE		
-do_semctl	1	NONE		
-qemu_coroutine_create	13	NONE		
-gen_mov_vreg_F0	11	NONE		
-qemu_opt_get_del	7	NONE		
-qdict_next	6	NONE		
-spr_register	22	NONE		
-roundToInt16	12	NONE		
-ff_put_pixels_clamped	1	NONE		
-gen_helper_float_cvts_pu	2	NONE		
-mxf_write_generic_desc	1	NONE		
-compute_all	3	NONE		
-qdev_get_gpio_in_named	1	NONE		
-get_user_u64	4	NONE		
-av_clip_pixel	4	NONE		
-ff_h264_init_poc	1	NONE		
-put_v	2	NONE		
-cpu_exec_end	1	NONE		
-OMAP_RO_REG	3	NONE		
-GIC_GET_PRIORITY	1	NONE		
-qtest_startf	1	NONE		
-trace_spapr_cas_failed	2	NONE		
-QTAILQ_FOREACH_SAFE	11	NONE		
-gen_op_set_inhibit_irq	3	NONE		
-ROUND256_0_TO_15	8	NONE		
-h264_luma_dc_dequant_idct	1	NONE		
-envelope16	1	NONE		
-gen_helper_neon_shl_s64	3	NONE		
-CHROMA422	5	NONE		
-PCI_SLOT	4	NONE		
-AV_RB32	46	NONE		
-array_get_next	3	NONE		
-av_get_sample_fmt_name	8	NONE		
-visit_next_list	4	NONE		
-tswapid	2	NONE		
-gen_aa32_ld8u	6	NONE		
-analyze	3	NONE		
-asprintf	2	NONE		
-tcg_gen_ext8s_tl	15	NONE		
-DB_PRINT_L	10	NONE		
-pack16to32	7	NONE		
-qemu_fflush	4	NONE		
-DEVICE_CLASS	19	NONE		
-cpu_tick_get_count	1	NONE		
-STORE_4VECS_UB	1	NONE		
-gen_inval_exception	12	NONE		
-tcg_gen_brcondi_tl	30	NONE		
-gen_store_fpr32h	8	NONE		
-GET_FIELD	5	NONE		
-qed_read_backing_file	1	NONE		
-get_system_io	8	NONE		
-gen_helper_float_cvtpw_ps	2	NONE		
-qemu_iovec_add	10	NONE		
-build_piix4_isa_bridge	2	NONE		
-qemu_mutex_lock_iothread	8	NONE		
-store_reg_bx	24	NONE		
-bdrv_pread	36	NONE		
-qint_get_int	5	NONE		
-OMAP_BAD_REG	5	NONE		
-stq_p	8	NONE		
-ff_vp9dsp_init_x86	1	NONE		
-av_strlcat	10	STRING_CONCAT		
-strcat	6	STRING_CONCAT		
-strncat	4	STRING_CONCAT		
-g_strlcat	1	STRING_CONCAT		
-strcpy	13	STRING_COPY		
-av_strlcpy	12	STRING_COPY		
-strncpy	10	STRING_COPY		
-strdup	10	STRING_COPY		
-g_strlcpy	6	STRING_COPY		
-fprintf	462	STRING_FORMAT		
-printf	193	STRING_FORMAT		
-snprintf	163	STRING_FORMAT		
-sscanf	44	STRING_FORMAT		
-sprintf	11	STRING_FORMAT		
-scanf	5	STRING_FORMAT		
-vsnprintf	3	STRING_FORMAT		
-fscanf	3	STRING_FORMAT		
-v9fs_string_sprintf	1	STRING_FORMAT		
-strlen	137	STRING_LENGTH		
-target_strlen	2	STRING_LENGTH		
+monitor_printf	77	IO_CALL	IO_CALL	writes to the monitor
+close	60	IO_CALL	IO_CALL	
+avio_printf	45	IO_CALL	IO_CALL	writes to an AVIO stream
+cpu_fprintf	28	IO_CALL	IO_CALL	writes to a stream
+write	23	IO_CALL	IO_CALL	
+open	20	IO_CALL	IO_CALL	
+read	17	IO_CALL	IO_CALL	
+fclose	14	IO_CALL	IO_CALL	
+fopen	13	IO_CALL	IO_CALL	
+fwrite	9	IO_CALL	IO_CALL	
+fgets	2	IO_CALL	IO_CALL	
+pwrite	2	IO_CALL	IO_CALL	
+send	5	IO_CALL	IO_CALL	
+fread	5	IO_CALL	IO_CALL	
+pread	2	IO_CALL	IO_CALL	
+mon_printf	3	IO_CALL	IO_CALL	writes to the monitor
+xen_be_printf	3	IO_CALL	IO_CALL	logging
+PCIE_DEV_PRINTF	1	IO_CALL	IO_CALL	logging macro
+sendto	1	IO_CALL	IO_CALL	
+error_printf	4	IO_CALL	IO_CALL	writes to the error stream
+av_malloc	120	MEMORY_ALLOC	MEMORY_ALLOC	
+g_malloc	59	MEMORY_ALLOC	MEMORY_ALLOC	
+qemu_malloc	17	MEMORY_ALLOC	MEMORY_ALLOC	
+qemu_ram_alloc	17	MEMORY_ALLOC	MEMORY_ALLOC	
+malloc	11	MEMORY_ALLOC	MEMORY_ALLOC	
+alloca	11	MEMORY_ALLOC	MEMORY_ALLOC	
+av_frame_alloc	10	MEMORY_ALLOC	MEMORY_ALLOC	
+avcodec_alloc_frame	9	MEMORY_ALLOC	MEMORY_ALLOC	allocates a frame
+av_fifo_alloc	8	MEMORY_ALLOC	MEMORY_ALLOC	
+av_fast_malloc	6	MEMORY_ALLOC	MEMORY_ALLOC	
+trace_xics_alloc_block	1	MEMORY_ALLOC	NONE	tracepoint, not an allocation
+av_hwdevice_ctx_alloc	1	MEMORY_ALLOC	MEMORY_ALLOC	allocates a device context
+calloc	2	MEMORY_ALLOC	MEMORY_ALLOC	
+checkasm_malloc	1	MEMORY_ALLOC	MEMORY_ALLOC	
+png_malloc	1	MEMORY_ALLOC	MEMORY_ALLOC	
+ff_alloc_packet	2	MEMORY_ALLOC	MEMORY_ALLOC	allocates packet payload
+alloc	1	MEMORY_ALLOC	MEMORY_ALLOC	generic allocator wrapper
+bios_linker_loader_alloc	2	MEMORY_ALLOC	MEMORY_ALLOC	allocates a loader entry
+qemu_chr_alloc	1	MEMORY_ALLOC	MEMORY_ALLOC	allocates a chardev
+gencb_alloc	1	MEMORY_ALLOC	MEMORY_ALLOC	allocates a callback object
+memcpy	337	MEMORY_COPY	MEMORY_COPY	
+g_strdup	55	MEMORY_COPY	MEMORY_COPY	
+memmove	22	MEMORY_COPY	MEMORY_COPY	
+AV_COPY32	21	MEMORY_COPY	MEMORY_COPY	copies 32 bits between buffers
+__msa_copy_u_w	20	MEMORY_COPY	NONE	SIMD lane extraction
+g_strdup_printf	18	MEMORY_COPY	MEMORY_ALLOC	allocates and formats; alloc taken
+__msa_copy_u_h	16	MEMORY_COPY	NONE	SIMD lane extraction
+av_strdup	14	MEMORY_COPY	MEMORY_COPY	
+copy_from_user_timeval	7	MEMORY_COPY	MEMORY_COPY	bounded copy across boundary
+av_dict_copy	6	MEMORY_COPY	MEMORY_COPY	deep-copies a dictionary
+memcpy_to_target	4	MEMORY_COPY	MEMORY_COPY	bounded copy to target memory
+__msa_copy_s_w	2	MEMORY_COPY	NONE	SIMD lane extraction
+COPY16TO8	2	MEMORY_COPY	NONE	pixel format conversion macro
+init_thread_copy	2	MEMORY_COPY	NONE	initialises thread state; not a buffer copy
+COPY16TO9_OR_10	4	MEMORY_COPY	NONE	pixel format conversion macro
+COPY	2	MEMORY_COPY	NONE	context-dependent macro
+avfilter_copy_frame_props	2	MEMORY_COPY	MEMORY_COPY	copies frame metadata
+copy_chapters	2	MEMORY_COPY	NONE	copies chapter records, not raw memory
+copy	2	MEMORY_COPY	NONE	ambiguous local helper
+copy_bits	2	MEMORY_COPY	NONE	bit-level helper, no caller buffer
+tcg_temp_free_i32	267	MEMORY_FREE	MEMORY_FREE	releases an IR temporary
+av_freep	240	MEMORY_FREE	MEMORY_FREE	
+g_free	222	MEMORY_FREE	MEMORY_FREE	
+av_free	170	MEMORY_FREE	MEMORY_FREE	
+tcg_temp_free_i64	169	MEMORY_FREE	MEMORY_FREE	releases an IR temporary
+tcg_temp_free	82	MEMORY_FREE	MEMORY_FREE	releases an IR temporary, not heap
+qemu_free	40	MEMORY_FREE	MEMORY_FREE	
+free	37	MEMORY_FREE	MEMORY_FREE	
+av_frame_free	30	MEMORY_FREE	MEMORY_FREE	frees a frame and its buffers
+av_free_packet	27	MEMORY_FREE	MEMORY_FREE	frees packet-owned buffers
+qapi_free_AltStrBool	2	MEMORY_FREE	MEMORY_FREE	generated deallocator
+scsi_req_free	1	MEMORY_FREE	MEMORY_FREE	frees a request object
+guest_phys_blocks_free	1	MEMORY_FREE	MEMORY_FREE	frees a list's memory
+ff_nut_free_sp	1	MEMORY_FREE	MEMORY_FREE	frees syncpoint storage
+g_ptr_array_new_with_free_func	4	MEMORY_FREE	MEMORY_ALLOC	allocates an array; the free_func is a callback
+v9fs_string_free	10	MEMORY_FREE	MEMORY_FREE	frees a caller-owned string struct
+tcg_temp_free_internal	3	MEMORY_FREE	MEMORY_FREE	releases an IR temporary
+qapi_free_MemoryDeviceInfoList	1	MEMORY_FREE	MEMORY_FREE	generated deallocator
+error_free	18	MEMORY_FREE	MEMORY_FREE	frees a caller-owned Error object
+frame_thread_free	1	MEMORY_FREE	MEMORY_FREE	frees per-thread frame state
+av_realloc	29	MEMORY_REALLOC	MEMORY_REALLOC	
+realloc	6	MEMORY_REALLOC	MEMORY_REALLOC	
+g_realloc	5	MEMORY_REALLOC	MEMORY_REALLOC	
+av_fast_realloc	4	MEMORY_REALLOC	MEMORY_REALLOC	
+av_buffer_realloc	2	MEMORY_REALLOC	MEMORY_REALLOC	resizes a buffer
+av_realloc_array	2	MEMORY_REALLOC	MEMORY_REALLOC	resizes an array allocation
+swri_realloc_audio	2	MEMORY_REALLOC	MEMORY_REALLOC	resizes an audio buffer
+realloc_texture	1	MEMORY_REALLOC	MEMORY_REALLOC	resizes a texture allocation
+av_audio_fifo_realloc	1	MEMORY_REALLOC	MEMORY_REALLOC	resizes a FIFO
+qemu_realloc	1	MEMORY_REALLOC	MEMORY_REALLOC	
+memset	244	MEMORY_SET	MEMORY_SET	
+qemu_iovec_memset	2	MEMORY_SET	MEMORY_SET	
+tcg_out_sxt	3	NONE	NONE	
+append_option_parameters	4	NONE	NONE	
+path_combine	3	NONE	NONE	
+vnc_client_error	14	NONE	NONE	
+pci_vga_init	5	NONE	NONE	
+pxa2xx_i2s_init	1	NONE	NONE	
+drive_get_by_blockdev	4	NONE	NONE	
+cpu_exit	4	NONE	NONE	
+bytestream2_get_be16	7	NONE	NONE	
+monitor_resume	1	NONE	NONE	
+cpu_breakpoint_remove	1	NONE	NONE	
+avcodec_find_encoder	10	NONE	NONE	
+qemu_set_fd_handler	11	NONE	NONE	
+gen_logic_imm	3	NONE	NONE	
+envlist_unsetenv	1	NONE	NONE	
+gen_op_mfc0_mvpconf1	1	NONE	NONE	
+tcg_gen_qemu_ld_i32	9	NONE	NONE	
+gen_helper_aaa	3	NONE	NONE	
+reset_on_second_timeout	1	NONE	NONE	
+SPAPR_CPU_CORE	3	NONE	NONE	
+__msa_asub_u_b	8	NONE	NONE	
+denoise_spatial	1	NONE	NONE	
+tpm_tis_prep_abort	3	NONE	NONE	
+glDrawPixels	1	NONE	NONE	
+vreader_get_id	5	NONE	NONE	
+GROW_ARRAY	1	NONE	NONE	
+virtio_scsi_handle_cmd_req_submit	1	NONE	NONE	
+qemu_in_coroutine	3	NONE	NONE	
+mov_write_source_reference_tag	1	NONE	NONE	
+qdev_init	10	NONE	NONE	
+av_mul_q	2	NONE	NONE	
+AVC_LOOP_FILTER_P0Q0	3	NONE	NONE	
+virtio_scsi_bad_req	1	NONE	NONE	
+fill_colmap	4	NONE	NONE	
+qxl_create_memslots	3	NONE	NONE	
+ROUNDED_DIV	5	NONE	NONE	
+SPAPR_DR_CONNECTOR_GET_CLASS	5	NONE	NONE	
+object_child_foreach	5	NONE	NONE	
+av_log2	25	NONE	NONE	
+SE_16BIT	4	NONE	NONE	
+do_semctl	1	NONE	NONE	
+qemu_coroutine_create	13	NONE	NONE	
+gen_mov_vreg_F0	11	NONE	NONE	
+qemu_opt_get_del	7	NONE	NONE	
+qdict_next	6	NONE	NONE	
+spr_register	22	NONE	NONE	
+roundToInt16	12	NONE	NONE	
+ff_put_pixels_clamped	1	NONE	NONE	
+gen_helper_float_cvts_pu	2	NONE	NONE	
+mxf_write_generic_desc	1	NONE	NONE	
+compute_all	3	NONE	NONE	
+qdev_get_gpio_in_named	1	NONE	NONE	
+get_user_u64	4	NONE	MEMORY_COPY	bounded copy across the user boundary
+av_clip_pixel	4	NONE	NONE	
+ff_h264_init_poc	1	NONE	NONE	
+put_v	2	NONE	NONE	
+cpu_exec_end	1	NONE	NONE	
+OMAP_RO_REG	3	NONE	NONE	
+GIC_GET_PRIORITY	1	NONE	NONE	
+qtest_startf	1	NONE	NONE	
+trace_spapr_cas_failed	2	NONE	NONE	
+QTAILQ_FOREACH_SAFE	11	NONE	NONE	
+gen_op_set_inhibit_irq	3	NONE	NONE	
+ROUND256_0_TO_15	8	NONE	NONE	
+h264_luma_dc_dequant_idct	1	NONE	NONE	
+envelope16	1	NONE	NONE	
+gen_helper_neon_shl_s64	3	NONE	NONE	
+CHROMA422	5	NONE	NONE	
+PCI_SLOT	4	NONE	NONE	
+AV_RB32	46	NONE	NONE	
+array_get_next	3	NONE	NONE	
+av_get_sample_fmt_name	8	NONE	NONE	
+visit_next_list	4	NONE	NONE	
+tswapid	2	NONE	NONE	
+gen_aa32_ld8u	6	NONE	NONE	
+analyze	3	NONE	NONE	
+asprintf	2	NONE	NONE	
+tcg_gen_ext8s_tl	15	NONE	NONE	
+DB_PRINT_L	10	NONE	IO_CALL	logging macro
+pack16to32	7	NONE	NONE	
+qemu_fflush	4	NONE	IO_CALL	flushes a stream
+DEVICE_CLASS	19	NONE	NONE	
+cpu_tick_get_count	1	NONE	NONE	
+STORE_4VECS_UB	1	NONE	NONE	
+gen_inval_exception	12	NONE	NONE	
+tcg_gen_brcondi_tl	30	NONE	NONE	
+gen_store_fpr32h	8	NONE	NONE	
+GET_FIELD	5	NONE	NONE	
+qed_read_backing_file	1	NONE	NONE	
+get_system_io	8	NONE	NONE	
+gen_helper_float_cvtpw_ps	2	NONE	NONE	
+qemu_iovec_add	10	NONE	NONE	
+build_piix4_isa_bridge	2	NONE	NONE	
+qemu_mutex_lock_iothread	8	NONE	NONE	
+store_reg_bx	24	NONE	NONE	
+bdrv_pread	36	NONE	IO_CALL	block-device positioned read
+qint_get_int	5	NONE	NONE	
+OMAP_BAD_REG	5	NONE	NONE	
+stq_p	8	NONE	NONE	
+ff_vp9dsp_init_x86	1	NONE	NONE	
+av_strlcat	10	STRING_CONCAT	STRING_CONCAT	
+strcat	6	STRING_CONCAT	STRING_CONCAT	
+strncat	4	STRING_CONCAT	STRING_CONCAT	
+g_strlcat	1	STRING_CONCAT	STRING_CONCAT	
+strcpy	13	STRING_COPY	STRING_COPY	
+av_strlcpy	12	STRING_COPY	STRING_COPY	
+strncpy	10	STRING_COPY	STRING_COPY	
+strdup	10	STRING_COPY	STRING_COPY	
+g_strlcpy	6	STRING_COPY	STRING_COPY	
+fprintf	462	STRING_FORMAT	IO_CALL	
+printf	193	STRING_FORMAT	IO_CALL	
+snprintf	163	STRING_FORMAT	STRING_FORMAT	
+sscanf	44	STRING_FORMAT	STRING_FORMAT	
+sprintf	11	STRING_FORMAT	STRING_FORMAT	
+scanf	5	STRING_FORMAT	STRING_FORMAT	
+vsnprintf	3	STRING_FORMAT	STRING_FORMAT	
+fscanf	3	STRING_FORMAT	STRING_FORMAT	
+v9fs_string_sprintf	1	STRING_FORMAT	STRING_FORMAT	writes into a caller string
+strlen	137	STRING_LENGTH	STRING_LENGTH	
+target_strlen	2	STRING_LENGTH	STRING_LENGTH	length of a target string

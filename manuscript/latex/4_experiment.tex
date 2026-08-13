@@ -66,30 +66,101 @@ draw no conclusion.
 \subsection{RQ1: $\phi$ as a static analysis}
 \label{sec:rq_analysis}
 
-We sample call sites stratified over predicted classes, plus a
-frequency-weighted sample of unmatched names so recall is estimable, and
-annotate the true class from documented API semantics.
+We extract every callee name in the Devign corpus, sample 212 names stratified
+over predicted classes (a precision arm) together with a frequency-weighted
+sample of unmatched names (a recall arm), and annotate the true class from
+documented API semantics. The annotation criteria are stated in the released
+script so that a reader can contest a specific label rather than an opaque
+score: an allocation label requires that the callee's documented purpose is to
+obtain, resize or release a heap allocation the \emph{caller} then owns; a
+copy or set label requires that it writes a caller-supplied destination of
+caller-specified length; \texttt{printf}-family calls that write to a stream
+are I/O, not buffer formatting.
 
-Two findings are worth stating before any accuracy number. First, substring
-matching --- the natural way to recognise wrapped allocators --- is wrong in a
-patterned way: it labels \texttt{\_\_put\_user} and \texttt{skb\_put} (writes)
-as release operations, \texttt{gen\_new\_label} as allocation,
-\texttt{float64\_is\_zero} (a predicate) as a block set, and
-\texttt{reallocate\_view} as reallocation, while missing
-\texttt{copy\_to\_user}. Whole-component matching removes these while
-retaining the genuine wrappers (\texttt{av\_malloc}, \texttt{g\_free},
-\texttt{qemu\_ram\_alloc}, \texttt{av\_freep}, \texttt{g\_strdup}). Second,
-placing \texttt{printf} and \texttt{fprintf} among buffer-writing formatters
-causes 655 stream-I/O call sites in the Devign sample to be counted as memory
-operations; only the \texttt{s*printf} and \texttt{scanf} families write into
-a caller-supplied buffer.
+\begin{table}[t]
+\centering
+\caption{RQ1: $\phi$ evaluated as a static analysis on 212 annotated callee
+names from Devign. Call-site-weighted accuracy is $0.976$; macro precision
+$0.976$, macro recall $0.938$.}
+\label{tab:rq1_analysis}
+\begin{tabular}{lrrrr}
+\toprule
+Class & Precision & Recall & $F_1$ & tp/fp/fn \\
+\midrule
+\texttt{MEMORY\_ALLOC}   & 0.950 & 0.905 & 0.927 & 19/1/2 \\
+\texttt{MEMORY\_REALLOC} & 1.000 & 1.000 & 1.000 & 10/0/0 \\
+\texttt{MEMORY\_FREE}    & 0.950 & 1.000 & 0.974 & 19/1/0 \\
+\texttt{MEMORY\_COPY}    & 0.857 & 0.600 & 0.706 & 6/1/4 \\
+\texttt{MEMORY\_SET}     & 1.000 & 1.000 & 1.000 & 2/0/0 \\
+\texttt{STRING\_COPY}    & 1.000 & 1.000 & 1.000 & 5/0/0 \\
+\texttt{STRING\_CONCAT}  & 1.000 & 1.000 & 1.000 & 4/0/0 \\
+\texttt{STRING\_FORMAT}  & 1.000 & 1.000 & 1.000 & 7/0/0 \\
+\texttt{STRING\_LENGTH}  & 1.000 & 1.000 & 1.000 & 2/0/0 \\
+\texttt{IO\_CALL}        & 1.000 & 0.880 & 0.936 & 22/0/3 \\
+\midrule
+Macro                    & 0.976 & 0.938 & --- & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-Component matching raises coverage of call sites from $4.7\%$ (exact
-allow-list) to $10.6\%$. We regard the residual disagreements as design
-information rather than noise, and name the hardest: \texttt{tcg\_temp\_free}
-frees an IR temporary in QEMU's own allocator discipline rather than heap
-memory, and \texttt{g\_strdup\_printf} both allocates and formats, which a
-single-label taxonomy cannot express.
+\subsubsection{What the validation changed}
+The exercise was not confirmatory. It changed the analysis three times, and
+each change is a result about how such abstractions should be built.
+
+\textbf{Substring matching is unsafe.} Recognising wrapped allocators by
+substring --- the obvious implementation --- labels \texttt{\_\_put\_user} and
+\texttt{skb\_put}, both \emph{writes}, as release operations via ``put'';
+\texttt{gen\_new\_label} as an allocation via ``new'';
+\texttt{float64\_is\_zero}, a predicate, as a block set via ``zero''; and
+\texttt{reallocate\_view} as a reallocation --- while missing
+\texttt{copy\_to\_user}, a genuine bounded copy. Matching whole identifier
+components removes all of these.
+
+\textbf{Stream I/O is not buffer formatting.} Placing \texttt{printf} and
+\texttt{fprintf} in the formatting class causes 655 call sites in this corpus
+alone to be counted as memory operations. Only the \texttt{s*printf} and
+\texttt{scanf} families write into a caller-supplied buffer.
+
+\textbf{A precision/recall trade-off, made explicit.}
+Table~\ref{tab:rq1_tradeoff} reports the copy rule at two operating points. A
+permissive needle matching any ``copy'' component reaches recall $0.900$ but
+precision $0.450$, because it captures SIMD lane extraction
+(\texttt{\_\_msa\_copy\_u\_w}) and pixel-format macros
+(\texttt{COPY16TO9\_OR\_10}), neither of which writes a caller buffer.
+Requiring an explicit copy primitive, or ``copy'' adjacent to a direction word,
+raises precision to $0.857$ at the cost of recall $0.600$ --- it now misses
+\texttt{AV\_COPY32} and \texttt{av\_dict\_copy}. We adopt the precise variant,
+because a false memory-operation label injects a spurious safety-relevant node
+into the graph whereas a miss merely leaves the node as a generic call site.
+
+\begin{table}[t]
+\centering
+\caption{RQ1: the copy rule at two operating points, showing the
+precision/recall trade-off the gold set exposed.}
+\label{tab:rq1_tradeoff}
+\begin{tabular}{lrrrrr}
+\toprule
+Rule & \multicolumn{3}{c}{\texttt{MEMORY\_COPY}} & Macro-P & Weighted acc. \\
+     & P & R & $F_1$ & & \\
+\midrule
+Permissive (any ``copy'') & 0.450 & 0.900 & 0.600 & 0.935 & 0.971 \\
+Precise (adopted)         & 0.857 & 0.600 & 0.706 & 0.976 & 0.976 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Coverage and residual disagreements}
+Component matching raises coverage of call sites from $4.7\%$ under exact
+allow-listing to $10.6\%$. Ten disagreements remain in the sample, and we name
+the informative ones rather than aggregating them away. \texttt{bdrv\_pread}
+(36 sites) is a positioned block-device read that no lexical rule recognises
+as I/O. \texttt{g\_strdup\_printf} both allocates and formats, which a
+single-label taxonomy cannot express; we label it as allocation, the stronger
+memory effect. \texttt{tcg\_temp\_free} releases an intermediate-representation
+temporary in QEMU's own allocator discipline rather than heap memory --- a
+release, but not the kind the taxonomy was designed around. These are
+limitations of a name-based analysis without type information, and they bound
+what the abstraction can claim.
 
 \subsection{RQ2: the representation effect}
 \label{sec:rq_representation}
