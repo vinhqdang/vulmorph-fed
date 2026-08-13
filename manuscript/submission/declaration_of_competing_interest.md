@@ -7,11 +7,11 @@ Vulnerability Detection
 
 ---
 
-☒ The authors declare that they have no known competing financial interests or
+☒ The author declares that he has no known competing financial interests or
 personal relationships that could have appeared to influence the work reported
 in this paper.
 
-☐ The authors declare the following financial interests/personal relationships
+☐ The author declares the following financial interests/personal relationships
 which may be considered as potential competing interests:
 
 _[If any exist, list here: employment, consultancies, stock ownership,
@@ -21,7 +21,8 @@ or other funding.]_
 ---
 
 **Author name:** Quang-Vinh Dang
-**Date:** [DATE]
+**Affiliation:** British University Vietnam, Hung Yen, Vietnam
+**Date:** 13 August 2026
 
 > Note: Elsevier does not require a signature on this form. Submit it as a
 > separate file at the Attach/Upload Files step, in its original file type.
