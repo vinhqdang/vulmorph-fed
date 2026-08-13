@@ -32,15 +32,16 @@ alternatives to lexical tokens are considered:
           fixed by the C grammar that requires no design effort whatsoever.
 \end{itemize}
 
-The result was not the one we set out to demonstrate. Grammar kinds improve
-cross-project ranking substantially and consistently: $+0.078$ AUC
-($p = 0.007$) and $+0.071$ AUPRC ($p = 0.002$) over lexical features, winning
-every project-level fold. The engineered taxonomy is statistically
-indistinguishable from lexical features ($p \approx 0.9$), and combining it
-with grammar kinds \emph{reduces} precision relative to grammar kinds alone.
-For scale, the three message-passing schemes we test differ by less than half
-as much under a fixed representation as the representations differ under a
-fixed architecture.
+The result was not the one we set out to demonstrate. Abandoning lexical
+features helps substantially and consistently --- every one of eight
+comparisons across two corpora and three message-passing schemes is positive,
+with effects of $+0.049$ to $+0.106$ AUC and seven of eight intervals
+excluding zero --- and the three architectures differ by roughly a third as
+much under a fixed representation as the representations differ under a fixed
+architecture. But the engineered taxonomy is not what produces this. On its own
+it is statistically indistinguishable from lexical features
+($p \approx 0.9$); the grammar kinds carry the effect, and adding the taxonomy
+to them yields no consistent gain.
 
 We then explain the null result rather than merely reporting it. Measuring the
 information the taxonomy carries relative to the grammar alphabet shows

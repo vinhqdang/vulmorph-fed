@@ -319,70 +319,62 @@ recommend it as a routine step.
 \subsection{RQ3: generality across corpora and architectures}
 \label{sec:rq_generality}
 
-If the effect were an artefact of one corpus or one propagation scheme it
-would not be a claim about representations. We therefore repeat the identical
-contrast on a second corpus and with two further message-passing schemes,
+RQ2 is a single corpus and a single backbone. To ask whether the effect is a
+property of representations rather than of one experimental cell, we repeat the
+comparison on a second corpus and under two further message-passing schemes,
 changing only the named factor.
 
 \begin{table*}[t]
 \centering
-\caption{RQ3: the representation contrast across corpora and backbones. All
-cells use the identical protocol of Section~\ref{sec:protocol}; only the named
-factor varies. Differences are paired per fold; intervals are cluster
-bootstrap over held-out projects.}
+\caption{RQ3: both project-invariant representations against the lexical
+baseline, across corpora and backbones. Differences are paired per fold;
+intervals are cluster bootstrap over held-out projects. Bold marks intervals
+excluding zero.}
 \label{tab:rq3_generality}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{llrrrrrl}
+\begin{tabular}{llrrrr}
 \toprule
-Corpus & Backbone & Lexical & Abstraction & $\Delta$ & 95\% CI & $p$ & Folds won \\
+Corpus & Backbone & \multicolumn{2}{c}{Grammar kind $\kappa$ vs lexical} & \multicolumn{2}{c}{Operation $+$ kind vs lexical} \\
+ & & $\Delta$AUC (95\% CI) & $p$ & $\Delta$AUC (95\% CI) & $p$ \\
 \midrule
-\multicolumn{8}{l}{\emph{AUC}} \\
-BigVul     & GGNN & 0.587 $\pm$ 0.050 & \textbf{0.668 $\pm$ 0.027} & $+0.064$ & $[+0.028, +0.112]$ & 0.001 & 8/10 \\
-BigVul     & GAT  & 0.590 $\pm$ 0.043 & \textbf{0.679 $\pm$ 0.024} & $+0.062$ & $[+0.013, +0.110]$ & 0.015 & 5/5 \\
-BigVul     & GIN  & 0.563 $\pm$ 0.027 & \textbf{0.647 $\pm$ 0.045} & $+0.070$ & $[+0.026, +0.134]$ & 0.004 & 5/5 \\
-DiverseVul & GGNN & 0.618 $\pm$ 0.026 & \textbf{0.690 $\pm$ 0.026} & $+0.083$ & $[+0.043, +0.125]$ & $<$0.001 & 4/4 \\
-\midrule
-\multicolumn{8}{l}{\emph{AUPRC}} \\
-BigVul     & GGNN & 0.125 $\pm$ 0.040 & \textbf{0.164 $\pm$ 0.034} & $+0.022$ & $[+0.000, +0.049]$ & 0.047 & 8/10 \\
-BigVul     & GAT  & 0.131 $\pm$ 0.023 & 0.175 $\pm$ 0.037 & $+0.021$ & $[-0.004, +0.052]$ & 0.104 & 5/5 \\
-BigVul     & GIN  & 0.138 $\pm$ 0.038 & 0.162 $\pm$ 0.040 & $+0.019$ & $[-0.002, +0.044]$ & 0.069 & 3/5 \\
-DiverseVul & GGNN & 0.092 $\pm$ 0.036 & 0.127 $\pm$ 0.013 & $+0.026$ & $[-0.000, +0.053]$ & 0.053 & 3/4 \\
+BigVul     & GGNN & \textbf{+0.078} $[+0.022,+0.130]$ & \textbf{0.007} & \textbf{+0.064} $[+0.028,+0.112]$ & \textbf{0.001} \\
+BigVul     & GAT  & +0.049 $[-0.032,+0.108]$ & 0.217 & \textbf{+0.062} $[+0.014,+0.111]$ & \textbf{0.012} \\
+BigVul     & GIN  & \textbf{+0.106} $[+0.053,+0.166]$ & \textbf{0.001} & \textbf{+0.070} $[+0.026,+0.135]$ & \textbf{0.003} \\
+DiverseVul & GGNN & \textbf{+0.071} $[+0.024,+0.124]$ & \textbf{0.001} & \textbf{+0.083} $[+0.043,+0.124]$ & \textbf{$<$0.001} \\
 \bottomrule
 \end{tabular}}
 \end{table*}
 
-Table~\ref{tab:rq3_generality} supports a claim about ranking and a weaker one
-about precision, and we separate them deliberately.
+Table~\ref{tab:rq3_generality} supports one claim strongly and refuses another,
+and we separate them carefully because the distinction is easy to blur.
 
-\textbf{On AUC the effect is general.} It holds on both corpora and under all
-three propagation schemes, with every confidence interval excluding zero
-($p$ from $0.015$ to $<0.001$) and the abstraction winning 22 of 24
-project-level folds. The magnitude, $+0.062$ to $+0.083$, is notably stable
-across conditions. For comparison, the \emph{architecture} differences under a
-fixed representation are smaller than the representation difference under a
-fixed architecture: with lexical features, GGNN, GAT and GIN span
-$0.563$--$0.590$ AUC on BigVul, a range of $0.027$, against a representation
-effect of $0.064$ on the same corpus. This is the paper's central quantitative
-point: on this evidence, what a node carries matters more than how information
-is propagated between nodes.
+\textbf{What generalises: abandoning lexical features.} Every one of the eight
+comparisons is positive, and seven of eight have intervals excluding zero. Both
+project-invariant representations beat project-specific tokens on both corpora
+and under all three propagation schemes, with effects of $+0.049$ to $+0.106$
+AUC. Against this, the \emph{architecture} differences under a fixed
+representation are smaller: with lexical features the three backbones span
+$0.563$--$0.590$ AUC on BigVul, a range of $0.027$, roughly a third of the
+representation effect on the same corpus. This is the paper's central
+quantitative claim, and it is the one supported by every cell.
 
-\textbf{On AUPRC the effect is consistent in sign but not reliably
-significant.} All four conditions show a positive difference of similar size
-($+0.019$ to $+0.026$), but only BigVul/GGNN reaches $p < 0.05$; GIN and
-DiverseVul sit just above threshold ($0.069$, $0.053$) and GAT further out
-($0.104$). With four to ten project-level folds this is what an effect of that
-size looks like when it is real but small, and we decline to claim
-significance we have not established. The defensible statement is that the
-abstraction improves the overall ranking robustly, and improves precision at
-the top of the ranking by a smaller amount that our sample sizes can detect
-in one of four conditions.
+\textbf{What does not generalise: a preference between the two invariant
+representations.} On BigVul/GGNN the grammar kind alone is the stronger of the
+two, and markedly so on AUPRC ($0.223$ versus $0.164$); on BigVul/GIN it is
+again stronger; on BigVul/GAT it is weaker and its interval crosses zero; on
+DiverseVul the two are within each other's intervals. We therefore do
+\emph{not} claim that grammar kinds beat the combined representation. What the
+evidence supports is narrower and, we think, more useful: the grammar kind is
+the component that carries the effect, the operation taxonomy alone does not
+suffice (Section~\ref{sec:rq_representation}, $p = 0.89$), and adding the
+taxonomy to the grammar kind yields no consistent gain --- which
+Section~\ref{sec:rq_why} explains by showing the taxonomy is $98.2\%$
+predictable from the kind.
 
-We note one further pattern relevant to deployment: the abstraction roughly
-halves fold-to-fold variance on BigVul/GGNN (AUC standard deviation $0.027$
-versus $0.050$) and is more stable in five of the six comparable cells. A
-detector whose behaviour varies less with the identity of the target project
-is more useful in practice than one whose expected score is similar but whose
-variance is twice as large.
+A practitioner reading Table~\ref{tab:rq3_generality} should take away that the
+choice worth making is lexical versus grammar-derived, not which grammar-derived
+variant; and that the cheaper variant, requiring no taxonomy design, allow-list
+curation or validation, is not measurably worse.
 
 \subsection{RQ4: what does not work}
 \label{sec:rq_negative}

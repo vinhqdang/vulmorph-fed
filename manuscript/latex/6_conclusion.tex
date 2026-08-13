@@ -9,14 +9,15 @@ The answer has two parts, and the second is the one we did not anticipate.
 Replacing project-specific lexical tokens with a project-invariant alphabet
 improves cross-project ranking substantially --- more than the differences
 between the message-passing schemes we compare, under a fixed representation.
-But the alphabet that works is the parser's own grammar node kinds, which cost
-nothing to obtain: $+0.078$ AUC ($p = 0.007$) and $+0.071$ AUPRC
-($p = 0.002$), winning every project-level fold, with roughly a third of the
-fold-to-fold variance of lexical features. The engineered operation taxonomy
-we built for the purpose --- API allow-lists, identifier-component rules,
-syntax-directed cases, validated as a static analysis at $0.976$ accuracy ---
-is statistically indistinguishable from lexical features, and combining it
-with grammar kinds costs precision rather than adding any.
+The gain holds in every one of eight comparisons spanning two corpora and
+three message-passing schemes ($+0.049$ to $+0.106$ AUC), and is roughly three
+times the spread between those architectures under a fixed representation. But
+the ingredient that carries it is the parser's own grammar node kinds, which
+cost nothing to obtain. The engineered operation taxonomy we built for the
+purpose --- API allow-lists, identifier-component rules, syntax-directed cases,
+validated as a static analysis at $0.976$ accuracy --- is on its own
+statistically indistinguishable from lexical features, and adding it to grammar
+kinds produces no consistent improvement.
 
 We explain that null result rather than leaving it as an anomaly. The taxonomy
 is predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
