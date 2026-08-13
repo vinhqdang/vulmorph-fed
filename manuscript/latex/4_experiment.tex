@@ -30,6 +30,60 @@ in corpus order rather than at random, and project mass is highly
 concentrated --- in BigVul, Chrome and \texttt{linux} together supply about
 two thirds of the functions.
 
+\begin{table}[t]
+\centering
+\caption{Corpus properties measured on our samples. Project concentration is
+reported because it determines whether a nominally cross-project split is
+meaningful: in BigVul the two largest repositories supply two thirds of the
+functions, which is why they are held train-only
+(Section~\ref{sec:protocol}).}
+\label{tab:corpora}
+\begin{tabular}{lrrrrr}
+\toprule
+Corpus & Functions & Prevalence & Projects & Top-2 share & Nodes/Edges \\
+\midrule
+BigVul     & 8{,}000 & 0.054 & 134 & 66.3\% & 90 / 231 \\
+DiverseVul & 8{,}000 & 0.055 & 580 & 27.4\% & 77 / 195 \\
+Devign     & 8{,}000 & 0.473 & 2   & 100\%  & 134 / 351 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:corpora} records these properties. Devign is included for the
+analysis validation of Section~\ref{sec:rq_analysis} but \emph{excluded from
+all cross-project claims}: with two repositories, a project-disjoint split
+degenerates to training on one and testing on the other, and any federated or
+heterogeneity framing over it would be describing a single codebase.
+
+\subsubsection{What the abstraction retains and discards}
+Table~\ref{tab:node_dist} gives the node-type distribution under
+$\phi_8$ on BigVul. Three quarters of AST nodes carry no operation semantics
+and are labelled $\bot$; they still contribute their grammar kind through
+Eq.~\eqref{eq:features}, so they are not featureless. The distribution also
+explains a negative result in advance: the memory-operation class that
+motivates the taxonomy accounts for $0.43\%$ of nodes, so subdividing it
+(Section~\ref{sec:rq_negative}) cannot move an aggregate metric however
+semantically justified the distinction is.
+
+\begin{table}[t]
+\centering
+\caption{Node-type distribution under $\phi_8$ (BigVul). $\bot$
+(\texttt{UNKNOWN}) nodes carry no operation label but retain their grammar
+kind.}
+\label{tab:node_dist}
+\begin{tabular}{lr@{\hskip 2em}lr}
+\toprule
+Type & Share & Type & Share \\
+\midrule
+$\bot$ (\texttt{UNKNOWN}) & 75.73\% & \texttt{ASSIGN}        & 3.38\% \\
+\texttt{PTR\_DEREF}       & 6.46\%  & \texttt{COMPARISON}    & 2.64\% \\
+\texttt{CALL\_SITE}       & 5.31\%  & \texttt{ARITH\_OP}     & 1.59\% \\
+\texttt{CONTROL\_BRANCH}  & 3.97\%  & \texttt{ARRAY\_INDEX}  & 0.49\% \\
+                          &         & \texttt{MEMORY\_ACCESS}& 0.43\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsubsection{Deduplication}
 Near-duplicate functions are removed \emph{before} any split. Vendored code
 appears under several project names, so without this step a held-out function
