@@ -1,296 +1,195 @@
-\section{Methodology}
+\section{Operation Abstraction}
 \label{sec:method}
 
-To address the cross-project generalisation gap and the data-silo problem simultaneously, we propose \emph{VulMorph-Fed}. The framework replaces standard parameter averaging with a privacy-preserving federated aggregation of semantic structural prototypes. It consists of three components: (1)~Vulnerability-Critical Subgraph Abstraction (VCSA), which maps functions onto project-invariant structural morphologies; (2)~Morphology-Conditioned Federated Prototype Aggregation (MCFPA), which aggregates structural knowledge under differential privacy; and (3)~Morphology-Guided Message Passing (MGMP), which injects the aggregated global knowledge into local graph learning. Figure~\ref{fig:worked_example} illustrates the end-to-end abstraction on two lexically different but structurally similar vulnerable functions.
+The object of study is a labelling function that replaces a program's
+project-specific lexical surface with a small alphabet of operation types
+fixed by the language grammar. This section specifies it, states the
+projection lattice relating its three granularities, and defines the graph on
+which it operates. Section~\ref{sec:experiment} then evaluates it twice: as a
+static analysis, against annotated ground truth, and as a representation, by
+its effect on cross-project detection.
 
-\subsection{Graph Construction}
+\subsection{Program Graphs}
 \label{sec:graph_construction}
 
-Let $\mathcal{G}_k = \{(G_i^{(k)}, y_i^{(k)}, c_i^{(k)})\}_{i=1}^{N_k}$ denote the local dataset of client $k \in \{1, \dots, K\}$, where $y_i \in \{0,1\}$ is the binary vulnerability label and $c_i$ the CWE annotation of vulnerable functions (Section~\ref{sec:label_model}).
+Each function is parsed with \texttt{tree-sitter}, an incremental,
+error-tolerant parser that recovers a usable tree from non-preprocessed C.
+That property matters here: vulnerability corpora ship isolated functions
+without their headers, so a parser requiring a complete translation unit
+cannot be used. From the resulting tree we build $G = (\mathcal{V},
+\mathcal{E})$:
 
-Full Code Property Graph (CPG) extraction requires a heavyweight static-analysis engine such as Joern~\cite{yamaguchi2014modeling}, which is impractical to deploy at every federated edge client and complicates exact reproduction. Our implementation instead parses every function with \texttt{tree-sitter} --- a production-grade, error-tolerant C/C++ parser --- and builds the graph $G = (\mathcal{V}, \mathcal{E})$ directly from the abstract syntax tree:
 \begin{itemize}
-    \item one node per \emph{named AST node}, in pre-order, capped at $|\mathcal{V}| \le 200$;
-    \item \emph{syntax edges} $\mathcal{E}_{AST}$: parent--child links in both directions;
-    \item \emph{order edges} $\mathcal{E}_{SIB}$: consecutive named siblings (source-order sequencing, the AST analogue of Devign's NCS edges~\cite{zhou2019devign});
-    \item \emph{data-dependence proxy} edges $\mathcal{E}_{DD}$: def-use chains linking successive occurrences of the same identifier leaf.
+    \item $\mathcal{V}$: named AST nodes in pre-order, capped at 200;
+    \item $\mathcal{E}_{AST}$: parent--child edges, both directions;
+    \item $\mathcal{E}_{SIB}$: consecutive named siblings, giving source order;
+    \item $\mathcal{E}_{DU}$: a def-use approximation linking successive
+          occurrences of the same identifier leaf.
 \end{itemize}
-The edge set is $\mathcal{E} = \mathcal{E}_{AST} \cup \mathcal{E}_{SIB} \cup \mathcal{E}_{DD}$; on our corpora this yields on average $\sim$130 nodes and $\sim$350 edges per function. Functions that fail to parse (a small minority) fall back to a token-level sequence graph and are marked as such. These graphs carry real syntactic structure, though not the interprocedural control- and data-flow precision of a compiler-grade CPG; Section~\ref{sec:discussion} discusses this trade-off, and graph construction is isolated behind a single interface so Joern-derived CPGs can be substituted without touching the rest of the framework.
 
-\subsection{Vulnerability-Critical Subgraph Abstraction (VCSA)}
-\label{sec:vcsa}
+with $\mathcal{E} = \mathcal{E}_{AST} \cup \mathcal{E}_{SIB} \cup
+\mathcal{E}_{DU}$, giving on average $\sim$130 nodes and $\sim$350 edges per
+function. We state plainly that this is a syntax graph with a data-dependence
+approximation, not a Code Property Graph~\cite{yamaguchi2014modeling}:
+interprocedural control flow and points-to-precise dependence are absent.
+Section~\ref{sec:limitations} discusses what that bounds.
 
-Raw code graphs carry thousands of project-specific API and identifier tokens, causing GNNs to overfit local lexical distributions. VCSA replaces the lexical node labels with a small taxonomy of abstract operation types and learns to down-weight vulnerability-irrelevant edges.
+\subsection{The Labelling Function $\phi$}
+\label{sec:phi}
 
-\subsubsection{Morphological taxonomy}
-\label{sec:taxonomy}
+Let $K$ be the node-kind alphabet of the tree-sitter C grammar ($|K| = 363$)
+and $\mathcal{T}_{32}$ the operation alphabet of Table~\ref{tab:taxonomy}. The
+abstraction is a total function
+\begin{equation}
+    \phi : \mathcal{V} \longrightarrow \mathcal{T}_{32} \cup \{\bot\},
+\label{eq:phi}
+\end{equation}
+where $\bot$ (\texttt{UNKNOWN}) labels nodes carrying no operation semantics.
+$\phi$ is deterministic and needs no name resolution, no build system and no
+whole-program context. It is defined by cases on the node's grammar kind:
 
-We define a fixed semantic taxonomy $\mathcal{T}$ of $|\mathcal{T}| = 8$ operation types, listed exhaustively in Table~\ref{tab:taxonomy} together with the reserved fallback type \texttt{UNKNOWN}. A node therefore takes one of $|\mathcal{T}| + 1 = 9$ morphological categories --- the \texttt{UNKNOWN} type has its own feature slot. For the taxonomy-size sensitivity analysis (RQ2b) we additionally define strictly nested refinements with $|\mathcal{T}| = 16$ and $|\mathcal{T}| = 32$ (e.g., \texttt{MEMORY\_ACCESS} splits into \texttt{MEMORY\_ALLOC}, \texttt{MEMORY\_FREE}, \texttt{MEMORY\_COPY}, \texttt{STRING\_OP}); the complete lists ship with the source code.
+\begin{enumerate}
+    \item \textbf{Call expressions} are labelled by their callee name through
+          $\psi$ (Section~\ref{sec:psi}); an unrecognised callee yields
+          \texttt{CALL\_SITE}. User-defined functions, macros and calls
+          through function pointers therefore all receive a label without
+          resolution.
+    \item \textbf{Kind-determined nodes} follow a fixed table:
+          \texttt{subscript\_expression} $\to$ \texttt{ARRAY\_INDEX};
+          \texttt{field\_expression} $\to$ \texttt{FIELD\_ACCESS};
+          \texttt{cast\_expression} $\to$ \texttt{CAST};
+          \texttt{if}/\texttt{switch}/\texttt{case} $\to$ \texttt{BRANCH\_*};
+          loops $\to$ \texttt{LOOP\_*};
+          \texttt{break}/\texttt{continue}/\texttt{goto}/\texttt{return} $\to$
+          \texttt{JUMP\_*}/\texttt{RETURN};
+          \texttt{assignment\_expression} and initialising declarators $\to$
+          \texttt{ASSIGN}; \texttt{update\_expression} $\to$
+          \texttt{ARITH\_ADD}.
+    \item \textbf{Operator-determined nodes}: a \texttt{binary\_expression} is
+          labelled by its operator token ($+\,-\ \to$ \texttt{ARITH\_ADD};
+          $*\,/\ \to$ \texttt{ARITH\_MUL}; \texttt{\%} $\to$
+          \texttt{ARITH\_MOD}; bitwise $\to$ \texttt{BITWISE\_OP}; shifts
+          $\to$ \texttt{SHIFT\_OP}; equality $\to$ \texttt{COMPARISON\_EQ};
+          relational $\to$ \texttt{COMPARISON\_REL}; logical $\to$
+          \texttt{LOGICAL\_OP}). A \texttt{pointer\_expression} is
+          \texttt{PTR\_DEREF} or \texttt{ADDR\_OF} by its prefix operator;
+          unary \texttt{!} is \texttt{LOGICAL\_OP}.
+    \item \textbf{Otherwise} $\phi(v) = \bot$.
+\end{enumerate}
 
-Each node's feature vector is the sum of two embeddings, both drawn from \emph{project-invariant} vocabularies: (i) its morphological type in $\mathcal{T} \cup \{\texttt{UNKNOWN}\}$, and (ii) its \emph{grammar kind} --- the tree-sitter node category (\texttt{call\_expression}, \texttt{subscript\_expression}, \texttt{if\_statement}, \dots), a fixed set of 364 categories determined entirely by the C grammar and therefore identical for every project and client by construction. No identifier, API name, literal or any other project-specific token ever enters the network.
+\subsubsection{Callee classification $\psi$}
+\label{sec:psi}
+
+$\psi$ maps a callee name to an operation class in two stages.
+
+\textbf{Stage 1 (exact).} A fixed allow-list of C standard-library names,
+grouped by the memory effect they carry: allocation, reallocation, release,
+block copy, block set, string copy, concatenation, buffer-writing formatting,
+length query, and stream I/O.
+
+\textbf{Stage 2 (component).} Production C rarely calls those directly:
+FFmpeg wraps allocation as \texttt{av\_malloc}, GLib as \texttt{g\_malloc},
+the Linux kernel as \texttt{kmalloc}, OpenSSL as \texttt{OPENSSL\_malloc}.
+Stage 2 splits the callee identifier into components on underscore and
+camel-case boundaries and fires when a \emph{whole component} matches an
+operation word.
+
+Whole-component matching, rather than substring matching, is load-bearing.
+Substring matching --- the obvious implementation --- is measurably wrong on
+real code: it labels \texttt{\_\_put\_user} and \texttt{skb\_put} (writes) as
+release operations via ``put'', \texttt{gen\_new\_label} as allocation via
+``new'', \texttt{float64\_is\_zero} (a predicate) as a block set via ``zero'',
+and \texttt{reallocate\_view} as reallocation, while \emph{missing}
+\texttt{copy\_to\_user}, a genuine bounded copy.
+Section~\ref{sec:rq_analysis} quantifies the resulting error.
+
+We further separate stream I/O from buffer formatting. \texttt{printf} and
+\texttt{fprintf} write to a stream and carry no caller-buffer overflow
+semantics; only the \texttt{s*printf} and \texttt{scanf} families fill a
+caller-supplied buffer. The distinction is not cosmetic: in our Devign sample
+\texttt{fprintf} and \texttt{printf} alone account for 655 call sites, every
+one of which a conflated rule would count as a memory operation.
+
+\subsection{The Projection Lattice}
+\label{sec:lattice}
+
+Three granularities are defined --- $\mathcal{T}_{32}$ (finest),
+$\mathcal{T}_{16}$, $\mathcal{T}_{8}$ --- related by surjections
+\begin{equation}
+    \pi_{16} : \mathcal{T}_{32} \to \mathcal{T}_{16}, \qquad
+    \pi_{8}  : \mathcal{T}_{16} \to \mathcal{T}_{8},
+\label{eq:projections}
+\end{equation}
+each extended to fix $\bot$. Coarser labellings are compositions,
+$\phi_{16} = \pi_{16} \circ \phi$ and
+$\phi_{8} = \pi_8 \circ \pi_{16} \circ \phi$, so the granularities are nested
+\emph{by construction} rather than separately specified.
+
+\begin{proposition}[Nesting]
+\label{prop:nesting}
+For all $u, v \in \mathcal{V}$, $\phi(u) = \phi(v) \Rightarrow \phi_{16}(u) =
+\phi_{16}(v) \Rightarrow \phi_{8}(u) = \phi_{8}(v)$. Equivalently, the
+partition of $\mathcal{V}$ induced by $\phi_8$ is coarser than that induced by
+$\phi_{16}$, which is coarser than that induced by $\phi$.
+\end{proposition}
+
+\begin{proof}
+Immediate from Eq.~\eqref{eq:projections}: $\phi_{16}$ and $\phi_8$ are
+compositions of $\phi$ with total functions, and applying a function to equal
+arguments yields equal results. The induced partitions are the preimages of a
+chain of surjections, hence a chain of coarsenings.
+\end{proof}
+
+The consequence is that varying granularity varies exactly one quantity --- the
+coarseness of a single labelling --- so the granularity experiment in
+Section~\ref{sec:experiment} is interpretable, which a comparison of three
+independently designed schemes would not be.
 
 \begin{table}[t]
 \centering
-\caption{The complete $|\mathcal{T}| = 8$ morphological taxonomy (plus the reserved \texttt{UNKNOWN} fallback). A node takes one of $|\mathcal{T}|+1 = 9$ morphological \emph{categories}; each category is mapped to a learned embedding (dimension 64 in our configuration), summed with the node's grammar-kind embedding.}
+\caption{The $|\mathcal{T}_8| = 8$ operation alphabet and the
+$\mathcal{T}_{32}$ classes each abstracts. $\bot$ (\texttt{UNKNOWN}) labels
+nodes with no operation semantics: declarations, identifiers, literals,
+punctuation.}
 \label{tab:taxonomy}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{ll}
+\begin{tabular}{lll}
 \toprule
-Abstract type & Covers \\
+$\mathcal{T}_8$ & abstracts ($\mathcal{T}_{32}$) & carries \\
 \midrule
-\texttt{MEMORY\_ACCESS} & allocation/free/copy/set and string APIs (\texttt{malloc}, \texttt{free}, \texttt{memcpy}, \texttt{strcpy}, \dots) \\
-\texttt{ARRAY\_INDEX}   & array subscript operations \texttt{a[i]} \\
-\texttt{PTR\_DEREF}     & pointer dereference and member access (\texttt{*p}, \texttt{p->f}, unary \texttt{\&}) \\
-\texttt{CONTROL\_BRANCH}& \texttt{if}/\texttt{else}/\texttt{switch}, loops, \texttt{goto}/\texttt{break}/\texttt{continue}/\texttt{return}, ternary \\
-\texttt{ARITH\_OP}      & arithmetic and bitwise operators (\texttt{+ - * / \% \& | \^{} \~{} << >>}) \\
-\texttt{COMPARISON}     & relational and logical operators (\texttt{== != < > <= >= \&\& || !}) \\
-\texttt{CALL\_SITE}     & any other function/macro call (user-defined and unresolved calls included) \\
-\texttt{ASSIGN}         & plain and compound assignments (\texttt{=}, \texttt{+=}, \dots) \\
-\midrule
-\texttt{UNKNOWN}        & all remaining tokens (identifiers, literals, punctuation, declarations) \\
+\texttt{MEMORY\_ACCESS} & \texttt{MEMORY\_\{ALLOC,REALLOC,FREE,COPY,SET\}}, \texttt{STRING\_\{COPY,CONCAT,FORMAT,LENGTH\}} & buffer lifetime, bounds \\
+\texttt{ARRAY\_INDEX}   & \texttt{ARRAY\_INDEX} & indexed access \\
+\texttt{PTR\_DEREF}     & \texttt{PTR\_DEREF}, \texttt{ADDR\_OF}, \texttt{FIELD\_ACCESS}, \texttt{CAST} & indirection \\
+\texttt{CONTROL\_BRANCH}& \texttt{BRANCH\_\{IF,SWITCH\}}, \texttt{LOOP\_\{FOR,WHILE\}}, \texttt{JUMP\_\{BREAK,GOTO\}}, \texttt{RETURN} & reachability \\
+\texttt{ARITH\_OP}      & \texttt{ARITH\_\{ADD,MUL,MOD\}}, \texttt{BITWISE\_OP}, \texttt{SHIFT\_OP} & value computation \\
+\texttt{COMPARISON}     & \texttt{COMPARISON\_\{EQ,REL\}}, \texttt{LOGICAL\_OP} & guards \\
+\texttt{CALL\_SITE}     & \texttt{CALL\_SITE}, \texttt{IO\_CALL} & unresolved or non-memory calls \\
+\texttt{ASSIGN}         & \texttt{ASSIGN} & value flow \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-\subsubsection{The abstraction function $\phi_{\mathrm{type}}$}
+\subsection{Node Features}
+\label{sec:features}
 
-The mapping $\phi_{\mathrm{type}}: \mathcal{V} \rightarrow \mathcal{T} \cup \{\texttt{UNKNOWN}\}$ is a deterministic rule set evaluated on the AST, in priority order:
-\begin{enumerate}
-    \item a \texttt{call\_expression} is classified by its callee name in two stages: an exact match against fixed libc allow-lists (\texttt{malloc}, \texttt{memcpy}, \texttt{strcpy}, \dots), then a set of \emph{affix rules} that recognise project-wrapped equivalents. The affix stage is essential rather than cosmetic: production C code almost never calls libc allocators directly (FFmpeg uses \texttt{av\_malloc}, GLib \texttt{g\_malloc}, the Linux kernel \texttt{kmalloc}, OpenSSL \texttt{OPENSSL\_malloc}), so an exact-match list alone routes nearly every real allocation site to \texttt{CALL\_SITE}. We measured this: on Devign, exact matching alone assigns \texttt{MEMORY\_ACCESS} to only 0.23\% of AST nodes, rising to 0.72\% once affix rules are applied --- i.e.\ two thirds of the memory-safety signal the taxonomy is designed to capture is invisible without them. The rules test for the affixes \texttt{*alloc*}, \texttt{*free*}, \texttt{*memcpy*}, \texttt{*memset*}, \texttt{*str\{cpy,cat,len\}*} and are evaluated in an order that resolves \texttt{realloc} and \texttt{dealloc} before the generic \texttt{alloc} test. Only the matched \emph{class} is retained --- never the identifier --- so project invariance is preserved. Unmatched calls, including all user-defined functions, macros and unresolved calls, map to \texttt{CALL\_SITE}; no name resolution or build system is required;
-    \item statement and expression kinds map directly: \texttt{subscript\_expression} $\to$ \texttt{ARRAY\_INDEX}; \texttt{field\_expression} and unary pointer expressions $\to$ \texttt{PTR\_DEREF}; \texttt{if}/\texttt{switch}/loop/jump statements and ternaries $\to$ \texttt{CONTROL\_BRANCH}; \texttt{assignment\_expression} and initialising declarators $\to$ \texttt{ASSIGN};
-    \item a \texttt{binary\_expression} maps by its operator text to \texttt{ARITH\_OP} or \texttt{COMPARISON} (Table~\ref{tab:taxonomy});
-    \item three further kind rules complete the set: \texttt{cast\_expression} $\to$ \texttt{PTR\_DEREF} (a cast reinterprets a pointee type), \texttt{update\_expression} (\texttt{i++}, \texttt{i--}) $\to$ \texttt{ARITH\_OP}, and unary \texttt{!} $\to$ \texttt{COMPARISON} with the remaining unary operators $\to$ \texttt{ARITH\_OP};
-    \item every remaining node maps to \texttt{UNKNOWN}.
-\end{enumerate}
-An equivalent token-context rule set (documented in the code) covers the rare parse-failure fallback graphs. The rules are implemented once at the finest ($|\mathcal{T}|=32$) granularity and projected onto the coarser taxonomies, so all three taxonomy sizes share a single rule set. $\phi_{\mathrm{type}}$ is a discrete label assignment and is \emph{not} differentiable; the only learned part of VCSA is the edge-weighting module below.
-
-On our four evaluation corpora, 25--26\% of AST nodes receive a non-\texttt{UNKNOWN} morphological type (the remainder are declarations, identifiers, literals and other syntax carriers, which still contribute their grammar-kind feature). The abstraction does not delete nodes: all nodes are retained with their graph structure, but their features are collapsed from a $\sim$10,000-token lexical vocabulary onto $|\mathcal{T}|+1$ morphological categories plus 364 grammar kinds. This many-to-one collapse is what removes project-specific lexical information from everything the model computes and, downstream, from everything a client transmits (Section~\ref{sec:privacy}).
-
-\subsubsection{Learned edge weighting}
-
-VCSA additionally learns a soft edge-importance mask. A two-layer MLP over concatenated endpoint features produces
+A node is represented as the sum of two embeddings, both over
+\emph{project-invariant} alphabets:
 \begin{equation}
-    \varepsilon_e = \sigma\!\left(\mathrm{MLP}([\mathbf{x}_u \,\|\, \mathbf{x}_v])\right) \in [0,1] \quad \text{for } e = (u,v) \in \mathcal{E},
-\label{eq:edge_mask}
+    \mathbf{x}_v = E_{\mathrm{op}}\big[\phi_8(v)\big]
+                 + E_{\mathrm{kind}}\big[\kappa(v)\big],
+\label{eq:features}
 \end{equation}
-which reweights messages during propagation (Eq.~\ref{eq:mgmp_local}); edges are softly down-weighted rather than hard-pruned, keeping the pipeline trainable end-to-end. Sparsity is encouraged by an $\ell_1$ penalty $\mathcal{L}_{\mathrm{sparse}} = \frac{1}{|\mathcal{E}|}\sum_e \varepsilon_e$. To align morphologies across clients we further use a structural contrastive loss over graph embeddings $\mathbf{h}_G$:
-\begin{equation}
-    \mathcal{L}_{SCL} = \frac{1}{|\mathcal{P}^+ \cup \mathcal{P}^-|} \left[ \sum_{(i,j) \in \mathcal{P}^+}\!\! \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2
-    + \!\!\sum_{(i,j) \in \mathcal{P}^-}\!\! \max\left(0, m - \|\mathbf{h}_{G_i} - \mathbf{h}_{G_j}\|_2^2\right) \right],
-\label{eq:scl}
-\end{equation}
-where $\mathcal{P}^+$ are same-CWE vulnerable pairs and $\mathcal{P}^-$ are (vulnerable, benign) pairs within a mini-batch, with margin $m = 1$. The total local objective is $\mathcal{L} = \mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}}$ with $\alpha = 0.1$, $\gamma = 0.01$; $\mathcal{L}_{BCE}$ is class-weighted binary cross-entropy with $\mathrm{pos\_weight} = \min(N^-/N^+, 20)$ computed on each client's local split.
+where $\kappa(v) \in K$ is the grammar kind and $E_{\mathrm{op}},
+E_{\mathrm{kind}}$ are learned tables with $|\mathcal{T}_8|+1 = 9$ and
+$|K|+1 = 364$ rows. Both alphabets are fixed by the C grammar and the
+taxonomy, hence identical across projects and corpora. That invariance is the
+property we claim explains transfer, and it is what
+Section~\ref{sec:experiment} tests against a lexical baseline under an
+otherwise identical protocol.
 
-\begin{figure}[t]
-\centering
-\begin{minipage}{0.48\linewidth}
-\footnotesize
-\textbf{Project A (FFmpeg-style):}
-\begin{verbatim}
-n = av_get_size(ctx);
-buf = av_malloc(n);
-for (i = 0; i <= n; i++)
-    buf[i] = src[i];
-\end{verbatim}
-\end{minipage}\hfill
-\begin{minipage}{0.48\linewidth}
-\footnotesize
-\textbf{Project B (OpenSSL-style):}
-\begin{verbatim}
-len = BN_num_bytes(a);
-out = OPENSSL_malloc(len);
-for (k = 0; k <= len; k++)
-    out[k] = in[k];
-\end{verbatim}
-\end{minipage}
-\vspace{2pt}
-\begin{minipage}{\linewidth}
-\centering
-\footnotesize
-\textbf{Morphology sequence emitted by $\phi_{\mathrm{type}}$ --- identical for both fragments:}\\[2pt]
-\texttt{CONTROL\_BRANCH} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{COMPARISON} $\rightarrow$ \texttt{ARITH\_OP} $\rightarrow$ \texttt{CALL\_SITE} $\rightarrow$ \texttt{MEMORY\_ACCESS} $\rightarrow$ \texttt{ASSIGN} $\rightarrow$ \texttt{ARRAY\_INDEX} $\rightarrow$ \texttt{ARRAY\_INDEX}
-\end{minipage}
-\caption{Worked example of the VCSA abstraction. Two off-by-one buffer overflows from different projects share no API or identifier token --- \texttt{av\_get\_size}/\texttt{BN\_num\_bytes}, \texttt{av\_malloc}/\texttt{OPENSSL\_malloc}, \texttt{buf}/\texttt{out} --- yet $\phi_{\mathrm{type}}$ maps both onto a byte-identical morphology: a size query (\texttt{CALL\_SITE}), an allocation (\texttt{MEMORY\_ACCESS}), and a loop whose \emph{inclusive} bound (\texttt{COMPARISON} on $\le$) drives an array write (\texttt{ARRAY\_INDEX}). The sequence shown is the literal output of the released \texttt{classify\_token}/\texttt{\_classify\_ast\_node} implementation on these two inputs (breadth-first over the AST, \texttt{UNKNOWN} nodes elided), not an idealisation; it is regenerated from the code so that figure and implementation cannot diverge. Note that recognising \texttt{av\_malloc} and \texttt{OPENSSL\_malloc} as allocations requires the affix rules of Section~\ref{sec:vcsa} --- an exact libc allow-list maps both to \texttt{CALL\_SITE} and the shared morphology is lost.}
-\label{fig:worked_example}
-\end{figure}
-
-\subsection{Label Model}
-\label{sec:label_model}
-
-Real vulnerability corpora have a many-to-many CVE--function--CWE structure, so we state our label model explicitly:
-\begin{itemize}
-    \item \textbf{Detection is strictly binary.} The classification head predicts $\hat{y} \in [0,1]$ (vulnerable vs.\ benign); all reported Precision, Recall, F1 and AUC values are computed from this binary head. The decision threshold is calibrated on held-out training-project data as described in Section~\ref{sec:experiment}, never on the test set; AUC is threshold-free. CWE information never enters the detection head.
-    \item \textbf{CWE labels condition only the prototypes.} A vulnerable function annotated with several CWEs contributes to the prototype of its \emph{first-listed (primary)} CWE. Benign functions contribute to a dedicated \emph{benign} prototype slot, giving the bank an explicit model of non-vulnerable morphology.
-    \item \textbf{CWE vocabulary.} The prototype bank has $|\mathcal{C}| + 1 = 11$ slots: the nine most frequent CWE types in the training corpus receive dedicated slots, all remaining types share an \texttt{OTHER} slot, and the eleventh slot is the benign prototype. This bucketing is computed once per dataset and reported with the released configurations. Datasets without per-function CWE annotations (Devign) degenerate gracefully to a single vulnerable-prototype slot plus the benign slot.
-\end{itemize}
-
-\subsection{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}
-\label{sec:mcfpa}
-
-FedAvg-style parameter averaging~\cite{mcmahan2017fedavg} assumes near-IID clients; vulnerability data is extremely non-IID in its CWE composition. MCFPA instead federates \emph{class-conditioned prototypes} over the $|\mathcal{C}|+1$ bank slots of Section~\ref{sec:label_model} (CWE buckets plus the benign slot). After local training, client $k$ computes, for each slot $c$ with local support $N_{c,k} > 0$,
-\begin{equation}
-    \mathbf{p}_c^{(k)} = \frac{1}{N_{c,k}} \sum_{\substack{G \in \mathcal{G}_k:\; y_G = 1,\; c_G = c}} \mathrm{clip}_R\!\left(f_{\theta_k}(\tilde{G})\right),
-    \qquad
-    \mathrm{clip}_R(\mathbf{z}) = \mathbf{z} \cdot \min\!\left(1, \tfrac{R}{\|\mathbf{z}\|_1}\right),
-\label{eq:prototype}
-\end{equation}
-i.e., the centroid of the $\ell_1$-clipped embeddings of its local functions assigned to slot $c$ (vulnerable functions of the corresponding CWE bucket; all benign functions for the benign slot). Slots with $N_{c,k} = 0$ are transmitted as zero rows and carry no information.
-
-\subsubsection{Differential privacy}
-\label{sec:privacy}
-
-Before upload, each non-empty prototype row is perturbed with the Laplace mechanism:
-\begin{equation}
-    \hat{\mathbf{p}}_c^{(k)} = \mathbf{p}_c^{(k)} + \mathrm{Lap}\!\left(0,\; \frac{2R}{N_{c,k}\,\varepsilon}\right)^{\otimes d}.
-\label{eq:laplace}
-\end{equation}
-
-VulMorph-Fed applies two mechanisms, so that the guarantee covers the whole
-pipeline rather than only the released artefact.
-
-\paragraph{Mechanism 1: private encoder training.}
-Local training uses DP-SGD~\cite{abadi2016deep}: each per-example gradient is
-clipped to $\|g_i\|_2 \le C$ and the batch sum is perturbed with Gaussian noise
-of standard deviation $\sigma C$ before the optimiser step. The encoder
-$\theta_k$ is therefore itself a differentially private function of the
-client's data. This matters: without it, everything below would be conditional
-on an encoder that had seen the raw data unprotected, and changing one record
-could move every embedding by an unbounded amount.
-
-\paragraph{Mechanism 2: private prototype release.}
-Prototypes are built from $\ell_1$-clipped embeddings (Eq.~\ref{eq:prototype})
-and perturbed per class (Eq.~\ref{eq:laplace}).
-
-\begin{proposition}[Per-round privacy of the prototype release]
-\label{prop:dp}
-Fix a client $k$ and condition on its (DP-trained) encoder. Let two
-neighbouring datasets differ in one function. Releasing the noisy bank
-$\{\hat{\mathbf{p}}_c^{(k)}\}$ of Eq.~\eqref{eq:laplace} satisfies
-$2\varepsilon$-differential privacy with respect to that record.
-\end{proposition}
-
-\begin{proof}
-With the encoder fixed, each per-sample embedding lies in the $\ell_1$ ball of
-radius $R$, so replacing one record changes an affected class mean by at most
-$\Delta_1 = 2R/N_{c,k}$ in $\ell_1$ norm; the Laplace mechanism with scale
-$\Delta_1/\varepsilon$ is $\varepsilon$-DP for that row~\cite{dwork2014algorithmic}.
-Under the replacement neighbouring relation a record change can affect
-\emph{two} rows --- it leaves the slot of its old label and joins the slot of
-its new one --- so parallel composition across slots does not apply and the two
-affected rows compose sequentially, giving $2\varepsilon$. (A restricted
-neighbouring relation that preserves the label would give $\varepsilon$; we
-report the weaker, safer constant.)
-\end{proof}
-
-\begin{theorem}[End-to-end budget]
-\label{thm:total}
-Let $\varepsilon_{\mathrm{sgd}}$ be the budget consumed by DP-SGD over all local
-steps, accounted under R\'enyi differential privacy for the subsampled Gaussian
-mechanism~\cite{mironov2019rdp} at a target $\delta$. Then $T$ rounds of
-VulMorph-Fed satisfy
-\begin{equation}
-    \varepsilon_{\mathrm{tot}} = \varepsilon_{\mathrm{sgd}} + 2T\varepsilon
-\label{eq:total_eps}
-\end{equation}
-$(\varepsilon_{\mathrm{tot}}, \delta)$-differential privacy with respect to any
-single function in a client's dataset, covering both the transmitted prototypes
-and the locally trained encoder.
-\end{theorem}
-
-\begin{proof}
-DP-SGD over the local steps is $(\varepsilon_{\mathrm{sgd}}, \delta)$-DP by the
-R\'enyi accountant; the $T$ prototype releases are $2T\varepsilon$-DP by
-Proposition~\ref{prop:dp} and sequential composition. The two mechanisms
-observe the same private dataset, so their budgets add.
-\end{proof}
-
-We use the standard R\'enyi accountant (the binomial bound of
-Mironov et al.~\cite{mironov2019rdp} for the sampled Gaussian, converted to
-$(\varepsilon,\delta)$ over a grid of orders) rather than advanced composition,
-which would overstate $\varepsilon_{\mathrm{sgd}}$ by more than an order of
-magnitude; our implementation reproduces the reference regime of
-Abadi et al.~\cite{abadi2016deep} to within the expected margin.
-
-\paragraph{Residual leakage outside the analysis.}
-Two channels remain, and we state them rather than leaving them implicit. The
-noise scale $2R/(N_{c,k}\varepsilon)$ depends on the private count $N_{c,k}$,
-and the \emph{support pattern} of a client's occupied slots is transmitted
-unnoised, revealing which weakness classes a client possesses at all. Padding
-the bank to a fixed support and using a count-independent scale would close
-both at some utility cost; we quantify neither here.
-
-We emphasise why the morphological abstraction matters here: because the encoder consumes only $|\mathcal{T}|+1$ abstract node types, the embeddings being clipped and averaged contain no project-specific lexical information to begin with. DP protects \emph{membership} of individual functions; the abstraction removes \emph{content} (identifiers, API names) categorically rather than statistically.
-
-\subsubsection{Affinity-weighted aggregation}
-
-The server aggregates the noisy banks per CWE bucket. Let $A_k \subseteq \{1..K\}$ be the clients with non-zero rows for bucket $c$. With $\bar{\mathbf{p}}_j = \hat{\mathbf{p}}_c^{(j)} / \|\hat{\mathbf{p}}_c^{(j)}\|_2$, the server computes cosine-affinity weights and the global prototype
-\begin{equation}
-    w_c^{(k)} = \max\!\left(0,\; \frac{1}{|A_k| - 1} \sum_{j \in A_k,\, j \neq k} \bar{\mathbf{p}}_j^\top \bar{\mathbf{p}}_k \right),
-    \qquad
-    \mathbf{p}_c^{\mathrm{glob}} = \frac{\sum_{k \in A_k} w_c^{(k)}\, \hat{\mathbf{p}}_c^{(k)}}{\sum_{k \in A_k} w_c^{(k)}},
-\label{eq:mcfpa}
-\end{equation}
-falling back to the uniform mean when all affinities vanish, and to the previous round's value when no client has data for $c$. Clients whose local view of CWE $c$ agrees with the consensus contribute more; outlier (or heavily noised) views are attenuated. The ablation ``w/o MCFPA'' replaces Eq.~\eqref{eq:mcfpa} with the uniform mean.
-
-\subsection{Morphology-Guided Message Passing (MGMP)}
-\label{sec:mgmp}
-
-Each client integrates the broadcast bank $\mathcal{P}^{\mathrm{glob}} = \{\mathbf{p}_c^{\mathrm{glob}}\}$ into its GNN. Layer $l$ first performs edge-weighted local aggregation (GCN-style normalisation $\hat{d}$ with the VCSA mask $\varepsilon$ as edge weight):
-\begin{equation}
-    \mathbf{h}_v^{\mathrm{loc}} = \sum_{u \in \mathcal{N}(v) \cup \{v\}} \frac{\varepsilon_{uv}}{\sqrt{\hat{d}_u \hat{d}_v}}\, \mathbf{W}^{(l)} \mathbf{h}_u^{(l)},
-\label{eq:mgmp_local}
-\end{equation}
-then attends over the global prototypes with scaled dot-product attention:
-\begin{equation}
-    \mathbf{m}_v = \sum_{c \in \mathcal{C}} \mathrm{softmax}_c\!\left(\frac{(\mathbf{W}^{(l)}\mathbf{h}_v^{(l)})^\top \mathbf{p}_c^{\mathrm{glob}}}{\sqrt{d}}\right) \mathbf{p}_c^{\mathrm{glob}},
-\label{eq:protoattn}
-\end{equation}
-and fuses the two signals through a per-node morphology gate $\beta_v = \sigma(\mathbf{w}_\beta^\top [\mathbf{W}^{(l)}\mathbf{h}_v^{(l)} \,\|\, \mathbf{x}_v^{\mathrm{morph}}])$ and a learnable per-layer balance $\lambda \in [0,1]$:
-\begin{equation}
-    \mathbf{h}_v^{(l+1)} = \mathrm{ReLU}\!\left((1-\lambda)\, \mathbf{h}_v^{\mathrm{loc}} + \lambda\, \beta_v\, \mathbf{m}_v\right).
-\label{eq:mgmp_fuse}
-\end{equation}
-Nodes whose abstract type is implicated in known vulnerability morphologies receive a higher gate $\beta_v$ and thus a stronger global signal. Even a client that has never observed CWE $c$ locally can recognise its structural morphology by attending to $\mathbf{p}_c^{\mathrm{glob}}$.
-
-The global bank additionally reaches the decision through two further channels. First, the graph-level readout is $[\mathbf{h}_G^{\mathrm{mean}} \,\|\, \mathbf{h}_G^{\mathrm{max}} \,\|\, \mathrm{cos}(\mathbf{h}_G^{\mathrm{mean}}, \mathbf{p}_c^{\mathrm{glob}})_{c \in \mathcal{C} \cup \{\mathrm{ben}\}}]$: the classifier directly sees how similar the current function is to every global morphology, including the benign one. Second, a prototype-alignment regulariser
-\begin{equation}
-    \mathcal{L}_{\mathrm{proto}} = \frac{1}{|B|} \sum_{i \in B} \big\| \mathbf{h}_{G_i} - \mathbf{p}_{s(i)}^{\mathrm{glob}} \big\|_2^2,
-\label{eq:proto_align}
-\end{equation}
-where $s(i)$ is sample $i$'s bank slot (its CWE bucket, or the benign slot), pulls each client's embedding space toward the shared global geometry --- the mechanism FedProto~\cite{tan2022fedproto} showed to be essential for prototype-based FL under non-IID clients. The total local objective becomes $\mathcal{L} = \mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}} + \mu \mathcal{L}_{\mathrm{proto}}$ with $\mu = 0.5$.
-
-\subsection{Training and Inference Protocol}
-\label{sec:protocol}
-
-Algorithm~\ref{alg:vulmorph_fed} summarises one federation. Note that \emph{model parameters are never aggregated}: each client keeps its own encoder $\theta_k$, and the only shared state is the prototype bank.
-
-\textbf{Inference.} The deployed global detector is the uniform probability ensemble of the $K$ client models, each conditioned on the same final prototype bank:
-\begin{equation}
-    \hat{p}(y \mid G) = \frac{1}{K} \sum_{k=1}^{K} \sigma\!\left(f_{\theta_k}(\tilde{G};\, \mathcal{P}^{\mathrm{glob}})\right).
-\label{eq:ensemble}
-\end{equation}
-All headline metrics are computed from Eq.~\eqref{eq:ensemble} on the held-out cross-project test set; we additionally report the mean and standard deviation of per-client F1 to expose client-level variance. In a production deployment, Eq.~\eqref{eq:ensemble} corresponds to clients exposing scoring endpoints, or --- when a single model is required --- any client model can be used alone, at the cost quantified by the reported per-client variance.
-
-\begin{algorithm}[t]
-\caption{VulMorph-Fed}
-\label{alg:vulmorph_fed}
-\begin{algorithmic}[1]
-\REQUIRE $K$ clients, rounds $T$, per-round budget $\varepsilon$, clip radius $R$
-\STATE Server initialises $\mathcal{P}^{\mathrm{glob}, (0)} = \mathbf{0}$
-\FOR{$t = 1, \dots, T$}
-    \FOR{each client $k$ \textbf{in parallel}}
-        \STATE Retrieve $\mathcal{P}^{\mathrm{glob}, (t-1)}$; abstract graphs via VCSA ($\phi_{\mathrm{type}}$, Eq.~\ref{eq:edge_mask})
-        \STATE Train $\theta_k$ for $E$ local epochs with MGMP (Eqs.~\ref{eq:mgmp_local}--\ref{eq:mgmp_fuse}) and loss $\mathcal{L}_{BCE} + \alpha \mathcal{L}_{SCL} + \gamma \mathcal{L}_{\mathrm{sparse}} + \mu \mathcal{L}_{\mathrm{proto}}$ (Eq.~\ref{eq:proto_align})
-        \STATE Build clipped prototypes $\mathbf{p}_c^{(k)}$ (Eq.~\ref{eq:prototype}); perturb via Eq.~\eqref{eq:laplace}
-        \STATE Upload $\{\hat{\mathbf{p}}_c^{(k)}\}_{c \in \mathcal{C}}$ \COMMENT{$2|\mathcal{C}|d$ floats per round incl.\ download}
-    \ENDFOR
-    \STATE Server aggregates $\mathcal{P}^{\mathrm{glob}, (t)}$ via Eq.~\eqref{eq:mcfpa} and broadcasts
-\ENDFOR
-\ENSURE Prototype bank $\mathcal{P}^{\mathrm{glob}, (T)}$; ensemble detector of Eq.~\eqref{eq:ensemble}; spent budget $\varepsilon_{\mathrm{tot}} = T\varepsilon$
-\end{algorithmic}
-\end{algorithm}
-
-\subsection{Communication Cost}
-\label{sec:comm}
-
-Per round, each client uploads and downloads one $(|\mathcal{C}|+1) \times d$ float32 bank: $2 \times 11 \times 128 \times 4\,\mathrm{B} \approx 11\,\mathrm{KB}$ per client per round in our configuration, independent of model size; total server traffic is $K$ times that (e.g., $\approx$220\,KB per round at $K = 20$). Standard FedAvg on the same backbone transmits the full parameter vector ($\sim$1.4\,MB for our deliberately compact GNN; hundreds of MB for code-LM backbones) per client per round.
+One caveat, stated precisely. Node \emph{features} contain no identifier, but
+$\phi$ \emph{consults} identifier text to classify a callee, so a bounded
+amount of name-derived information --- at most
+$\log_2(|\mathcal{T}_{32}|+1) \approx 5$ bits per call node --- influences the
+representation. What does not survive is the identifier itself, its spelling,
+or any project-specific vocabulary.
