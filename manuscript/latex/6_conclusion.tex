@@ -10,9 +10,12 @@ taxonomy, with a projection lattice that makes its granularities nested by
 construction. Evaluated as a static analysis it exposes failure modes that
 downstream accuracy hides; evaluated as a representation, with graph,
 backbone, depth, readout and training budget all held fixed, it improves
-cross-project ranking by $+0.064$ AUC ($p = 0.001$) and $+0.022$ AUPRC
-($p = 0.047$), winning 8 of 10 project-level folds, and roughly halves
-fold-to-fold variance.
+cross-project ranking by $+0.062$ to $+0.083$ AUC on two corpora and under
+three message-passing schemes, winning 22 of 24 project-level folds with every
+interval excluding zero, and roughly halves fold-to-fold variance. Under a
+fixed representation the three architectures differ by less than half as much
+as the representations differ under a fixed architecture, which is the sense
+in which we claim the representation matters more.
 
 We are equally clear about what we did not find. A learned edge-weighting
 module, an affinity-weighted federated aggregation, and taxonomy refinement

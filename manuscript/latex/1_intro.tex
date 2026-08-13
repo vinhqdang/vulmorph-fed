@@ -65,9 +65,12 @@ Our contributions are:
           admits (Section~\ref{sec:rq_analysis}).
     \item \textbf{The representation effect, measured under controls.}
           Replacing lexical features with the abstraction improves
-          cross-project ranking by $+0.064$ AUC ($p = 0.001$) and $+0.022$
-          AUPRC ($p = 0.047$), winning 8 of 10 folds, with every other factor
-          held constant (Section~\ref{sec:rq_representation}).
+          cross-project ranking by $+0.062$ to $+0.083$ AUC on two corpora and
+          three message-passing schemes, winning 22 of 24 project-level folds,
+          with every other factor held constant --- a larger and more
+          consistent effect than the differences between the architectures
+          themselves (Sections~\ref{sec:rq_representation}
+          and~\ref{sec:rq_generality}).
     \item \textbf{Negative results, reported with equal weight.} A learned
           edge-weighting module and an affinity-weighted federated aggregation
           scheme --- both of which we implemented and initially believed in ---

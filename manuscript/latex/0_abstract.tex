@@ -17,8 +17,12 @@ readout and training budget fixed and vary only the node features, under
 project-level GroupKFold with deduplication, mega-projects held train-only,
 and cluster-bootstrap confidence intervals over held-out projects. Replacing
 lexical node features with the abstraction improves cross-project ranking by
-$+0.064$ AUC (95\% CI $[+0.028, +0.112]$, $p = 0.001$) and $+0.022$ AUPRC
-(95\% CI $[+0.000, +0.049]$, $p = 0.047$) on BigVul, winning 8 of 10 folds.
+$+0.062$ to $+0.083$ AUC across two corpora and three message-passing schemes
+--- every interval excluding zero, winning 22 of 24 project-level folds --- while
+the architecture differences under a fixed representation span less than half
+that range. The improvement in precision at the top of the ranking is
+consistent in sign but smaller ($+0.019$ to $+0.026$ AUPRC) and reaches
+significance in one of four conditions, which we report as such.
 We report negative results with equal weight: learned edge weighting and
 affinity-weighted federated aggregation do not help, and refining the taxonomy
 beyond eight types does not either. All code, annotations and the scripts that
