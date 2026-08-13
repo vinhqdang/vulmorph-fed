@@ -40,7 +40,7 @@ def _ap(y, s):
     return average_precision_score(y, s) if len(np.unique(y)) > 1 else 0.0
 
 
-def analyse(path, metric="auc", n_boot=1000):
+def analyse(path, metric="auc", n_boot=2000, n_seeds=10):
     data = json.load(open(path))
     cells = {k: v for k, v in data.items() if k.count("|") == 1}
     if not cells:
@@ -88,28 +88,48 @@ def analyse(path, metric="auc", n_boot=1000):
                     continue
                 ys += fa["y"]; sa += fa["s"]; sb += fb["s"]
                 gs += [f"{f}:{g}" for g in fa["groups"]]
+            # A bootstrap interval is itself a random quantity. For an effect
+            # sitting near zero the verdict can depend on the resampling draw,
+            # so we repeat the bootstrap under several seeds and record how
+            # often the interval excludes zero. A conclusion that holds for
+            # only some seeds is reported as borderline rather than as a
+            # finding; the headline interval remains the seed-0 one.
+            stability = float("nan")
             if ys:
-                ci = cluster_bootstrap_ci(ys, sa, sb, gs, metric_fn,
-                                          n_boot=n_boot)
+                excl = []
+                for s in range(n_seeds):
+                    c = cluster_bootstrap_ci(ys, sa, sb, gs, metric_fn,
+                                             n_boot=n_boot, seed=s)
+                    if s == 0:
+                        ci = c
+                    excl.append(1.0 if (c["lo"] > 0 or c["hi"] < 0) else 0.0)
+                stability = float(np.mean(excl))
 
             crosses = not (ci["lo"] > 0 or ci["hi"] < 0)
-            verdict = ("INCONCLUSIVE (CI crosses 0)" if crosses
-                       else ("mode HELPS" if ci["diff"] > 0 else "mode HURTS"))
+            if crosses:
+                verdict = "INCONCLUSIVE (CI crosses 0)"
+            elif stability == stability and stability < 0.9:
+                verdict = f"BORDERLINE (excludes 0 in {stability:.0%} of seeds)"
+            else:
+                verdict = "mode HELPS" if ci["diff"] > 0 else "mode HURTS"
             print(f"    {mode:<10} d={d.mean():+.4f}±{d.std():.4f} "
                   f"wins {wins}/{len(d)}  "
                   f"pooled d={ci['diff']:+.4f} "
                   f"[{ci['lo']:+.4f},{ci['hi']:+.4f}] "
-                  f"p={ci['p_two_sided']:.3f}  {verdict}")
+                  f"p={ci['p_two_sided']:.3f}  stab={stability:.2f}  {verdict}")
             out[f"{bb}|{mode}"] = {
                 "per_fold_mean": float(d.mean()), "per_fold_std": float(d.std()),
-                "wins": wins, "n_folds": len(d), **ci, "verdict": verdict}
+                "wins": wins, "n_folds": len(d), **ci,
+                "seed_stability": stability, "n_seeds": n_seeds,
+                "verdict": verdict}
     return out
 
 
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("paths", nargs="*")
-    p.add_argument("--n_boot", type=int, default=1000)
+    p.add_argument("--n_boot", type=int, default=2000)
+    p.add_argument("--n_seeds", type=int, default=10)
     args = p.parse_args()
     paths = args.paths or sorted(
         glob.glob(str(Path(__file__).parent / "results" / "*representation*.json"))
@@ -117,7 +137,7 @@ def main():
     summary = {}
     for path in paths:
         for m in ("auc", "auprc"):
-            r = analyse(path, m, args.n_boot)
+            r = analyse(path, m, args.n_boot, args.n_seeds)
             if r:
                 summary[f"{Path(path).stem}:{m}"] = r
     out = Path(__file__).parent / "results" / "representation_analysis.json"

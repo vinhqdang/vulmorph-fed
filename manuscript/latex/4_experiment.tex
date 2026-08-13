@@ -14,9 +14,8 @@ positive ones:
           features with the abstraction change cross-project detection?
     \item \textbf{RQ3 (generality).} Does the effect hold across corpora and
           across message-passing schemes?
-    \item \textbf{RQ4 (what does not work).} Do a learned edge-weighting
-          module, an affinity-weighted federated aggregation, or a finer
-          taxonomy improve on their ablations?
+    \item \textbf{RQ4 (granularity).} Does a finer operation alphabet recover
+          signal that the coarsest one discards?
 \end{itemize}
 
 \subsection{Setup}
@@ -110,12 +109,27 @@ several F1 values reported as results in the literature.
 
 \subsubsection{Statistical treatment}
 Fold-level means are reported with standard deviations, but inference uses a
-\emph{cluster bootstrap} that resamples held-out projects with replacement
-(1000 resamples), because functions within a repository share style, APIs and
-often near-duplicate code and are therefore not independent. We report the
-paired difference between systems with a 95\% percentile interval and a
-two-sided bootstrap $p$-value. Where an interval crosses zero we say so and
-draw no conclusion.
+\emph{cluster bootstrap} that resamples held-out projects with replacement,
+because functions within a repository share style, APIs and often
+near-duplicate code and are therefore not independent. We report the paired
+difference between systems with a 95\% percentile interval and a two-sided
+bootstrap $p$-value. Where an interval crosses zero we say so and draw no
+conclusion.
+
+Two details of this procedure are declared in advance because they can be
+tuned after the fact. First, all reported intervals use $2000$ resamples with
+the generator seeded at zero. Second, because a percentile interval is itself a
+random quantity, we recompute every interval under ten seeds and record how
+often it excludes zero; a cell whose verdict holds under fewer than nine of the
+ten is marked $\dagger$ and is not treated as a finding. We adopted this check
+after observing that one borderline cell changed verdict when the resample
+count changed, and we regard reporting it as preferable to selecting the
+setting that produced the more favourable answer.
+
+All comparisons are paired on the folds both conditions completed. Where the
+two conditions completed different numbers of folds, the paired count is the
+one reported, and any comparison we cannot make paired we mark as such rather
+than differencing two unequally estimated means.
 
 \subsection{RQ1: $\phi$ as a static analysis}
 \label{sec:rq_analysis}
@@ -226,78 +240,70 @@ project-specific lexical tokens; the engineered operation taxonomy $\phi_8$;
 the parser's grammar node kinds $\kappa$; and their sum, which is the
 combination an author designing such a system would naturally adopt.
 
-\begin{table}[t]
-\centering
-\caption{RQ2: node-feature mode under an otherwise identical protocol (BigVul,
-project-level folds, mean $\pm$ std). Differences are paired per fold against
-the lexical baseline; intervals are cluster bootstrap over held-out projects.}
-\label{tab:rq2_representation}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrrrr}
-\toprule
-Node features & AUC & $\Delta$ AUC (95\% CI, $p$) & AUPRC & $\Delta$ AUPRC (95\% CI, $p$) & Folds \\
-\midrule
-Trivial (all-positive) & 0.500 & --- & 0.088 & --- & --- \\
-Lexical token & 0.587 $\pm$ 0.050 & --- & 0.125 $\pm$ 0.040 & --- & 10 \\
-Operation type $\phi_8$ & 0.635 $\pm$ 0.027 & $-0.006$ $[-0.054,+0.070]$ $p{=}0.89$ & 0.142 $\pm$ 0.025 & $-0.003$ $[-0.034,+0.040]$ $p{=}0.91$ & 5 \\
-\textbf{Grammar kind $\kappa$} & \textbf{0.692 $\pm$ 0.018} & $\mathbf{+0.078}$ $[+0.022,+0.130]$ $p{=}0.007$ & \textbf{0.223 $\pm$ 0.036} & $\mathbf{+0.071}$ $[+0.023,+0.114]$ $p{=}0.002$ & 5 \\
-Operation $+$ kind & 0.668 $\pm$ 0.027 & $+0.064$ $[+0.028,+0.112]$ $p{=}0.001$ & 0.164 $\pm$ 0.034 & $+0.022$ $[+0.000,+0.049]$ $p{=}0.047$ & 9 \\
-\bottomrule
-\end{tabular}}
-\end{table}
+\input{tab_rq2_representation}
 
 Table~\ref{tab:rq2_representation} reports three findings, and the second is
 the one we did not expect.
 
 \textbf{Grammar kinds transfer.} Replacing lexical tokens with the parser's
-node-kind alphabet improves AUC by $+0.078$ ($p = 0.007$) and AUPRC by
-$+0.071$ ($p = 0.002$), winning every fold on both metrics. It is also the
-most stable representation: fold-to-fold AUC deviation is $0.018$ against
+node-kind alphabet improves AUC by $+0.078$ $[+0.022, +0.130]$ and AUPRC by
+$+0.071$ $[+0.023, +0.114]$, winning every fold on both metrics. It is also
+the most stable representation: fold-to-fold AUC deviation is $0.021$ against
 $0.050$ for lexical features, consistent with the account that lexical
 variance is driven by accidental vocabulary overlap between train and test.
 
 \textbf{The engineered taxonomy does not.} $\phi_8$ --- built from API
 allow-lists, identifier-component rules and syntax-directed cases, and
 validated as an analysis in Section~\ref{sec:rq_analysis} --- is
-statistically indistinguishable from lexical features on both metrics
-($p = 0.89$, $p = 0.91$). This is the representation the abstraction was
+statistically indistinguishable from lexical features on both metrics, with
+intervals comfortably containing zero and point estimates that are, if
+anything, slightly negative. This is the representation the abstraction was
 designed to provide, and on this evidence it provides nothing.
 
-\textbf{Combining them is worse than the grammar kind alone.} The sum reaches
-AUPRC $0.164$ against $0.223$ for $\kappa$ alone. Adding a nine-symbol
-labelling to a 364-symbol one does not merely fail to help; it costs
-precision, which is what one would expect if the added channel carries little
-signal but consumes representational capacity.
+\textbf{Combining them does not recover the grammar kind's advantage.} The sum
+reaches AUPRC $0.164$ against $0.215$ for $\kappa$ alone. We report this
+comparison with a caveat we consider important: the two conditions completed
+different numbers of folds ($9$ against $5$), so the gap is not a paired
+contrast of the kind the rest of the table reports, and we do not test it.
+What the table does establish is the weaker and safer statement that adding
+the taxonomy to the grammar kind does not improve on the grammar kind ---
+which is consistent with Section~\ref{sec:rq_why} --- not that it actively
+harms it.
 
-Absolute performance remains modest and we state it plainly: AUPRC $0.223$
-against a base rate of $0.088$ is a lift of about $2.5\times$, and
+One cell deserves explicit caution. The AUPRC gain of the combined
+representation, $+0.022$, has a lower bound of $+0.0002$: it excludes zero by
+two ten-thousandths, and moving from $1000$ to $2000$ bootstrap resamples
+moves that bound across zero. We report the interval as computed at our
+pre-declared setting and rest no claim on it. Cells whose verdict varies
+across bootstrap seeds are marked $\dagger$ throughout.
+
+Absolute performance remains modest and we state it plainly: AUPRC $0.215$
+against a base rate of $0.088$ is a lift of about $2.4\times$, and
 cross-project detection is not solved here.
 
 \subsection{RQ2b: why the engineered taxonomy adds nothing}
 \label{sec:rq_why}
 
-A null result is more useful with a mechanism, so we measure the information
-$\phi$ carries relative to $\kappa$. Both are functions of the same node, so we
-can compute their joint distribution exactly over a corpus and ask how much of
-$\phi$ is already determined by $\kappa$.
+Section~\ref{sec:rq_representation} produced two nulls, not one, and they need
+different explanations. The first is that adding $\phi$ to $\kappa$ buys
+nothing. The second, and the more damaging one for the abstraction, is that
+$\phi$ \emph{alone} performs no better than the lexical baseline it was
+designed to replace. A single quantity cannot account for both.
 
-\begin{table}[t]
-\centering
-\caption{RQ2b: information carried by the operation taxonomy relative to the
-grammar kind, measured over all AST nodes in each corpus.}
-\label{tab:rq2b_information}
-\begin{tabular}{lrr}
-\toprule
- & BigVul & Devign \\
-\midrule
-$H(\phi)$ & 1.438 bits & 1.520 bits \\
-$H(\kappa)$ & 4.500 bits & 4.430 bits \\
-$H(\phi \mid \kappa)$ & \textbf{0.059 bits} & \textbf{0.071 bits} \\
-$I(\phi ; \kappa) / H(\phi)$ & 95.9\% & 95.3\% \\
-$\phi$ predictable from $\kappa$ alone & \textbf{98.2\%} of nodes & \textbf{97.3\%} of nodes \\
-\bottomrule
-\end{tabular}
-\end{table}
+Both $\phi$ and $\kappa$ are functions of the same node, so their joint
+distribution can be computed exactly over a corpus, and the two directions of
+conditional entropy answer the two questions separately:
+\begin{itemize}
+    \item $H(\phi \mid \kappa)$ --- the information in the taxonomy that the
+          grammar kind does not already supply. If this is near zero, adding
+          $\phi$ to $\kappa$ cannot help.
+    \item $H(\kappa \mid \phi)$ --- the information in the grammar kind that
+          the taxonomy destroys. If this is large, $\phi$ alone is a lossy
+          version of a representation that works, and should perform worse than
+          it.
+\end{itemize}
+
+\input{tab_rq2b_information}
 
 \begin{figure}[t]
 \centering
@@ -310,23 +316,53 @@ coarsening of an alphabet the parser already supplies.}
 \label{fig:redundancy}
 \end{figure}
 
-Table~\ref{tab:rq2b_information} and Figure~\ref{fig:redundancy} give a
-complete explanation. The taxonomy is
-predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
-its information is already present in $\kappa$. This follows from the
-specification: rules~2 and~3 of Section~\ref{sec:phi} are syntax-directed, so
-for every node kind they decide, $\phi$ is a constant function of $\kappa$ and
-contributes exactly zero. Only two kinds carry residual uncertainty, and they
-are precisely the name- and token-dependent cases: \texttt{call\_expression}
-(is this callee a memory operation?) and \texttt{binary\_expression} (is this
-operator a comparison or arithmetic?).
+Table~\ref{tab:rq2b_information} and Figure~\ref{fig:redundancy} answer both
+questions, and the two answers together are a complete account.
+
+\textbf{Why the taxonomy adds nothing.} $H(\phi \mid \kappa) = 0.059$ bits on
+BigVul and $0.071$ on Devign: the taxonomy is predictable from the grammar kind
+alone for $98.2\%$ of nodes, and $96\%$ of its information is already present
+in $\kappa$. This follows from the specification rather than from any accident
+of these corpora: rules~2 and~3 of Section~\ref{sec:phi} are syntax-directed,
+so for every node kind they decide, $\phi$ is a constant function of $\kappa$
+and contributes exactly zero. Only two kinds carry residual uncertainty, and
+they are precisely the name- and token-dependent cases:
+\texttt{call\_expression} (is this callee a memory operation?) and
+\texttt{binary\_expression} (is this operator a comparison or arithmetic?).
+
+\textbf{Why the taxonomy alone is weak.} The reverse direction is large:
+$H(\kappa \mid \phi) = 3.12$ bits on BigVul, which is $69\%$ of the grammar
+kind's total information. Collapsing $364$ kinds into nine operation types
+discards more than two thirds of what the kind alphabet distinguishes, and
+Section~\ref{sec:rq_representation} shows that the discarded part is where the
+transferable signal lives. So $\phi$ is not a neutral re-encoding of $\kappa$
+that happens not to help; it is a lossy compression of it, and it performs like
+one.
+
+We note that these two facts are what makes the abstraction's position
+uncomfortable. Judged as a compression of the grammar alphabet, $\phi$ is
+almost perfectly redundant in one direction and heavily lossy in the other ---
+it retains the part $\kappa$ already determines and drops the part that
+carries the effect. That is the opposite of what a useful abstraction does.
+
+The estimates are not sensitive to how much data we measure them on. Across
+five independently cached samples spanning $40{,}779$ to $134{,}441$ AST nodes
+and two corpora, $H(\phi \mid \kappa)$ lies in $[0.055, 0.071]$ bits and
+$H(\kappa \mid \phi)$ in $[2.98, 3.12]$ bits, with bootstrap intervals over
+functions narrower than $0.01$ and $0.07$ bits respectively. These are
+properties of two deterministic labelling functions over a joint table of
+$|\mathcal{T}_8| \times |K|$ cells, so they converge quickly; we report the
+intervals rather than assert the point estimates.
 
 The lesson generalises beyond this taxonomy. An engineered abstraction over a
 parse tree is at risk of being a coarsening of the grammar alphabet in
 disguise; whether it is can be checked in a few lines, before an experiment is
-run, by computing $H(\text{abstraction} \mid \text{grammar kind})$. We would
-have saved considerable effort by running that diagnostic first, and we
-recommend it as a routine step.
+run, by computing the conditional entropy in \emph{both} directions against the
+grammar kind. Had we run that diagnostic first, it would have predicted both of
+our experimental nulls from the specification of $\phi$ alone, at a cost of
+minutes rather than the compute the experiments took. We recommend it as a
+routine step, and we regard it as the most portable contribution of this
+paper.
 
 \subsection{RQ3: generality across corpora and architectures}
 \label{sec:rq_generality}
@@ -336,26 +372,7 @@ property of representations rather than of one experimental cell, we repeat the
 comparison on a second corpus and under two further message-passing schemes,
 changing only the named factor.
 
-\begin{table*}[t]
-\centering
-\caption{RQ3: both project-invariant representations against the lexical
-baseline, across corpora and backbones. Differences are paired per fold;
-intervals are cluster bootstrap over held-out projects. Bold marks intervals
-excluding zero.}
-\label{tab:rq3_generality}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{llrrrr}
-\toprule
-Corpus & Backbone & \multicolumn{2}{c}{Grammar kind $\kappa$ vs lexical} & \multicolumn{2}{c}{Operation $+$ kind vs lexical} \\
- & & $\Delta$AUC (95\% CI) & $p$ & $\Delta$AUC (95\% CI) & $p$ \\
-\midrule
-BigVul     & GGNN & \textbf{+0.078} $[+0.022,+0.130]$ & \textbf{0.007} & \textbf{+0.064} $[+0.028,+0.112]$ & \textbf{0.001} \\
-BigVul     & GAT  & +0.049 $[-0.032,+0.108]$ & 0.217 & \textbf{+0.062} $[+0.014,+0.111]$ & \textbf{0.012} \\
-BigVul     & GIN  & \textbf{+0.106} $[+0.053,+0.166]$ & \textbf{0.001} & \textbf{+0.070} $[+0.026,+0.135]$ & \textbf{0.003} \\
-DiverseVul & GGNN & \textbf{+0.071} $[+0.024,+0.124]$ & \textbf{0.001} & \textbf{+0.083} $[+0.043,+0.124]$ & \textbf{$<$0.001} \\
-\bottomrule
-\end{tabular}}
-\end{table*}
+\input{tab_rq3_generality}
 
 \begin{figure}[t]
 \centering
@@ -412,32 +429,27 @@ signal, a finer alphabet --- separating allocation from release from block
 copy, rather than collapsing them into \texttt{MEMORY\_ACCESS} --- should
 recover more of it.
 
-\begin{table}[t]
-\centering
-\caption{RQ4: taxonomy granularity (BigVul, GGNN). Each row compares the
-operation$+$kind representation at that granularity against the lexical
-baseline computed on the same folds.}
-\label{tab:rq4_granularity}
-\begin{tabular}{lrrr}
-\toprule
-Granularity & Lexical AUC & Operation$+$kind AUC & $\Delta$ \\
-\midrule
-$|\mathcal{T}| = 8$  & 0.587 & 0.668 & $+0.082$ \\
-$|\mathcal{T}| = 16$ & 0.583 & 0.675 & $+0.092$ \\
-$|\mathcal{T}| = 32$ & \multicolumn{3}{c}{not run to completion --- see note} \\
-\bottomrule
-\end{tabular}
-\end{table}
+\input{tab_rq4_granularity}
 
-Refining the alphabet from eight to sixteen types changes the effect by
-$+0.010$ AUC, well inside the fold-to-fold variation of either configuration
-($\sigma \approx 0.03$--$0.05$) and inside the confidence intervals of both. On
-this evidence, granularity does not matter. We report the $|\mathcal{T}| = 32$
-configuration as not run to completion rather than quoting a partial result: a
-single fold yields no interval, and the comparison we would draw from it is not
-one we would defend. The claim we make is therefore restricted to the
-$8 \rightarrow 16$ refinement, which is the step the taxonomy design actually
-turns on (it separates allocation from release from block copy).
+We compare granularities against \emph{each other} rather than each against its
+own lexical baseline. The three runs share a fold assignment --- fold $i$ holds
+out the same repositories in every run, which we verify programmatically rather
+than assume --- so a paired comparison of $|\mathcal{T}| = 16$ against
+$|\mathcal{T}| = 8$ varies granularity and nothing else. Comparing each
+granularity to its own baseline would not: those baselines are themselves
+estimated on whichever folds each run completed, and differencing two such
+estimates confounds granularity with fold composition. An earlier version of
+this analysis did exactly that and read a $+0.010$ AUC ``refinement benefit''
+off the result; the paired comparison shows that quantity to be an artifact.
+
+Refining the alphabet from eight to sixteen types changes AUC by $-0.002$
+$[-0.023, +0.026]$ and AUPRC by $+0.009$ $[-0.007, +0.028]$ over five matched
+folds. Both intervals are centred essentially on zero. On this evidence
+granularity does not matter, and the $8 \rightarrow 16$ step is the one the
+taxonomy design actually turns on, since it separates allocation from release
+from block copy. The $|\mathcal{T}| = 32$ run completed a single fold; we
+report its interval for completeness but draw no conclusion from a comparison
+with that much uncertainty.
 
 The class distribution explains why, and it was visible before the experiment
 was run (Table~\ref{tab:node_dist}): the memory-operation class that motivates
@@ -458,21 +470,28 @@ Collecting the four questions:
           three defects invisible to downstream accuracy.
     \item \textbf{As a representation} it is not what matters. Abandoning
           project-specific lexical features improves cross-project ranking in
-          all eight corpus $\times$ backbone comparisons, by roughly three times
-          the spread between the architectures themselves; but the operation
-          taxonomy alone is indistinguishable from lexical features
-          ($p = 0.89$), and the grammar kind carries the effect.
-    \item \textbf{The null result has a mechanism.} $\phi$ is $98.2\%$
-          predictable from the grammar kind, so it supplies almost nothing the
-          parser has not already provided.
-    \item \textbf{Granularity is irrelevant} for the same reason, compounded by
-          the rarity of the classes a finer taxonomy separates.
+          every corpus $\times$ backbone comparison we ran, by roughly three
+          times the spread between the architectures themselves; but the
+          operation taxonomy \emph{alone} is indistinguishable from lexical
+          features, and the grammar kind is the component carrying the effect.
+    \item \textbf{Both nulls have a mechanism, and it is the same one measured
+          in two directions.} $\phi$ is $98.2\%$ predictable from the grammar
+          kind, so it supplies almost nothing the parser has not already
+          provided; and it discards $69\%$ of the grammar kind's information,
+          so on its own it is a lossy version of the representation that works.
+    \item \textbf{Granularity does not matter.} Refining the alphabet from
+          eight to sixteen types changes AUC by $-0.002$ $[-0.023, +0.026]$
+          over matched folds --- consistent with the redundancy account, and
+          compounded by the rarity of the classes a finer taxonomy separates.
 \end{itemize}
 
 We note explicitly what we do \emph{not} report. An earlier version of this
 work included a learned edge-weighting module and a federated aggregation
-scheme weighted by prototype similarity. Both were removed rather than reported:
-the pipeline that produced their numbers contained defects identified during the
-analysis validation of Section~\ref{sec:rq_analysis}, and we considered it
-unsound to carry forward results we could not reproduce under the corrected
-implementation. Neither component appears in the system evaluated here.
+scheme weighted by prototype similarity. Both were removed rather than
+reported: the pipeline that produced their numbers contained defects identified
+during the analysis validation of Section~\ref{sec:rq_analysis}, and we
+considered it unsound to carry forward results we could not reproduce under the
+corrected implementation. Neither component appears in the system evaluated
+here, and no claim in this paper depends on either. We describe them at all
+only because omitting a component that appeared in a prior version, without
+saying why, is the kind of silent deletion a reader is entitled to know about.

@@ -96,43 +96,45 @@
 \newlabel{tab:rq1_tradeoff}{{5}{15}{RQ1: the copy rule at two operating points, showing the precision/recall trade-off the gold set exposed}{table.5}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Coverage and residual disagreements}{15}{subsubsection.4.2.2}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces RQ2: node-feature mode under an otherwise identical protocol (BigVul, project-level folds, mean $\pm $ std). Differences are paired per fold against the lexical baseline; intervals are cluster bootstrap over held-out projects.}}{16}{table.6}\protected@file@percent }
-\newlabel{tab:rq2_representation}{{6}{16}{RQ2: node-feature mode under an otherwise identical protocol (BigVul, project-level folds, mean $\pm $ std). Differences are paired per fold against the lexical baseline; intervals are cluster bootstrap over held-out projects}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces RQ2: node-feature mode under an otherwise identical protocol (BigVul, GGNN, project-level folds; mean $\pm $ population std over the folds each mode completed). Differences are paired against the lexical baseline on the folds both completed --- that paired count is the ``Folds'' column --- with 95\% cluster-bootstrap intervals over held-out projects; \emph  {n.s.} marks an interval containing zero. Generated mechanically from the result files.}}{16}{table.6}\protected@file@percent }
+\newlabel{tab:rq2_representation}{{6}{16}{RQ2: node-feature mode under an otherwise identical protocol (BigVul, GGNN, project-level folds; mean $\pm $ population std over the folds each mode completed). Differences are paired against the lexical baseline on the folds both completed --- that paired count is the ``Folds'' column --- with 95\% cluster-bootstrap intervals over held-out projects; \emph {n.s.} marks an interval containing zero. Generated mechanically from the result files}{table.6}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.3}RQ2: which representation transfers}{16}{subsection.4.3}\protected@file@percent }
 \newlabel{sec:rq_representation}{{4.3}{16}{RQ2: which representation transfers}{subsection.4.3}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces RQ2b: information carried by the operation taxonomy relative to the grammar kind, measured over all AST nodes in each corpus.}}{17}{table.7}\protected@file@percent }
-\newlabel{tab:rq2b_information}{{7}{17}{RQ2b: information carried by the operation taxonomy relative to the grammar kind, measured over all AST nodes in each corpus}{table.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.4}RQ2b: why the engineered taxonomy adds nothing}{17}{subsection.4.4}\protected@file@percent }
 \newlabel{sec:rq_why}{{4.4}{17}{RQ2b: why the engineered taxonomy adds nothing}{subsection.4.4}{}}
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Why the operation taxonomy adds nothing. Left: the information the taxonomy carries beyond the grammar kind, $H(\phi \mid \kappa )$, is under $0.08$ bits on both corpora. Right: the operation label is recoverable from the grammar kind alone for $97$--$98\%$ of nodes. The taxonomy is, in effect, a coarsening of an alphabet the parser already supplies.}}{18}{figure.1}\protected@file@percent }
-\newlabel{fig:redundancy}{{1}{18}{Why the operation taxonomy adds nothing. Left: the information the taxonomy carries beyond the grammar kind, $H(\phi \mid \kappa )$, is under $0.08$ bits on both corpora. Right: the operation label is recoverable from the grammar kind alone for $97$--$98\%$ of nodes. The taxonomy is, in effect, a coarsening of an alphabet the parser already supplies}{figure.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}RQ3: generality across corpora and architectures}{18}{subsection.4.5}\protected@file@percent }
-\newlabel{sec:rq_generality}{{4.5}{18}{RQ3: generality across corpora and architectures}{subsection.4.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces RQ2b: information shared between the operation taxonomy and the grammar kind, computed exactly over every AST node of the corpora indicated. Brackets are 95\% bootstrap intervals resampling functions. The two conditional entropies answer different questions: $H(\phi \mid \kappa )$ is what the taxonomy adds to the grammar kind, and $H(\kappa \mid \phi )$ is what the taxonomy throws away. Generated mechanically from the result files.}}{18}{table.7}\protected@file@percent }
+\newlabel{tab:rq2b_information}{{7}{18}{RQ2b: information shared between the operation taxonomy and the grammar kind, computed exactly over every AST node of the corpora indicated. Brackets are 95\% bootstrap intervals resampling functions. The two conditional entropies answer different questions: $H(\phi \mid \kappa )$ is what the taxonomy adds to the grammar kind, and $H(\kappa \mid \phi )$ is what the taxonomy throws away. Generated mechanically from the result files}{table.7}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces RQ3: both project-invariant representations against the lexical baseline, across corpora and backbones. Differences are paired per fold; intervals are cluster bootstrap over held-out projects. Bold marks intervals excluding zero.}}{19}{table.8}\protected@file@percent }
-\newlabel{tab:rq3_generality}{{8}{19}{RQ3: both project-invariant representations against the lexical baseline, across corpora and backbones. Differences are paired per fold; intervals are cluster bootstrap over held-out projects. Bold marks intervals excluding zero}{table.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Why the operation taxonomy adds nothing. Left: the information the taxonomy carries beyond the grammar kind, $H(\phi \mid \kappa )$, is under $0.08$ bits on both corpora. Right: the operation label is recoverable from the grammar kind alone for $97$--$98\%$ of nodes. The taxonomy is, in effect, a coarsening of an alphabet the parser already supplies.}}{19}{figure.1}\protected@file@percent }
+\newlabel{fig:redundancy}{{1}{19}{Why the operation taxonomy adds nothing. Left: the information the taxonomy carries beyond the grammar kind, $H(\phi \mid \kappa )$, is under $0.08$ bits on both corpora. Right: the operation label is recoverable from the grammar kind alone for $97$--$98\%$ of nodes. The taxonomy is, in effect, a coarsening of an alphabet the parser already supplies}{figure.1}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces RQ4: taxonomy granularity (BigVul, GGNN). Each row compares the operation$+$kind representation at that granularity against the lexical baseline computed on the same folds.}}{20}{table.9}\protected@file@percent }
-\newlabel{tab:rq4_granularity}{{9}{20}{RQ4: taxonomy granularity (BigVul, GGNN). Each row compares the operation$+$kind representation at that granularity against the lexical baseline computed on the same folds}{table.9}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}RQ4: taxonomy granularity}{20}{subsection.4.6}\protected@file@percent }
-\newlabel{sec:rq_negative}{{4.6}{20}{RQ4: taxonomy granularity}{subsection.4.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces RQ3: both grammar-derived representations against the lexical baseline, across corpora and backbones. Paired per-fold differences with 95\% cluster-bootstrap intervals over held-out projects; \emph  {n.s.} marks an interval containing zero. Generated mechanically from the result files.}}{20}{table.8}\protected@file@percent }
+\newlabel{tab:rq3_generality}{{8}{20}{RQ3: both grammar-derived representations against the lexical baseline, across corpora and backbones. Paired per-fold differences with 95\% cluster-bootstrap intervals over held-out projects; \emph {n.s.} marks an interval containing zero. Generated mechanically from the result files}{table.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}RQ3: generality across corpora and architectures}{20}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:rq_generality}{{4.5}{20}{RQ3: generality across corpora and architectures}{subsection.4.5}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Summary of findings}{21}{subsection.4.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}RQ4: taxonomy granularity}{21}{subsection.4.6}\protected@file@percent }
+\newlabel{sec:rq_negative}{{4.6}{21}{RQ4: taxonomy granularity}{subsection.4.6}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{22}{section.5}\protected@file@percent }
-\newlabel{sec:discussion}{{5}{22}{Discussion}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Why the abstraction transfers}{22}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Validating an abstraction is not optional}{22}{subsection.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces RQ4: taxonomy granularity, compared directly rather than through separate baselines. Fold $i$ holds out the same repositories in every granularity run, so each row is a paired comparison in which granularity is the only quantity that differs. Intervals are 95\% cluster bootstrap over held-out projects; \emph  {n.s.} marks an interval containing zero. The $|\mathcal  {T}|=32$ run completed one fold, so its interval is correspondingly wide and we draw no conclusion from it. Generated mechanically from the result files.}}{22}{table.9}\protected@file@percent }
+\newlabel{tab:rq4_granularity}{{9}{22}{RQ4: taxonomy granularity, compared directly rather than through separate baselines. Fold $i$ holds out the same repositories in every granularity run, so each row is a paired comparison in which granularity is the only quantity that differs. Intervals are 95\% cluster bootstrap over held-out projects; \emph {n.s.} marks an interval containing zero. The $|\mathcal {T}|=32$ run completed one fold, so its interval is correspondingly wide and we draw no conclusion from it. Generated mechanically from the result files}{table.9}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Negative results}{23}{subsection.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations}{23}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:limitations}{{5.4}{23}{Limitations}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7}Summary of findings}{23}{subsection.4.7}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}A corollary for federated deployment}{24}{subsection.5.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{24}{section.6}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{24}{Conclusion}{section.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{24}{section.5}\protected@file@percent }
+\newlabel{sec:discussion}{{5}{24}{Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Why the abstraction transfers}{24}{subsection.5.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Validating an abstraction is not optional}{24}{subsection.5.2}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Negative results}{25}{subsection.5.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations}{25}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:limitations}{{5.4}{25}{Limitations}{subsection.5.4}{}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}A corollary for federated deployment}{26}{subsection.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{26}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{26}{Conclusion}{section.6}{}}
 \def\@LN@column{1}
 \bibdata{ref}
 \bibcite{chakraborty2022deep}{{1}{}{{}}{{}}}
@@ -167,6 +169,6 @@
 \bibcite{fan2020bigvul}{{26}{}{{}}{{}}}
 \providecommand\NAT@force@numbers{}\NAT@force@numbers
 \def\@LN@column{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Paired difference in AUC against lexical node features, for every representation and every corpus $\times $ backbone cell, with 95\% cluster-bootstrap intervals over held-out projects. Intervals crossing zero are marked \emph  {n.s.} The operation taxonomy alone (grey) is the only representation indistinguishable from lexical features; both representations containing the grammar kind sit clearly to the right of zero in seven of eight cells.}}{31}{figure.2}\protected@file@percent }
-\newlabel{fig:forest}{{2}{31}{Paired difference in AUC against lexical node features, for every representation and every corpus $\times $ backbone cell, with 95\% cluster-bootstrap intervals over held-out projects. Intervals crossing zero are marked \emph {n.s.} The operation taxonomy alone (grey) is the only representation indistinguishable from lexical features; both representations containing the grammar kind sit clearly to the right of zero in seven of eight cells}{figure.2}{}}
-\gdef \@abspage@last{31}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Paired difference in AUC against lexical node features, for every representation and every corpus $\times $ backbone cell, with 95\% cluster-bootstrap intervals over held-out projects. Intervals crossing zero are marked \emph  {n.s.} The operation taxonomy alone (grey) is the only representation indistinguishable from lexical features; both representations containing the grammar kind sit clearly to the right of zero in seven of eight cells.}}{33}{figure.2}\protected@file@percent }
+\newlabel{fig:forest}{{2}{33}{Paired difference in AUC against lexical node features, for every representation and every corpus $\times $ backbone cell, with 95\% cluster-bootstrap intervals over held-out projects. Intervals crossing zero are marked \emph {n.s.} The operation taxonomy alone (grey) is the only representation indistinguishable from lexical features; both representations containing the grammar kind sit clearly to the right of zero in seven of eight cells}{figure.2}{}}
+\gdef \@abspage@last{33}
