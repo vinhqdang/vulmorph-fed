@@ -3,9 +3,7 @@
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
 \bibstyle{elsarticle-num}
-\emailauthor{vinh.dq4@buv.edu.vn}{Quang-Vinh Dang}
 \def\@LN@column{1}
-\Newlabel{buv}{a}
 \citation{chakraborty2022deep,chakraborty2024realvul,ding2025primevul}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{2}{section.1}\protected@file@percent }
@@ -31,6 +29,7 @@
 \citation{chakraborty2024realvul}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Normalisation and Abstraction of Code}{5}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}The Cross-Project Generalisation Gap}{5}{subsection.2.3}\protected@file@percent }
 \citation{liu2022cdvuld,zhang2023cpvd,li2023vulgda}
 \citation{cai2024csvdtf}
 \citation{ding2025primevul,chen2023diversevul}
@@ -41,7 +40,6 @@
 \citation{abadi2016deep}
 \citation{mironov2019rdp}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}The Cross-Project Generalisation Gap}{6}{subsection.2.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Evaluation Methodology in this Area}{6}{subsection.2.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Federated and Privacy-Preserving Variants}{6}{subsection.2.5}\protected@file@percent }
 \citation{yamaguchi2014modeling}
@@ -54,16 +52,16 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}The Labelling Function $\phi $}{8}{subsection.3.2}\protected@file@percent }
 \newlabel{sec:phi}{{3.2}{8}{The Labelling Function $\phi $}{subsection.3.2}{}}
 \newlabel{eq:phi}{{1}{8}{The Labelling Function $\phi $}{equation.1}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Callee classification $\psi $}{8}{subsubsection.3.2.1}\protected@file@percent }
+\newlabel{sec:psi}{{3.2.1}{8}{Callee classification $\psi $}{subsubsection.3.2.1}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.2.1}Callee classification $\psi $}{9}{subsubsection.3.2.1}\protected@file@percent }
-\newlabel{sec:psi}{{3.2.1}{9}{Callee classification $\psi $}{subsubsection.3.2.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}The Projection Lattice}{9}{subsection.3.3}\protected@file@percent }
 \newlabel{sec:lattice}{{3.3}{9}{The Projection Lattice}{subsection.3.3}{}}
 \newlabel{eq:projections}{{2}{9}{The Projection Lattice}{equation.2}{}}
+\newlabel{prop:nesting}{{1}{9}{Nesting}{proposition.1}{}}
 \def\@LN@column{1}
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The $|\mathcal  {T}_8| = 8$ operation alphabet and the $\mathcal  {T}_{32}$ classes each abstracts. $\bot $ (\texttt  {UNKNOWN}) labels nodes with no operation semantics: declarations, identifiers, literals, punctuation.}}{10}{table.1}\protected@file@percent }
 \newlabel{tab:taxonomy}{{1}{10}{The $|\mathcal {T}_8| = 8$ operation alphabet and the $\mathcal {T}_{32}$ classes each abstracts. $\bot $ (\texttt {UNKNOWN}) labels nodes with no operation semantics: declarations, identifiers, literals, punctuation}{table.1}{}}
-\newlabel{prop:nesting}{{1}{10}{Nesting}{proposition.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Node Features}{10}{subsection.3.4}\protected@file@percent }
 \newlabel{sec:features}{{3.4}{10}{Node Features}{subsection.3.4}{}}
 \newlabel{eq:features}{{3}{10}{Node Features}{equation.3}{}}
@@ -79,11 +77,11 @@
 \def\@LN@column{1}
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Corpus properties measured on our samples. Project concentration is reported because it determines whether a nominally cross-project split is meaningful: in BigVul the two largest repositories supply two thirds of the functions, which is why they are held train-only (Section~\ref {sec:protocol}).}}{12}{table.2}\protected@file@percent }
 \newlabel{tab:corpora}{{2}{12}{Corpus properties measured on our samples. Project concentration is reported because it determines whether a nominally cross-project split is meaningful: in BigVul the two largest repositories supply two thirds of the functions, which is why they are held train-only (Section~\ref {sec:protocol})}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Node-type distribution under $\phi _8$ (BigVul). $\bot $ (\texttt  {UNKNOWN}) nodes carry no operation label but retain their grammar kind.}}{12}{table.3}\protected@file@percent }
+\newlabel{tab:node_dist}{{3}{12}{Node-type distribution under $\phi _8$ (BigVul). $\bot $ (\texttt {UNKNOWN}) nodes carry no operation label but retain their grammar kind}{table.3}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.2}What the abstraction retains and discards}{12}{subsubsection.4.1.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.3}Deduplication}{12}{subsubsection.4.1.3}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Node-type distribution under $\phi _8$ (BigVul). $\bot $ (\texttt  {UNKNOWN}) nodes carry no operation label but retain their grammar kind.}}{13}{table.3}\protected@file@percent }
-\newlabel{tab:node_dist}{{3}{13}{Node-type distribution under $\phi _8$ (BigVul). $\bot $ (\texttt {UNKNOWN}) nodes carry no operation label but retain their grammar kind}{table.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.3}Deduplication}{13}{subsubsection.4.1.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.4}Cross-project protocol}{13}{subsubsection.4.1.4}\protected@file@percent }
 \newlabel{sec:protocol}{{4.1.4}{13}{Cross-project protocol}{subsubsection.4.1.4}{}}
 \@writefile{toc}{\contentsline {subsubsection}{\numberline {4.1.5}Statistical treatment}{13}{subsubsection.4.1.5}\protected@file@percent }
@@ -130,8 +128,8 @@
 \newlabel{sec:conclusion}{{6}{22}{Conclusion}{section.6}{}}
 \def\@LN@column{1}
 \bibdata{ref}
-\def\@LN@column{1}
 \bibcite{chakraborty2022deep}{{1}{}{{}}{{}}}
+\def\@LN@column{1}
 \bibcite{chakraborty2024realvul}{{2}{}{{}}{{}}}
 \bibcite{ding2025primevul}{{3}{}{{}}{{}}}
 \bibcite{li2018vuldeepecker}{{4}{}{{}}{{}}}
