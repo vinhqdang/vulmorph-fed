@@ -216,49 +216,105 @@ release, but not the kind the taxonomy was designed around. These are
 limitations of a name-based analysis without type information, and they bound
 what the abstraction can claim.
 
-\subsection{RQ2: the representation effect}
+\subsection{RQ2: which representation transfers}
 \label{sec:rq_representation}
 
 Everything except the node features is held fixed: graph topology, backbone
-(GGNN), depth, hidden width, mean-max readout, classification head, optimiser,
-class weighting and gradient budget. Table~\ref{tab:rq2_representation}
-reports BigVul over ten folds.
+(GGNN), depth, hidden width, mean--max readout, classification head, optimiser,
+class weighting and gradient budget. Four feature modes are compared:
+project-specific lexical tokens; the engineered operation taxonomy $\phi_8$;
+the parser's grammar node kinds $\kappa$; and their sum, which is the
+combination an author designing such a system would naturally adopt.
 
 \begin{table}[t]
 \centering
-\caption{RQ2: node-feature mode under an otherwise identical protocol
-(BigVul, 10 project-level folds, mean $\pm$ std). Differences are paired per
-fold; intervals are cluster bootstrap over held-out projects.}
+\caption{RQ2: node-feature mode under an otherwise identical protocol (BigVul,
+project-level folds, mean $\pm$ std). Differences are paired per fold against
+the lexical baseline; intervals are cluster bootstrap over held-out projects.}
 \label{tab:rq2_representation}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrr}
+\toprule
+Node features & AUC & $\Delta$ AUC (95\% CI, $p$) & AUPRC & $\Delta$ AUPRC (95\% CI, $p$) & Folds \\
+\midrule
+Trivial (all-positive) & 0.500 & --- & 0.088 & --- & --- \\
+Lexical token & 0.587 $\pm$ 0.050 & --- & 0.125 $\pm$ 0.040 & --- & 10 \\
+Operation type $\phi_8$ & 0.635 $\pm$ 0.027 & $-0.006$ $[-0.054,+0.070]$ $p{=}0.89$ & 0.142 $\pm$ 0.025 & $-0.003$ $[-0.034,+0.040]$ $p{=}0.91$ & 5 \\
+\textbf{Grammar kind $\kappa$} & \textbf{0.692 $\pm$ 0.018} & $\mathbf{+0.078}$ $[+0.022,+0.130]$ $p{=}0.007$ & \textbf{0.223 $\pm$ 0.036} & $\mathbf{+0.071}$ $[+0.023,+0.114]$ $p{=}0.002$ & 5 \\
+Operation $+$ kind & 0.668 $\pm$ 0.027 & $+0.064$ $[+0.028,+0.112]$ $p{=}0.001$ & 0.164 $\pm$ 0.034 & $+0.022$ $[+0.000,+0.049]$ $p{=}0.047$ & 9 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Table~\ref{tab:rq2_representation} reports three findings, and the second is
+the one we did not expect.
+
+\textbf{Grammar kinds transfer.} Replacing lexical tokens with the parser's
+node-kind alphabet improves AUC by $+0.078$ ($p = 0.007$) and AUPRC by
+$+0.071$ ($p = 0.002$), winning every fold on both metrics. It is also the
+most stable representation: fold-to-fold AUC deviation is $0.018$ against
+$0.050$ for lexical features, consistent with the account that lexical
+variance is driven by accidental vocabulary overlap between train and test.
+
+\textbf{The engineered taxonomy does not.} $\phi_8$ --- built from API
+allow-lists, identifier-component rules and syntax-directed cases, and
+validated as an analysis in Section~\ref{sec:rq_analysis} --- is
+statistically indistinguishable from lexical features on both metrics
+($p = 0.89$, $p = 0.91$). This is the representation the abstraction was
+designed to provide, and on this evidence it provides nothing.
+
+\textbf{Combining them is worse than the grammar kind alone.} The sum reaches
+AUPRC $0.164$ against $0.223$ for $\kappa$ alone. Adding a nine-symbol
+labelling to a 364-symbol one does not merely fail to help; it costs
+precision, which is what one would expect if the added channel carries little
+signal but consumes representational capacity.
+
+Absolute performance remains modest and we state it plainly: AUPRC $0.223$
+against a base rate of $0.088$ is a lift of about $2.5\times$, and
+cross-project detection is not solved here.
+
+\subsection{RQ2b: why the engineered taxonomy adds nothing}
+\label{sec:rq_why}
+
+A null result is more useful with a mechanism, so we measure the information
+$\phi$ carries relative to $\kappa$. Both are functions of the same node, so we
+can compute their joint distribution exactly over a corpus and ask how much of
+$\phi$ is already determined by $\kappa$.
+
+\begin{table}[t]
+\centering
+\caption{RQ2b: information carried by the operation taxonomy relative to the
+grammar kind, measured over all AST nodes in each corpus.}
+\label{tab:rq2b_information}
 \begin{tabular}{lrr}
 \toprule
-Node features & AUC & AUPRC \\
+ & BigVul & Devign \\
 \midrule
-Trivial (all-positive) & 0.500 & 0.088 \\
-Lexical token & 0.587 $\pm$ 0.050 & 0.125 $\pm$ 0.040 \\
-\textbf{Operation + grammar kind} & \textbf{0.668 $\pm$ 0.027} & \textbf{0.164 $\pm$ 0.034} \\
-\midrule
-Paired difference & $+0.064$ & $+0.022$ \\
-95\% CI (cluster bootstrap) & $[+0.028, +0.112]$ & $[+0.000, +0.049]$ \\
-$p$ (two-sided) & $0.001$ & $0.047$ \\
-Folds won & 8/10 & 8/10 \\
+$H(\phi)$ & 1.438 bits & 1.520 bits \\
+$H(\kappa)$ & 4.500 bits & 4.430 bits \\
+$H(\phi \mid \kappa)$ & \textbf{0.059 bits} & \textbf{0.071 bits} \\
+$I(\phi ; \kappa) / H(\phi)$ & 95.9\% & 95.3\% \\
+$\phi$ predictable from $\kappa$ alone & \textbf{98.2\%} of nodes & \textbf{97.3\%} of nodes \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The abstraction improves cross-project ranking by $+0.064$ AUC
-($p = 0.001$) and $+0.022$ AUPRC ($p = 0.047$), winning 8 of 10 folds on both
-metrics, with both intervals excluding zero. It is also markedly more stable
-across folds (AUC standard deviation $0.027$ versus $0.050$), which is what
-one expects if the lexical model's fold-to-fold variation is driven by how
-much of the test vocabulary it happened to see in training.
+Table~\ref{tab:rq2b_information} gives a complete explanation. The taxonomy is
+predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
+its information is already present in $\kappa$. This follows from the
+specification: rules~2 and~3 of Section~\ref{sec:phi} are syntax-directed, so
+for every node kind they decide, $\phi$ is a constant function of $\kappa$ and
+contributes exactly zero. Only two kinds carry residual uncertainty, and they
+are precisely the name- and token-dependent cases: \texttt{call\_expression}
+(is this callee a memory operation?) and \texttt{binary\_expression} (is this
+operator a comparison or arithmetic?).
 
-Two honest qualifications. Absolute performance remains modest: AUPRC of
-$0.164$ against a base rate of $0.088$ is a lift of roughly $1.9\times$, and
-cross-project detection is not solved by this or, on the present evidence, by
-any published method. And the AUPRC interval's lower bound is $+0.000$: the
-effect on precision at the top of the ranking is real but small, and we do not
-claim more.
+The lesson generalises beyond this taxonomy. An engineered abstraction over a
+parse tree is at risk of being a coarsening of the grammar alphabet in
+disguise; whether it is can be checked in a few lines, before an experiment is
+run, by computing $H(\text{abstraction} \mid \text{grammar kind})$. We would
+have saved considerable effort by running that diagnostic first, and we
+recommend it as a routine step.
 
 \subsection{RQ3: generality across corpora and architectures}
 \label{sec:rq_generality}

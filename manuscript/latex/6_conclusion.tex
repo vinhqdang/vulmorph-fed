@@ -2,29 +2,41 @@
 \label{sec:conclusion}
 
 We asked how much of the cross-project gap in vulnerability detection is
-attributable to the program representation rather than the model, and answered
-it by specifying an abstraction and measuring it under controls.
+attributable to the node representation rather than the model, and answered it
+by comparing representations under strict control.
 
-$\phi$ is a total labelling from a C grammar's node alphabet onto an operation
-taxonomy, with a projection lattice that makes its granularities nested by
-construction. Evaluated as a static analysis it exposes failure modes that
-downstream accuracy hides; evaluated as a representation, with graph,
-backbone, depth, readout and training budget all held fixed, it improves
-cross-project ranking by $+0.062$ to $+0.083$ AUC on two corpora and under
-three message-passing schemes, winning 22 of 24 project-level folds with every
-interval excluding zero, and roughly halves fold-to-fold variance. Under a
-fixed representation the three architectures differ by less than half as much
-as the representations differ under a fixed architecture, which is the sense
-in which we claim the representation matters more.
+The answer has two parts, and the second is the one we did not anticipate.
+Replacing project-specific lexical tokens with a project-invariant alphabet
+improves cross-project ranking substantially --- more than the differences
+between the message-passing schemes we compare, under a fixed representation.
+But the alphabet that works is the parser's own grammar node kinds, which cost
+nothing to obtain: $+0.078$ AUC ($p = 0.007$) and $+0.071$ AUPRC
+($p = 0.002$), winning every project-level fold, with roughly a third of the
+fold-to-fold variance of lexical features. The engineered operation taxonomy
+we built for the purpose --- API allow-lists, identifier-component rules,
+syntax-directed cases, validated as a static analysis at $0.976$ accuracy ---
+is statistically indistinguishable from lexical features, and combining it
+with grammar kinds costs precision rather than adding any.
 
-We are equally clear about what we did not find. A learned edge-weighting
-module, an affinity-weighted federated aggregation, and taxonomy refinement
-beyond eight types all fail to improve on their ablations. Absolute
-performance stays modest --- an AUPRC lift of about $1.9\times$ over base rate
---- and cross-project detection remains open.
+We explain that null result rather than leaving it as an anomaly. The taxonomy
+is predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
+its information is already present in the kind alphabet, because most of its
+rules are syntax-directed and therefore decided by the parser before the
+taxonomy is consulted. Its residual contribution is confined to callee names
+and operator tokens.
 
-The methodological suggestion we would most like to see adopted is the
-cheapest one: when a paper introduces a code abstraction, evaluate it as an
-analysis. A few hundred annotated call sites caught two defects in our own
-mapping that no downstream metric revealed, and that would otherwise have
-inflated the statistic used to motivate the design.
+Two recommendations follow, both cheap. When a paper introduces an abstraction
+over a parse tree, measure $H(\text{abstraction} \mid \text{grammar kind})$
+before attributing an effect to it; a few lines of counting would have told us
+in advance what a substantial experimental campaign eventually showed. And when
+an abstraction is introduced at all, evaluate it as an analysis: annotating 212
+call sites exposed three defects --- writes classified as deallocations, stream
+I/O counted as buffer formatting, SIMD lane extraction counted as copying ---
+that no downstream accuracy metric revealed.
+
+For practitioners the implication is a one-line change: feed the graph neural
+network the parser's node kinds instead of the source tokens. Absolute
+performance remains modest --- an AUPRC lift of roughly $2.5\times$ over base
+rate --- and cross-project detection remains open. But the cheapest available
+change to the representation outperformed both the status quo and the
+engineered alternative we expected to beat them.

@@ -1,30 +1,28 @@
 \begin{abstract}
-Deep learning detectors of software vulnerabilities generalise poorly across
-projects, and the field has responded largely by proposing new architectures.
-We ask a different question: how much of the cross-project gap is attributable
-to the \emph{representation} rather than the model? We specify $\phi$, a total
-labelling function from the node alphabet of a C grammar onto a small
-operation taxonomy, together with a projection lattice that makes its three
-granularities nested by construction. Because the resulting alphabet is fixed
-by the grammar rather than by any project's vocabulary, the representation is
-identical across corpora by construction. We evaluate $\phi$ twice. As a
-static analysis, we annotate a stratified sample of call sites and report
-per-class precision and recall, which exposes failure modes that an
-accuracy-only evaluation hides --- notably that substring-based recognition of
-wrapped allocators misclassifies writes and logging macros as memory
-operations. As a representation, we hold graph topology, backbone, depth,
-readout and training budget fixed and vary only the node features, under
-project-level GroupKFold with deduplication, mega-projects held train-only,
-and cluster-bootstrap confidence intervals over held-out projects. Replacing
-lexical node features with the abstraction improves cross-project ranking by
-$+0.062$ to $+0.083$ AUC across two corpora and three message-passing schemes
---- every interval excluding zero, winning 22 of 24 project-level folds --- while
-the architecture differences under a fixed representation span less than half
-that range. The improvement in precision at the top of the ranking is
-consistent in sign but smaller ($+0.019$ to $+0.026$ AUPRC) and reaches
-significance in one of four conditions, which we report as such.
-We report negative results with equal weight: learned edge weighting and
-affinity-weighted federated aggregation do not help, and refining the taxonomy
-beyond eight types does not either. All code, annotations and the scripts that
-regenerate every number are released.
+Learned vulnerability detectors generalise poorly across projects, and the
+field has largely responded with new architectures. We ask instead how much of
+the gap is attributable to the node representation, and find that the answer is
+both larger than the architecture effect and simpler than expected. Holding
+graph topology, backbone, depth, readout and training budget fixed, and varying
+only what a node carries, we compare project-specific lexical tokens against
+two project-invariant alternatives: a hand-designed taxonomy of operation types
+built from API allow-lists and identifier rules, and the parser's own grammar
+node kinds, which are free. Under project-level GroupKFold with deduplication,
+mega-projects held train-only, and cluster-bootstrap intervals over held-out
+projects, grammar kinds improve cross-project ranking by $+0.078$ AUC
+($p = 0.007$) and $+0.071$ AUPRC ($p = 0.002$), winning every fold, while the
+same architectures under a fixed representation differ by less than half as
+much. The engineered taxonomy, by contrast, is indistinguishable from lexical
+features ($p \approx 0.9$), and adding it to grammar kinds \emph{degrades}
+precision. We explain this rather than merely reporting it: an
+information-theoretic analysis shows the taxonomy is $98.2\%$ predictable from
+the grammar kind alone ($H(\phi \mid \kappa) = 0.06$ bits), so it supplies
+almost nothing the parser has not already provided, with its residual
+contribution confined to callee names and operator tokens. We also validate the
+taxonomy as a static analysis against annotated ground truth ($0.976$
+call-site-weighted accuracy), which exposed three defects invisible to
+downstream accuracy. The practical implication is a one-line change ---
+substitute grammar kinds for lexical tokens --- and a methodological one: an
+engineered abstraction should be checked for redundancy against the free
+alternative before it is credited with an effect.
 \end{abstract}
