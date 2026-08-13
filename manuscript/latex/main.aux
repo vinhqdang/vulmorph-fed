@@ -14,38 +14,38 @@
 \citation{zhou2019devign}
 \citation{cheng2021deepwukong}
 \citation{li2021ivdetect}
-\citation{sun2024vullmgnns}
 \citation{luo2025hagnn}
+\citation{fu2022linevul}
+\citation{hin2022linevd,sun2024vullmgnns}
+\citation{yamaguchi2014modeling}
+\citation{li2018vuldeepecker,li2022sysevr}
 \def\@LN@column{1}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Background and Related Work}{4}{section.2}\protected@file@percent }
 \newlabel{sec:background}{{2}{4}{Background and Related Work}{section.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Deep Learning for Software Vulnerability Detection}{4}{subsection.2.1}\protected@file@percent }
-\citation{fu2022linevul}
-\citation{lekssays2025llmxcpg}
-\citation{weissberg2026codemetrics,widyasari2026vultrial}
-\citation{chakraborty2022deep,chakraborty2024realvul,ding2025primevul}
-\citation{yamamoto2023flr}
-\citation{liu2022cdvuld}
-\citation{li2023vulgda}
-\citation{zhang2023cpvd}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Code Representations for Learned Detectors}{4}{subsection.2.1}\protected@file@percent }
+\citation{chakraborty2022deep}
+\citation{chen2023diversevul}
+\citation{ding2025primevul}
+\citation{chakraborty2024realvul}
+\citation{liu2022cdvuld,zhang2023cpvd,li2023vulgda}
 \citation{cai2024csvdtf}
-\citation{mcmahan2017fedavg}
-\citation{shanbhag2022exploring}
-\citation{yang2024federated,hu2024vulfl}
-\citation{he2021fedgraphnn}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Normalisation and Abstraction of Code}{5}{subsection.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}The Cross-Project Generalisation Gap}{5}{subsection.2.3}\protected@file@percent }
+\citation{ding2025primevul,chen2023diversevul}
+\citation{yamamoto2023flr}
+\citation{yang2024federated}
 \citation{zhang2024flvul,hu2024vulfl}
-\citation{wang2026feddense}
-\def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Cross-Project Vulnerability and Defect Prediction}{5}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Federated Learning in Software Engineering}{5}{subsection.2.3}\protected@file@percent }
+\citation{tan2022fedproto}
 \citation{abadi2016deep}
-\citation{bonawitz2017practical}
+\citation{mironov2019rdp}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Privacy-Preserving Mechanisms}{6}{subsection.2.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}Operation Abstraction}{6}{section.3}\protected@file@percent }
-\newlabel{sec:method}{{3}{6}{Operation Abstraction}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Evaluation Methodology in this Area}{6}{subsection.2.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Federated and Privacy-Preserving Variants}{6}{subsection.2.5}\protected@file@percent }
 \citation{yamaguchi2014modeling}
 \def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Operation Abstraction}{7}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{3}{7}{Operation Abstraction}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Program Graphs}{7}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:graph_construction}{{3.1}{7}{Program Graphs}{subsection.3.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}The Labelling Function $\phi $}{7}{subsection.3.2}\protected@file@percent }
@@ -82,64 +82,66 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}RQ1: $\phi $ as a static analysis}{12}{subsection.4.2}\protected@file@percent }
 \newlabel{sec:rq_analysis}{{4.2}{12}{RQ1: $\phi $ as a static analysis}{subsection.4.2}{}}
 \def\@LN@column{1}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces RQ2: node-feature mode under an otherwise identical protocol (BigVul, 10 project-level folds, mean $\pm $ std). Differences are paired per fold; intervals are cluster bootstrap over held-out projects.}}{13}{table.2}\protected@file@percent }
-\newlabel{tab:rq2_representation}{{2}{13}{RQ2: node-feature mode under an otherwise identical protocol (BigVul, 10 project-level folds, mean $\pm $ std). Differences are paired per fold; intervals are cluster bootstrap over held-out projects}{table.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}RQ2: the representation effect}{13}{subsection.4.3}\protected@file@percent }
-\newlabel{sec:rq_representation}{{4.3}{13}{RQ2: the representation effect}{subsection.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces RQ1: $\phi $ evaluated as a static analysis on 212 annotated callee names from Devign. Call-site-weighted accuracy is $0.976$; macro precision $0.976$, macro recall $0.938$.}}{13}{table.2}\protected@file@percent }
+\newlabel{tab:rq1_analysis}{{2}{13}{RQ1: $\phi $ evaluated as a static analysis on 212 annotated callee names from Devign. Call-site-weighted accuracy is $0.976$; macro precision $0.976$, macro recall $0.938$}{table.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.1}What the validation changed}{13}{subsubsection.4.2.1}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}RQ3: generality}{14}{subsection.4.4}\protected@file@percent }
-\newlabel{sec:rq_generality}{{4.4}{14}{RQ3: generality}{subsection.4.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}RQ4: what does not work}{14}{subsection.4.5}\protected@file@percent }
-\newlabel{sec:rq_negative}{{4.5}{14}{RQ4: what does not work}{subsection.4.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces RQ1: the copy rule at two operating points, showing the precision/recall trade-off the gold set exposed.}}{14}{table.3}\protected@file@percent }
+\newlabel{tab:rq1_tradeoff}{{3}{14}{RQ1: the copy rule at two operating points, showing the precision/recall trade-off the gold set exposed}{table.3}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {4.2.2}Coverage and residual disagreements}{14}{subsubsection.4.2.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}RQ2: the representation effect}{14}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:rq_representation}{{4.3}{14}{RQ2: the representation effect}{subsection.4.3}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{15}{section.5}\protected@file@percent }
-\newlabel{sec:discussion}{{5}{15}{Discussion}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Why the abstraction transfers}{15}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Validating an abstraction is not optional}{15}{subsection.5.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces RQ2: node-feature mode under an otherwise identical protocol (BigVul, 10 project-level folds, mean $\pm $ std). Differences are paired per fold; intervals are cluster bootstrap over held-out projects.}}{15}{table.4}\protected@file@percent }
+\newlabel{tab:rq2_representation}{{4}{15}{RQ2: node-feature mode under an otherwise identical protocol (BigVul, 10 project-level folds, mean $\pm $ std). Differences are paired per fold; intervals are cluster bootstrap over held-out projects}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}RQ3: generality}{15}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:rq_generality}{{4.4}{15}{RQ3: generality}{subsection.4.4}{}}
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Negative results}{16}{subsection.5.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations}{16}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:limitations}{{5.4}{16}{Limitations}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}RQ4: what does not work}{16}{subsection.4.5}\protected@file@percent }
+\newlabel{sec:rq_negative}{{4.5}{16}{RQ4: what does not work}{subsection.4.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion}{16}{section.5}\protected@file@percent }
+\newlabel{sec:discussion}{{5}{16}{Discussion}{section.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Why the abstraction transfers}{16}{subsection.5.1}\protected@file@percent }
 \def\@LN@column{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}A corollary for federated deployment}{17}{subsection.5.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{17}{section.6}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{17}{Conclusion}{section.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Validating an abstraction is not optional}{17}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Negative results}{17}{subsection.5.3}\protected@file@percent }
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Limitations}{18}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:limitations}{{5.4}{18}{Limitations}{subsection.5.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}A corollary for federated deployment}{18}{subsection.5.5}\protected@file@percent }
 \bibdata{ref}
 \bibcite{chakraborty2022deep}{{1}{}{{}}{{}}}
 \bibcite{chakraborty2024realvul}{{2}{}{{}}{{}}}
+\def\@LN@column{1}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{19}{section.6}\protected@file@percent }
+\newlabel{sec:conclusion}{{6}{19}{Conclusion}{section.6}{}}
 \bibcite{ding2025primevul}{{3}{}{{}}{{}}}
 \bibcite{li2018vuldeepecker}{{4}{}{{}}{{}}}
 \bibcite{li2022sysevr}{{5}{}{{}}{{}}}
 \bibcite{yamaguchi2014modeling}{{6}{}{{}}{{}}}
-\def\@LN@column{1}
 \bibcite{zhou2019devign}{{7}{}{{}}{{}}}
 \bibcite{cheng2021deepwukong}{{8}{}{{}}{{}}}
 \bibcite{li2021ivdetect}{{9}{}{{}}{{}}}
-\bibcite{sun2024vullmgnns}{{10}{}{{}}{{}}}
-\bibcite{luo2025hagnn}{{11}{}{{}}{{}}}
-\bibcite{fu2022linevul}{{12}{}{{}}{{}}}
-\bibcite{lekssays2025llmxcpg}{{13}{}{{}}{{}}}
 \def\@LN@column{1}
-\bibcite{weissberg2026codemetrics}{{14}{}{{}}{{}}}
-\bibcite{widyasari2026vultrial}{{15}{}{{}}{{}}}
-\bibcite{yamamoto2023flr}{{16}{}{{}}{{}}}
-\bibcite{liu2022cdvuld}{{17}{}{{}}{{}}}
-\bibcite{li2023vulgda}{{18}{}{{}}{{}}}
-\bibcite{zhang2023cpvd}{{19}{}{{}}{{}}}
-\bibcite{cai2024csvdtf}{{20}{}{{}}{{}}}
+\bibcite{luo2025hagnn}{{10}{}{{}}{{}}}
+\bibcite{fu2022linevul}{{11}{}{{}}{{}}}
+\bibcite{hin2022linevd}{{12}{}{{}}{{}}}
+\bibcite{sun2024vullmgnns}{{13}{}{{}}{{}}}
+\bibcite{chen2023diversevul}{{14}{}{{}}{{}}}
+\bibcite{liu2022cdvuld}{{15}{}{{}}{{}}}
+\bibcite{zhang2023cpvd}{{16}{}{{}}{{}}}
 \def\@LN@column{1}
-\bibcite{mcmahan2017fedavg}{{21}{}{{}}{{}}}
-\bibcite{shanbhag2022exploring}{{22}{}{{}}{{}}}
-\bibcite{yang2024federated}{{23}{}{{}}{{}}}
-\bibcite{hu2024vulfl}{{24}{}{{}}{{}}}
-\bibcite{he2021fedgraphnn}{{25}{}{{}}{{}}}
-\bibcite{zhang2024flvul}{{26}{}{{}}{{}}}
+\bibcite{li2023vulgda}{{17}{}{{}}{{}}}
+\bibcite{cai2024csvdtf}{{18}{}{{}}{{}}}
+\bibcite{yamamoto2023flr}{{19}{}{{}}{{}}}
+\bibcite{yang2024federated}{{20}{}{{}}{{}}}
+\bibcite{zhang2024flvul}{{21}{}{{}}{{}}}
+\bibcite{hu2024vulfl}{{22}{}{{}}{{}}}
+\bibcite{tan2022fedproto}{{23}{}{{}}{{}}}
 \def\@LN@column{1}
-\bibcite{wang2026feddense}{{27}{}{{}}{{}}}
-\bibcite{abadi2016deep}{{28}{}{{}}{{}}}
-\bibcite{bonawitz2017practical}{{29}{}{{}}{{}}}
-\bibcite{fan2020bigvul}{{30}{}{{}}{{}}}
-\bibcite{chen2023diversevul}{{31}{}{{}}{{}}}
+\bibcite{abadi2016deep}{{24}{}{{}}{{}}}
+\bibcite{mironov2019rdp}{{25}{}{{}}{{}}}
+\bibcite{fan2020bigvul}{{26}{}{{}}{{}}}
 \providecommand\NAT@force@numbers{}\NAT@force@numbers
 \def\@LN@column{1}
-\gdef \@abspage@last{22}
+\gdef \@abspage@last{23}

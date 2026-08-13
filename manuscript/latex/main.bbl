@@ -70,14 +70,6 @@ Y.~Li, S.~Wang, T.~N. Nguyen, Vulnerability detection with fine-grained
 \newblock \href {https://doi.org/10.1145/3468264.3468597}
   {\path{doi:10.1145/3468264.3468597}}.
 
-\bibitem{sun2024vullmgnns}
-R.~Liu, Y.~Wang, H.~Xu, J.~Sun, F.~Zhang, P.~Li, Z.~Guo, Vul-{LMGNNs}: Fusing
-  language models and online-distilled graph neural networks for code
-  vulnerability detection, Information Fusion 115 (2025) 102748,
-  arXiv:2404.14719.
-\newblock \href {https://doi.org/10.1016/j.inffus.2024.102748}
-  {\path{doi:10.1016/j.inffus.2024.102748}}.
-
 \bibitem{luo2025hagnn}
 Y.~Luo, W.~Xu, D.~Xu, Detecting code vulnerabilities with heterogeneous {GNN}
   training, International Journal of Information Security 24, arXiv:2502.16835
@@ -92,27 +84,57 @@ M.~Fu, C.~Tantithamthavorn, {LineVul}: A transformer-based line-level
 \newblock \href {https://doi.org/10.1145/3524842.3527927}
   {\path{doi:10.1145/3524842.3527927}}.
 
-\bibitem{lekssays2025llmxcpg}
-A.~Lekssays, H.~Mouhcine, K.~Tran, T.~Yu, I.~Khalil, {LLMxCPG}: Context-aware
-  vulnerability detection through code property graph-guided large language
-  models, arXiv preprintArXiv:2507.16585 (2025).
+\bibitem{hin2022linevd}
+D.~Hin, A.~Kan, H.~Chen, M.~A. Babar, {LineVD}: Statement-level vulnerability
+  detection using graph neural networks, in: Proceedings of the 19th
+  International Conference on Mining Software Repositories (MSR), ACM, 2022,
+  pp. 596--607.
+\newblock \href {https://doi.org/10.1145/3524842.3527949}
+  {\path{doi:10.1145/3524842.3527949}}.
 
-\bibitem{weissberg2026codemetrics}
-F.~Weissberg, L.~Pirch, E.~Imgrund, J.~M{\"o}ller, T.~Eisenhofer, K.~Rieck,
-  {LLM}-based vulnerability discovery through the lens of code metrics, in:
-  Proceedings of the 48th IEEE/ACM International Conference on Software
-  Engineering (ICSE), ACM, 2026, arXiv:2509.19117.
-\newblock \href {https://doi.org/10.1145/3744916.3764574}
-  {\path{doi:10.1145/3744916.3764574}}.
+\bibitem{sun2024vullmgnns}
+R.~Liu, Y.~Wang, H.~Xu, J.~Sun, F.~Zhang, P.~Li, Z.~Guo, Vul-{LMGNNs}: Fusing
+  language models and online-distilled graph neural networks for code
+  vulnerability detection, Information Fusion 115 (2025) 102748,
+  arXiv:2404.14719.
+\newblock \href {https://doi.org/10.1016/j.inffus.2024.102748}
+  {\path{doi:10.1016/j.inffus.2024.102748}}.
 
-\bibitem{widyasari2026vultrial}
-R.~Widyasari, M.~Weyssow, I.~C. Irsan, H.~W. Ang, F.~Liauw, E.~L. Ouh, L.~K.
-  Shar, H.~J. Kang, D.~Lo, Let the trial begin: A mock-court approach to
-  vulnerability detection using {LLM}-based agents, in: Proceedings of the 48th
-  IEEE/ACM International Conference on Software Engineering (ICSE), ACM, 2026,
-  arXiv:2505.10961.
-\newblock \href {https://doi.org/10.1145/3744916.3773256}
-  {\path{doi:10.1145/3744916.3773256}}.
+\bibitem{chen2023diversevul}
+Y.~Chen, Z.~Ding, L.~Alowain, X.~Chen, D.~Wagner, {DiverseVul}: A new
+  vulnerable source code dataset for deep learning based vulnerability
+  detection, in: Proceedings of the 26th International Symposium on Research in
+  Attacks, Intrusions and Defenses (RAID), ACM, 2023, pp. 654--668.
+\newblock \href {https://doi.org/10.1145/3607199.3607242}
+  {\path{doi:10.1145/3607199.3607242}}.
+
+\bibitem{liu2022cdvuld}
+S.~Liu, G.~Lin, L.~Qu, J.~Zhang, O.~D. Vel, P.~Montague, Y.~Xiang, {CD-VulD}:
+  Cross-domain vulnerability discovery based on deep domain adaptation, IEEE
+  Transactions on Dependable and Secure Computing 19~(1) (2022) 438--451.
+\newblock \href {https://doi.org/10.1109/TDSC.2020.2984505}
+  {\path{doi:10.1109/TDSC.2020.2984505}}.
+
+\bibitem{zhang2023cpvd}
+C.~Zhang, B.~Liu, Y.~Xin, L.~Yao, {CPVD}: Cross project vulnerability detection
+  based on graph attention network and domain adaptation, IEEE Transactions on
+  Software Engineering 49~(8) (2023) 4152--4168.
+\newblock \href {https://doi.org/10.1109/TSE.2023.3285910}
+  {\path{doi:10.1109/TSE.2023.3285910}}.
+
+\bibitem{li2023vulgda}
+X.~Li, Y.~Xin, H.~Zhu, Y.~Yang, Y.~Chen, Cross-domain vulnerability detection
+  using graph embedding and domain adaptation, Computers \& Security 125 (2023)
+  103017.
+\newblock \href {https://doi.org/10.1016/j.cose.2022.103017}
+  {\path{doi:10.1016/j.cose.2022.103017}}.
+
+\bibitem{cai2024csvdtf}
+Z.~Cai, Y.~Cai, X.~Chen, G.~Lu, W.~Pei, J.~Zhao, {CSVD-TF}: Cross-project
+  software vulnerability detection with {TrAdaBoost} by fusing expert metrics
+  and semantic metrics, Journal of Systems and Software 213 (2024) 112038.
+\newblock \href {https://doi.org/10.1016/j.jss.2024.112038}
+  {\path{doi:10.1016/j.jss.2024.112038}}.
 
 \bibitem{yamamoto2023flr}
 H.~Yamamoto, D.~Wang, G.~K. Rajbahadur, M.~Kondo, Y.~Kamei, N.~Ubayashi,
@@ -123,50 +145,6 @@ H.~Yamamoto, D.~Wang, G.~K. Rajbahadur, M.~Kondo, Y.~Kamei, N.~Ubayashi,
 \newblock \href {https://doi.org/10.1109/SANER56733.2023.00052}
   {\path{doi:10.1109/SANER56733.2023.00052}}.
 
-\bibitem{liu2022cdvuld}
-S.~Liu, G.~Lin, L.~Qu, J.~Zhang, O.~D. Vel, P.~Montague, Y.~Xiang, {CD-VulD}:
-  Cross-domain vulnerability discovery based on deep domain adaptation, IEEE
-  Transactions on Dependable and Secure Computing 19~(1) (2022) 438--451.
-\newblock \href {https://doi.org/10.1109/TDSC.2020.2984505}
-  {\path{doi:10.1109/TDSC.2020.2984505}}.
-
-\bibitem{li2023vulgda}
-X.~Li, Y.~Xin, H.~Zhu, Y.~Yang, Y.~Chen, Cross-domain vulnerability detection
-  using graph embedding and domain adaptation, Computers \& Security 125 (2023)
-  103017.
-\newblock \href {https://doi.org/10.1016/j.cose.2022.103017}
-  {\path{doi:10.1016/j.cose.2022.103017}}.
-
-\bibitem{zhang2023cpvd}
-C.~Zhang, B.~Liu, Y.~Xin, L.~Yao, {CPVD}: Cross project vulnerability detection
-  based on graph attention network and domain adaptation, IEEE Transactions on
-  Software Engineering 49~(8) (2023) 4152--4168.
-\newblock \href {https://doi.org/10.1109/TSE.2023.3285910}
-  {\path{doi:10.1109/TSE.2023.3285910}}.
-
-\bibitem{cai2024csvdtf}
-Z.~Cai, Y.~Cai, X.~Chen, G.~Lu, W.~Pei, J.~Zhao, {CSVD-TF}: Cross-project
-  software vulnerability detection with {TrAdaBoost} by fusing expert metrics
-  and semantic metrics, Journal of Systems and Software 213 (2024) 112038.
-\newblock \href {https://doi.org/10.1016/j.jss.2024.112038}
-  {\path{doi:10.1016/j.jss.2024.112038}}.
-
-\bibitem{mcmahan2017fedavg}
-H.~B. McMahan, E.~Moore, D.~Ramage, S.~Hampson, B.~A. y~Arcas,
-  Communication-efficient learning of deep networks from decentralized data,
-  in: Proceedings of the 20th International Conference on Artificial
-  Intelligence and Statistics (AISTATS), Vol.~54 of Proceedings of Machine
-  Learning Research, PMLR, 2017, pp. 1273--1282.
-
-\bibitem{shanbhag2022exploring}
-S.~Shanbhag, S.~Chimalakonda, Exploring the under-explored terrain of
-  non-open-source data for software engineering through the lens of federated
-  learning, in: Proceedings of the 30th ACM Joint European Software Engineering
-  Conference and Symposium on the Foundations of Software Engineering
-  (ESEC/FSE), Ideas, Visions and Reflections, ACM, 2022, pp. 1610--1614.
-\newblock \href {https://doi.org/10.1145/3540250.3560883}
-  {\path{doi:10.1145/3540250.3560883}}.
-
 \bibitem{yang2024federated}
 Y.~Yang, X.~Hu, Z.~Gao, J.~Chen, C.~Ni, X.~Xia, D.~Lo, Federated learning for
   software engineering: A case study of code clone detection and defect
@@ -174,30 +152,23 @@ Y.~Yang, X.~Hu, Z.~Gao, J.~Chen, C.~Ni, X.~Xia, D.~Lo, Federated learning for
 \newblock \href {https://doi.org/10.1109/TSE.2023.3347898}
   {\path{doi:10.1109/TSE.2023.3347898}}.
 
-\bibitem{hu2024vulfl}
-P.~Zhou, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
-  vulnerability detection using federated learning, arXiv
-  preprintArXiv:2411.16099 (2024).
-
-\bibitem{he2021fedgraphnn}
-C.~He, K.~Balasubramanian, E.~Ceyani, C.~Yang, H.~Xie, L.~Sun, L.~He, L.~Yang,
-  P.~S. Yu, Y.~Rong, P.~Zhao, J.~Huang, M.~Annavaram, S.~Avestimehr,
-  {FedGraphNN}: A federated learning system and benchmark for graph neural
-  networks, in: Proceedings of the ICLR Workshop on Distributed and Private
-  Machine Learning (DPML), 2021, arXiv:2104.07145.
-
 \bibitem{zhang2024flvul}
 C.~Zhang, T.~Yu, B.~Liu, Y.~Xin, Vulnerability detection based on federated
   learning, Information and Software Technology 167 (2024) 107371.
 \newblock \href {https://doi.org/10.1016/j.infsof.2023.107371}
   {\path{doi:10.1016/j.infsof.2023.107371}}.
 
-\bibitem{wang2026feddense}
-L.~Wang, J.~Liu, X.~Gao, et~al., {FedDense}: Tackling non-{IID} graphs via
-  decoupled structure and feature in federated graph learning, in: Database
-  Systems for Advanced Applications (DASFAA), LNCS 15988, Springer, 2026.
-\newblock \href {https://doi.org/10.1007/978-981-95-3906-2_22}
-  {\path{doi:10.1007/978-981-95-3906-2_22}}.
+\bibitem{hu2024vulfl}
+P.~Zhou, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
+  vulnerability detection using federated learning, arXiv
+  preprintArXiv:2411.16099 (2024).
+
+\bibitem{tan2022fedproto}
+Y.~Tan, G.~Long, L.~Liu, T.~Zhou, Q.~Lu, J.~Jiang, C.~Zhang, {FedProto}:
+  Federated prototype learning across heterogeneous clients, in: Proceedings of
+  the 36th AAAI Conference on Artificial Intelligence, 2022, pp. 8432--8440.
+\newblock \href {https://doi.org/10.1609/aaai.v36i8.20819}
+  {\path{doi:10.1609/aaai.v36i8.20819}}.
 
 \bibitem{abadi2016deep}
 M.~Abadi, A.~Chu, I.~Goodfellow, H.~B. McMahan, I.~Mironov, K.~Talwar,
@@ -207,14 +178,9 @@ M.~Abadi, A.~Chu, I.~Goodfellow, H.~B. McMahan, I.~Mironov, K.~Talwar,
 \newblock \href {https://doi.org/10.1145/2976749.2978318}
   {\path{doi:10.1145/2976749.2978318}}.
 
-\bibitem{bonawitz2017practical}
-K.~Bonawitz, V.~Ivanov, B.~Kreuter, A.~Marcedone, H.~B. McMahan, S.~Patel,
-  D.~Ramage, A.~Segal, K.~Seth, Practical secure aggregation for
-  privacy-preserving machine learning, in: Proceedings of the 2017 ACM SIGSAC
-  Conference on Computer and Communications Security (CCS), ACM, 2017, pp.
-  1175--1191.
-\newblock \href {https://doi.org/10.1145/3133956.3133982}
-  {\path{doi:10.1145/3133956.3133982}}.
+\bibitem{mironov2019rdp}
+I.~Mironov, K.~Talwar, L.~Zhang, R\'enyi differential privacy of the sampled
+  gaussian mechanism, in: arXiv preprint, 2019, arXiv:1908.10530.
 
 \bibitem{fan2020bigvul}
 J.~Fan, Y.~Li, S.~Wang, T.~N. Nguyen, A {C/C++} code vulnerability dataset with
@@ -222,13 +188,5 @@ J.~Fan, Y.~Li, S.~Wang, T.~N. Nguyen, A {C/C++} code vulnerability dataset with
   Conference on Mining Software Repositories (MSR), ACM, 2020, pp. 508--512.
 \newblock \href {https://doi.org/10.1145/3379597.3387501}
   {\path{doi:10.1145/3379597.3387501}}.
-
-\bibitem{chen2023diversevul}
-Y.~Chen, Z.~Ding, L.~Alowain, X.~Chen, D.~Wagner, {DiverseVul}: A new
-  vulnerable source code dataset for deep learning based vulnerability
-  detection, in: Proceedings of the 26th International Symposium on Research in
-  Attacks, Intrusions and Defenses (RAID), ACM, 2023, pp. 654--668.
-\newblock \href {https://doi.org/10.1145/3607199.3607242}
-  {\path{doi:10.1145/3607199.3607242}}.
 
 \end{thebibliography}

@@ -1,20 +1,100 @@
 \section{Background and Related Work}
 \label{sec:background}
 
-\subsection{Deep Learning for Software Vulnerability Detection}
-The application of Deep Learning (DL) to Software Vulnerability Detection (SVD) has evolved significantly from early sequence-based models to modern graph-based and transformer-based architectures. Early works, such as VulDeePecker \cite{li2018vuldeepecker} and SySeVR \cite{li2022sysevr}, treated code as sequences of tokens, employing recurrent neural networks (RNNs) like BiLSTMs to classify code gadgets. While these sequence-based models demonstrated the feasibility of DL for SVD, they struggled to capture the complex, non-linear structural dependencies inherent in source code.
+\subsection{Code Representations for Learned Detectors}
+Learned vulnerability detection has moved through three representations. Early
+sequence models treated a function as a token stream: VulDeePecker's code
+gadgets~\cite{li2018vuldeepecker} and SySeVR's syntax- and semantics-based
+candidates~\cite{li2022sysevr} sliced programs into data-dependent token
+sequences for recurrent classifiers. The Code Property Graph
+(CPG)~\cite{yamaguchi2014modeling}, unifying abstract syntax, control flow and
+data dependence in one structure, then made graph learning natural, and
+Devign~\cite{zhou2019devign} established the template still in use: parse to a
+graph, embed node text, propagate, pool, classify. Later work varied the
+graph or the propagation --- inter-procedural slices in
+DeepWukong~\cite{cheng2021deepwukong}, feature-attention over program
+dependence in IVDetect~\cite{li2021ivdetect}, heterogeneous attention
+in~\cite{luo2025hagnn}. A third line embeds code with pre-trained language
+models, either alone as in LineVul~\cite{fu2022linevul} or fused with a graph
+channel~\cite{hin2022linevd, sun2024vullmgnns}.
 
-The introduction of the Code Property Graph (CPG) \cite{yamaguchi2014modeling}, which unifies the Abstract Syntax Tree (AST), Control Flow Graph (CFG), and Data Flow Graph (DFG), marked a paradigm shift. Graph Neural Networks (GNNs) became the architecture of choice for SVD because they naturally align with the topological structure of CPGs. Devign \cite{zhou2019devign} pioneered this approach by applying Gated Graph Neural Networks (GGNNs) over composite graphs to detect vulnerabilities in large C/C++ projects. Subsequent GNN-based models have focused on improving graph representation and interpretability. For instance, DeepWukong \cite{cheng2021deepwukong} operates on inter-procedural program slices, while IVDetect \cite{li2021ivdetect} provides fine-grained interpretations using GNNExplainer. More recent advancements include Vul-LMGNNs \cite{sun2024vullmgnns}, which fuses Large Language Models (LLMs) with GNNs, and HAGNN \cite{luo2025hagnn}, which utilises heterogeneous attention mechanisms.
+What is largely invariant across this progression is the node feature: some
+embedding of the node's lexical content. Our work isolates that choice. We
+hold the graph, the propagation scheme and the training protocol fixed and
+vary only what a node carries, which --- to our knowledge --- prior work does
+not do as a controlled comparison.
 
-Simultaneously, Transformer-based models and LLMs have been adapted for SVD. LineVul \cite{fu2022linevul} leverages CodeBERT for line-level vulnerability prediction, and LLMxCPG \cite{lekssays2025llmxcpg} uses CPGs to guide LLM attention. Despite these advances, recent studies \cite{weissberg2026codemetrics, widyasari2026vultrial} indicate that LLMs often operate at a shallow structural level, highlighting the continued necessity for deep structural abstractions. Furthermore, rigorous replication studies \cite{chakraborty2022deep, chakraborty2024realvul, ding2025primevul} have consistently exposed a severe generalisation gap: SOTA models perform well in within-project settings but their accuracy drops precipitously when evaluated on unseen projects (cross-project).
+\subsection{Normalisation and Abstraction of Code}
+Abstracting away identifiers is long-established practice, but as
+preprocessing rather than as an object of study. Clone detection normalises
+identifiers and literals so that Type-2 clones become textually
+identical~\cite{yamaguchi2014modeling}; sequence-based detectors routinely map
+user-defined names to placeholder tokens (\texttt{VAR1}, \texttt{FUN1}) before
+training~\cite{li2018vuldeepecker, li2022sysevr}; the Devign corpus itself
+ships a normalised variant of every function.
 
-\subsection{Cross-Project Vulnerability and Defect Prediction}
-Cross-Project Vulnerability Detection (CPVD) and Cross-Project Defect Prediction (CPDP) aim to train models on a source project and deploy them on a target project. Traditional CPDP often relies on software metrics and transfer learning \cite{yamamoto2023flr}. In the context of DLVD, several works have employed Domain Adaptation (DA) techniques. CD-VulD \cite{liu2022cdvuld} and VulGDA \cite{li2023vulgda} use deep domain adaptation on graph embeddings to achieve cross-domain discovery. CPVD \cite{zhang2023cpvd} combines Graph Attention Networks (GATs) with adversarial domain adaptation, representing the current SOTA for fully supervised cross-project SVD. CSVD-TF \cite{cai2024csvdtf} fuses expert and semantic metrics using TrAdaBoost. However, a critical limitation of these DA-based approaches is that they require centralised access to raw source code from both the source and target domains, violating privacy constraints in many real-world scenarios.
+Two properties distinguish what we do. First, existing normalisation is
+\emph{anonymising}: it erases the identifier and replaces it with a fresh
+symbol, preserving only equality of occurrences. Ours is \emph{semantic}: it
+maps a call onto the memory effect the callee is documented to have, so that
+\texttt{av\_malloc} and \texttt{kmalloc} become the same symbol as
+\texttt{malloc} rather than three distinct placeholders. Second, and more
+importantly for a languages venue, we treat the mapping as an analysis with a
+specification and a measured error rate, rather than as an unexamined
+preprocessing step. We are not aware of prior work in this area that reports
+precision and recall for its own abstraction.
 
-\subsection{Federated Learning in Software Engineering}
-Federated Learning (FL) \cite{mcmahan2017fedavg} allows multiple clients to jointly train a global model without sharing their local data. Its application to Software Engineering (FL-SE) is a burgeoning area of research, motivated by the proprietary nature of commercial codebases \cite{shanbhag2022exploring}. Recent empirical studies \cite{yang2024federated, hu2024vulfl} confirm the feasibility of FL for tasks like code clone detection and vulnerability detection.
+The idea of typing operations by their effect is of course not new in
+programming languages --- it is the intuition behind effect systems and behavioural
+types --- but those require type information and whole-program context that
+function-level vulnerability corpora do not provide. Our $\phi$ is deliberately
+weaker: syntax-directed, name-based, and total, so it applies to isolated,
+non-preprocessed functions, at the cost of the precision quantified in
+Section~\ref{sec:rq_analysis}.
 
-However, adapting FL to SVD presents unique challenges, primarily due to severe non-IID data distributions (heterogeneity in CWE types and coding styles). FedGraphNN \cite{he2021fedgraphnn} demonstrated that standard federated GNNs often underperform centralised models on non-IID graph splits. Existing FL-SVD solutions typically rely on NLP models (e.g., CodeBERT) or naive GNN aggregations \cite{zhang2024flvul, hu2024vulfl}, which inherit the generalisation gap of their centralized counterparts. To address graph heterogeneity, approaches like FedDense \cite{wang2026feddense} decouple structural and feature learning. VulMorph-Fed builds upon these concepts but specifically targets the structural invariance of vulnerabilities by federating semantic prototypes rather than raw model parameters.
+\subsection{The Cross-Project Generalisation Gap}
+The finding that motivates this paper is now well replicated. Chakraborty et
+al.~\cite{chakraborty2022deep} showed that detectors reporting strong
+within-project results degrade sharply on realistic, project-disjoint data;
+DiverseVul~\cite{chen2023diversevul} demonstrated that simply adding training
+projects does not close the gap; PrimeVul~\cite{ding2025primevul} showed that
+much apparent progress reflects duplication and label noise, with F1 falling
+dramatically under a rigorous split; and~\cite{chakraborty2024realvul} found
+the same degradation at repository scale.
 
-\subsection{Privacy-Preserving Mechanisms}
-Ensuring data privacy in FL often involves Differential Privacy (DP) \cite{abadi2016deep} or Secure Aggregation \cite{bonawitz2017practical}. DP algorithms, such as DP-SGD, add calibrated noise (e.g., Laplace or Gaussian) to model updates. The magnitude of this noise is proportional to the sensitivity of the function being computed. Standard DP-SGD on large GNNs or LLMs requires significant noise due to the high dimensionality of the model parameters and the large vocabulary size of source code tokens, severely degrading utility. VulMorph-Fed mitigates this by applying DP at the level of semantic prototypes. By utilizing a compact, abstracted morphological space instead of the full token vocabulary, the sensitivity is drastically reduced, enabling a much more favorable privacy-utility trade-off.
+Responses have been mostly architectural or adaptational --- domain adaptation
+across projects~\cite{liu2022cdvuld, zhang2023cpvd, li2023vulgda}, transfer
+with metric fusion~\cite{cai2024csvdtf}. Our result is complementary and, we
+argue, prior: with architecture held constant, changing the node
+representation alone yields a larger and more consistent improvement than the
+architecture comparisons in Section~\ref{sec:rq_generality}. This suggests the
+gap is at least partly a representation problem that architectural work has
+been indirectly compensating for.
+
+\subsection{Evaluation Methodology in this Area}
+The methodological pitfalls we control for are documented in exactly the
+literature above, which is why we treat them as requirements rather than
+refinements. Duplication across and within corpora inflates results unless
+removed before splitting~\cite{ding2025primevul, chen2023diversevul}. Project
+mass is heavily concentrated, so a nominally cross-project split can
+degenerate into evaluation on a single repository unless large projects are
+handled explicitly. Threshold-dependent metrics are unstable when the
+calibration and test distributions differ, which they do by construction in
+cross-project evaluation. And functions within a repository are not
+independent, so confidence intervals computed over functions understate
+uncertainty. Section~\ref{sec:protocol} states how each is addressed.
+
+\subsection{Federated and Privacy-Preserving Variants}
+A body of work applies federated learning to software engineering tasks,
+including defect prediction~\cite{yamamoto2023flr}, code clone detection and
+defect prediction jointly~\cite{yang2024federated}, and vulnerability
+detection~\cite{zhang2024flvul, hu2024vulfl}, typically with token or metric
+features; FedProto~\cite{tan2022fedproto} introduced sharing class prototypes
+rather than parameters, and differential privacy for learned models follows
+DP-SGD~\cite{abadi2016deep} with R\'enyi accounting~\cite{mironov2019rdp}.
+Because our abstraction removes project-specific vocabulary from every
+statistic computed over the graph, it composes naturally with such settings,
+and we report that as a corollary in Section~\ref{sec:discussion}. We do not
+claim a federated contribution: in our own experiments ordinary parameter
+averaging, without privacy constraints, remained the stronger aggregation
+strategy.
