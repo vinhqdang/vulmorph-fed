@@ -28,42 +28,6 @@ Y.~Ding, Y.~Fu, O.~Ibrahim, C.~Sitawarin, X.~Chen, B.~Alomair, D.~Wagner,
 \newblock \href {https://doi.org/10.1109/ICSE55347.2025.00038}
   {\path{doi:10.1109/ICSE55347.2025.00038}}.
 
-\bibitem{mcmahan2017fedavg}
-H.~B. McMahan, E.~Moore, D.~Ramage, S.~Hampson, B.~A. y~Arcas,
-  Communication-efficient learning of deep networks from decentralized data,
-  in: Proceedings of the 20th International Conference on Artificial
-  Intelligence and Statistics (AISTATS), Vol.~54 of Proceedings of Machine
-  Learning Research, PMLR, 2017, pp. 1273--1282.
-
-\bibitem{abadi2016deep}
-M.~Abadi, A.~Chu, I.~Goodfellow, H.~B. McMahan, I.~Mironov, K.~Talwar,
-  L.~Zhang, Deep learning with differential privacy, in: Proceedings of the
-  2016 ACM SIGSAC Conference on Computer and Communications Security (CCS),
-  ACM, 2016, pp. 308--318.
-\newblock \href {https://doi.org/10.1145/2976749.2978318}
-  {\path{doi:10.1145/2976749.2978318}}.
-
-\bibitem{he2021fedgraphnn}
-C.~He, K.~Balasubramanian, E.~Ceyani, C.~Yang, H.~Xie, L.~Sun, L.~He, L.~Yang,
-  P.~S. Yu, Y.~Rong, P.~Zhao, J.~Huang, M.~Annavaram, S.~Avestimehr,
-  {FedGraphNN}: A federated learning system and benchmark for graph neural
-  networks, in: Proceedings of the ICLR Workshop on Distributed and Private
-  Machine Learning (DPML), 2021, arXiv:2104.07145.
-
-\bibitem{yamamoto2023flr}
-H.~Yamamoto, D.~Wang, G.~K. Rajbahadur, M.~Kondo, Y.~Kamei, N.~Ubayashi,
-  Towards privacy preserving cross project defect prediction with federated
-  learning, in: Proceedings of the 30th IEEE International Conference on
-  Software Analysis, Evolution and Reengineering (SANER), IEEE, 2023, pp.
-  485--496.
-\newblock \href {https://doi.org/10.1109/SANER56733.2023.00052}
-  {\path{doi:10.1109/SANER56733.2023.00052}}.
-
-\bibitem{hu2024vulfl}
-P.~Zhou, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
-  vulnerability detection using federated learning, arXiv
-  preprintArXiv:2411.16099 (2024).
-
 \bibitem{li2018vuldeepecker}
 Z.~Li, D.~Zou, S.~Xu, X.~Ou, H.~Jin, S.~Wang, Z.~Deng, Y.~Zhong,
   {VulDeePecker}: A deep learning-based system for vulnerability detection, in:
@@ -71,12 +35,6 @@ Z.~Li, D.~Zou, S.~Xu, X.~Ou, H.~Jin, S.~Wang, Z.~Deng, Y.~Zhong,
   Internet Society, 2018.
 \newblock \href {https://doi.org/10.14722/ndss.2018.23158}
   {\path{doi:10.14722/ndss.2018.23158}}.
-
-\bibitem{zhou2019devign}
-Y.~Zhou, S.~Liu, J.~K. Siow, X.~Du, Y.~Liu, Devign: Effective vulnerability
-  identification by learning comprehensive program semantics via graph neural
-  networks, in: Advances in Neural Information Processing Systems (NeurIPS),
-  Vol.~32, 2019, arXiv:1909.03496.
 
 \bibitem{li2022sysevr}
 Z.~Li, D.~Zou, S.~Xu, H.~Jin, Y.~Zhu, Z.~Chen, {SySeVR}: A framework for using
@@ -91,6 +49,12 @@ F.~Yamaguchi, N.~Golde, D.~Arp, K.~Rieck, Modeling and discovering
   Symposium on Security and Privacy (S\&P), IEEE, 2014, pp. 590--604.
 \newblock \href {https://doi.org/10.1109/SP.2014.44}
   {\path{doi:10.1109/SP.2014.44}}.
+
+\bibitem{zhou2019devign}
+Y.~Zhou, S.~Liu, J.~K. Siow, X.~Du, Y.~Liu, Devign: Effective vulnerability
+  identification by learning comprehensive program semantics via graph neural
+  networks, in: Advances in Neural Information Processing Systems (NeurIPS),
+  Vol.~32, 2019, arXiv:1909.03496.
 
 \bibitem{cheng2021deepwukong}
 X.~Cheng, H.~Wang, J.~Hua, G.~Xu, Y.~Sui, {DeepWukong}: Statically detecting
@@ -150,6 +114,15 @@ R.~Widyasari, M.~Weyssow, I.~C. Irsan, H.~W. Ang, F.~Liauw, E.~L. Ouh, L.~K.
 \newblock \href {https://doi.org/10.1145/3744916.3773256}
   {\path{doi:10.1145/3744916.3773256}}.
 
+\bibitem{yamamoto2023flr}
+H.~Yamamoto, D.~Wang, G.~K. Rajbahadur, M.~Kondo, Y.~Kamei, N.~Ubayashi,
+  Towards privacy preserving cross project defect prediction with federated
+  learning, in: Proceedings of the 30th IEEE International Conference on
+  Software Analysis, Evolution and Reengineering (SANER), IEEE, 2023, pp.
+  485--496.
+\newblock \href {https://doi.org/10.1109/SANER56733.2023.00052}
+  {\path{doi:10.1109/SANER56733.2023.00052}}.
+
 \bibitem{liu2022cdvuld}
 S.~Liu, G.~Lin, L.~Qu, J.~Zhang, O.~D. Vel, P.~Montague, Y.~Xiang, {CD-VulD}:
   Cross-domain vulnerability discovery based on deep domain adaptation, IEEE
@@ -178,6 +151,13 @@ Z.~Cai, Y.~Cai, X.~Chen, G.~Lu, W.~Pei, J.~Zhao, {CSVD-TF}: Cross-project
 \newblock \href {https://doi.org/10.1016/j.jss.2024.112038}
   {\path{doi:10.1016/j.jss.2024.112038}}.
 
+\bibitem{mcmahan2017fedavg}
+H.~B. McMahan, E.~Moore, D.~Ramage, S.~Hampson, B.~A. y~Arcas,
+  Communication-efficient learning of deep networks from decentralized data,
+  in: Proceedings of the 20th International Conference on Artificial
+  Intelligence and Statistics (AISTATS), Vol.~54 of Proceedings of Machine
+  Learning Research, PMLR, 2017, pp. 1273--1282.
+
 \bibitem{shanbhag2022exploring}
 S.~Shanbhag, S.~Chimalakonda, Exploring the under-explored terrain of
   non-open-source data for software engineering through the lens of federated
@@ -194,6 +174,18 @@ Y.~Yang, X.~Hu, Z.~Gao, J.~Chen, C.~Ni, X.~Xia, D.~Lo, Federated learning for
 \newblock \href {https://doi.org/10.1109/TSE.2023.3347898}
   {\path{doi:10.1109/TSE.2023.3347898}}.
 
+\bibitem{hu2024vulfl}
+P.~Zhou, M.~Hu, X.~Xie, Y.~Liu, M.~Chen, {VulFL}: An empirical study of
+  vulnerability detection using federated learning, arXiv
+  preprintArXiv:2411.16099 (2024).
+
+\bibitem{he2021fedgraphnn}
+C.~He, K.~Balasubramanian, E.~Ceyani, C.~Yang, H.~Xie, L.~Sun, L.~He, L.~Yang,
+  P.~S. Yu, Y.~Rong, P.~Zhao, J.~Huang, M.~Annavaram, S.~Avestimehr,
+  {FedGraphNN}: A federated learning system and benchmark for graph neural
+  networks, in: Proceedings of the ICLR Workshop on Distributed and Private
+  Machine Learning (DPML), 2021, arXiv:2104.07145.
+
 \bibitem{zhang2024flvul}
 C.~Zhang, T.~Yu, B.~Liu, Y.~Xin, Vulnerability detection based on federated
   learning, Information and Software Technology 167 (2024) 107371.
@@ -207,6 +199,14 @@ L.~Wang, J.~Liu, X.~Gao, et~al., {FedDense}: Tackling non-{IID} graphs via
 \newblock \href {https://doi.org/10.1007/978-981-95-3906-2_22}
   {\path{doi:10.1007/978-981-95-3906-2_22}}.
 
+\bibitem{abadi2016deep}
+M.~Abadi, A.~Chu, I.~Goodfellow, H.~B. McMahan, I.~Mironov, K.~Talwar,
+  L.~Zhang, Deep learning with differential privacy, in: Proceedings of the
+  2016 ACM SIGSAC Conference on Computer and Communications Security (CCS),
+  ACM, 2016, pp. 308--318.
+\newblock \href {https://doi.org/10.1145/2976749.2978318}
+  {\path{doi:10.1145/2976749.2978318}}.
+
 \bibitem{bonawitz2017practical}
 K.~Bonawitz, V.~Ivanov, B.~Kreuter, A.~Marcedone, H.~B. McMahan, S.~Patel,
   D.~Ramage, A.~Segal, K.~Seth, Practical secure aggregation for
@@ -215,24 +215,6 @@ K.~Bonawitz, V.~Ivanov, B.~Kreuter, A.~Marcedone, H.~B. McMahan, S.~Patel,
   1175--1191.
 \newblock \href {https://doi.org/10.1145/3133956.3133982}
   {\path{doi:10.1145/3133956.3133982}}.
-
-\bibitem{dwork2014algorithmic}
-C.~Dwork, A.~Roth, The Algorithmic Foundations of Differential Privacy, Vol.~9
-  of Foundations and Trends in Theoretical Computer Science, Now Publishers,
-  2014.
-\newblock \href {https://doi.org/10.1561/0400000042}
-  {\path{doi:10.1561/0400000042}}.
-
-\bibitem{mironov2019rdp}
-I.~Mironov, K.~Talwar, L.~Zhang, R\'enyi differential privacy of the sampled
-  gaussian mechanism, in: arXiv preprint, 2019, arXiv:1908.10530.
-
-\bibitem{tan2022fedproto}
-Y.~Tan, G.~Long, L.~Liu, T.~Zhou, Q.~Lu, J.~Jiang, C.~Zhang, {FedProto}:
-  Federated prototype learning across heterogeneous clients, in: Proceedings of
-  the 36th AAAI Conference on Artificial Intelligence, 2022, pp. 8432--8440.
-\newblock \href {https://doi.org/10.1609/aaai.v36i8.20819}
-  {\path{doi:10.1609/aaai.v36i8.20819}}.
 
 \bibitem{fan2020bigvul}
 J.~Fan, Y.~Li, S.~Wang, T.~N. Nguyen, A {C/C++} code vulnerability dataset with

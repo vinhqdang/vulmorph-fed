@@ -1,24 +1,88 @@
-\section{Discussion and Limitations}
+\section{Discussion}
 \label{sec:discussion}
 
-\subsection{Why Does Morphological Abstraction Transfer?}
-The abstraction collapses a $\sim$10{,}000-token lexical vocabulary onto nine morphological categories plus the grammar-kind vocabulary fixed by the C grammar itself; about a quarter of AST nodes receive a semantically meaningful (non-\texttt{UNKNOWN}) morphological type on all four corpora. What survives this collapse is exactly the information security analysts use when they recognise a weakness pattern: which \emph{kinds} of operations occur (allocation, indexed write, bounds comparison) and how data flows between them --- not which project-specific API performs them. The comparison between the lexical and VCSA variants of the same backbones (Table~\ref{tab:rq1_main}) shows where this pays off: under pooled centralised training, lexical features are still exploitable; under a federated, cross-project regime they become a liability, both as a source of client drift during aggregation and as non-transferable signal at test time. The morphology is what remains shareable.
+\subsection{Why the abstraction transfers}
+The result is consistent with a simple account. A lexical model's features are
+drawn from the vocabulary of the projects it trained on; at test time on an
+unseen repository, much of its input is out-of-vocabulary, and what remains
+correlates with project identity rather than with the weakness. The abstracted
+model's alphabet is fixed by the C grammar and the operation taxonomy, so its
+input distribution is, by construction, the same on every project. The
+stability we observe supports this: fold-to-fold AUC deviation is roughly half
+that of the lexical model, which is what one expects if lexical variance is
+driven by accidental vocabulary overlap between train and test.
 
-\subsection{Federated Prototypes vs.\ Parameter Averaging}
-The comparison against FedAvg + GGNN \emph{on the identical VCSA representation} isolates the aggregation mechanism, and we report the outcome candidly: without privacy constraints, parameter averaging remains the stronger aggregator --- every client effectively trains one shared encoder on the union of the shards, which prototype exchange cannot fully replicate. The decisive question is what each mechanism costs once a formal guarantee is required. Noising a $\sim$350K-coordinate parameter update at our per-round budget destroys FedAvg's signal (Table~\ref{tab:rq1_main}, DP rows), while noising an $(|\mathcal{C}|+1) \times d \approx 1.4$K prototype bank --- released as clipped class means with sensitivity $2R/N_{c,k}$, not a high-dimensional gradient --- barely dents ours. Prototypes are also what bound communication to $2(|\mathcal{C}|+1)d$ floats per client per round ($\sim$11\,KB in our configuration) and remove parameters from the attack surface entirely: gradient-inversion attacks have no gradient to invert.
+This also explains why the effect is larger on ranking (AUC) than at the top
+of the ranking (AUPRC). The abstraction supplies a consistent notion of
+\emph{what kind of operation} a node performs, which is enough to order
+functions by risk; it discards the specific API, which is often what
+distinguishes a genuinely dangerous call from a benign one of the same type.
 
-\subsection{On the Motivation for Federation}
-Scepticism about federated vulnerability detection deserves a direct answer: since public corpora exist and our own thesis says morphologies are project-invariant, why federate? RQ1b measures precisely this. Two honest observations follow. First, the invariance is a matter of degree --- Table~\ref{tab:rq1_main} shows cross-project transfer is far from solved even with abstraction, so additional in-distribution structural evidence from private codebases retains value, and the RQ1b delta quantifies that value at our scale. Second, our evaluation necessarily \emph{simulates} private clients by partitioning public corpora; genuinely proprietary codebases (with distinct API ecosystems, coding standards, and CWE mixes) are where the private contribution should be largest, but demonstrating this requires industrial partners and is future work. We therefore frame federation as the mechanism that makes private participation \emph{possible at bounded privacy cost}, and let the measured deltas --- not rhetoric --- carry the argument.
+\subsection{Validating an abstraction is not optional}
+The most transferable methodological point concerns RQ1. Program abstractions
+are routinely introduced as preprocessing and never evaluated: a taxonomy is
+listed, a mapping asserted, and downstream accuracy is reported. Our
+experience argues this is unsafe. Two defects in our own mapping --- substring
+matching that classified writes and predicates as memory operations, and a
+formatter class that absorbed 655 stream-I/O call sites --- were invisible to
+every downstream metric and were caught only by annotating call sites and
+computing per-class precision. Both would have inflated the very statistic we
+use to motivate the taxonomy.
 
-\subsection{Limitations and Threats to Validity}
+The cost is modest: a few hundred annotated names. We would encourage the
+practice as a default for work that introduces a code abstraction, in the same
+way that a static analysis is expected to report precision and recall.
+
+\subsection{Negative results}
+We implemented a learned edge-weighting module and an affinity-weighted
+federated aggregation, and expected both to help. Neither improves on its
+ablation. We report them because the alternative --- keeping components a
+paper names but its data does not support --- is how unreproducible results
+enter the literature, and because the negative result is itself informative:
+it locates the effect in the representation rather than in the machinery built
+around it.
+
+The taxonomy-refinement result has a concrete explanation worth recording. The
+memory-operation class fires on under $1\%$ of AST nodes, so subdividing it
+into allocation, release, copy and set cannot shift an aggregate metric
+however well-motivated the distinction is semantically. A finer taxonomy would
+need to be paired with an evaluation that weights the nodes it refines.
+
+\subsection{Limitations}
 \label{sec:limitations}
 
-\textbf{Graph construction.} Our graphs are real tree-sitter ASTs with sibling-order and def-use proxy edges (Section~\ref{sec:graph_construction}), but they are still not compiler-grade CPGs: interprocedural control flow and points-to-precise data dependence are absent. This choice makes the entire pipeline self-contained and exactly reproducible, but it bounds the structural fidelity available to every graph model we evaluate (baselines included, so comparisons remain internally fair). Integrating Joern-derived CPGs behind the same interface is the most direct route to stronger absolute numbers.
+\textbf{Graph fidelity.} Our graphs are tree-sitter syntax trees with sibling
+and def-use approximation edges, not Code Property Graphs: interprocedural
+control flow and points-to-precise dependence are absent. Every system we
+compare consumes the same graphs, so the comparison is internally fair, but
+the absolute ceiling is bounded by this choice.
 
-\textbf{Scale and model class.} Experiments use 8{,}000 functions per corpus, compact models, and our sequence baseline is trained from scratch rather than being a pre-trained code LM such as CodeBERT. Conclusions about relative ordering under matched budgets are supported; conclusions about the ceiling of any model family at industrial scale are not claimed. A FedAvg + CodeBERT comparison is the clearest next experiment.
+\textbf{Scale and language.} Experiments use 8{,}000 functions per corpus,
+compact models, and C only. The abstraction is specified over a tree-sitter
+grammar and is therefore instantiable for other languages, but we have not
+demonstrated that, and a taxonomy validated on C should not be assumed to
+transfer to, say, Rust's ownership discipline.
 
-\textbf{Label noise and CWE model.} We inherit the label quality of the underlying corpora, and our primary-CWE assignment (first listed CWE) simplifies the many-to-many CVE--function--CWE reality; Devign contributes no CWE structure at all. The prototype bank's \texttt{OTHER} bucket absorbs tail CWEs, which limits what can be said about rare-CWE transfer.
+\textbf{Sampling and concentration.} Corpus samples are taken in file order
+rather than at random, and project mass is concentrated (Chrome and
+\texttt{linux} supply about two thirds of BigVul). We hold those projects
+train-only and report it, but a differently constructed sample could yield
+different absolute numbers.
 
-\textbf{Privacy scope.} Theorem~\ref{thm:total} is record-level and covers both mechanisms, so the deployed encoders --- not only the transmitted prototypes --- carry a guarantee. Two caveats remain. First, the composed budget is loose: the prototype releases dominate at $2T\varepsilon$, so reducing rounds or per-round $\varepsilon$ buys more privacy than tightening DP-SGD. Second, the analysis does not cover the count-dependent noise scale or the unnoised slot-support pattern (Section~\ref{sec:privacy}), and we do not yet evaluate membership-inference or reconstruction attacks empirically; an attack-based evaluation is the natural complement to the analytical guarantee.
+\textbf{Label noise.} We inherit the labels of the underlying corpora, whose
+accuracy is itself contested in the literature that produced them.
 
-\textbf{External validity.} All clients are simulated by partitioning public corpora at project granularity. Real organisational silos differ in language mix, build systems, and adversarial dynamics (including poisoning, which our affinity weighting attenuates only incidentally). Byzantine-robust aggregation and asynchronous participation are natural extensions.
+\textbf{Effect size.} The AUPRC improvement is small and its interval's lower
+bound is at zero. The claim we defend is that the representation matters more
+than the architecture choices it is usually compared against --- not that
+cross-project detection is solved.
+
+\subsection{A corollary for federated deployment}
+Because statistics computed over the abstracted graphs contain no
+project-specific vocabulary, class-conditioned summaries can be shared between
+organisations without transmitting code, and perturbed to satisfy differential
+privacy at low dimensionality. We report this as a corollary rather than a
+contribution: in our experiments, ordinary parameter averaging without any
+privacy constraint remained the stronger aggregation strategy, and we found no
+evidence that the prototype-based alternative beats it absent a formal privacy
+requirement.

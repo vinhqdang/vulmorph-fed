@@ -1,3 +1,26 @@
 \begin{abstract}
-Deep learning-based software vulnerability detection faces two coupled barriers: models fail to generalise across projects because they overfit project-specific lexical patterns, and organisations cannot pool the proprietary code that would diversify training data. We propose VulMorph-Fed, a federated learning framework built on the observation that vulnerability manifestations vary lexically across projects while their structural characteristics (morphologies) are largely shared. VulMorph-Fed combines three components: Vulnerability-Critical Subgraph Abstraction (VCSA), which maps code tokens onto a small, fully specified taxonomy of abstract operation types and learns to down-weight vulnerability-irrelevant edges; Morphology-Conditioned Federated Prototype Aggregation (MCFPA), which shares CWE-conditioned prototypes instead of model parameters; combined with DP-SGD on the local encoders this yields an \emph{end-to-end} $(\varepsilon,\delta)$-differential-privacy guarantee over the whole pipeline --- not merely over the released artefact --- accounted with a R\'enyi accountant; and Morphology-Guided Message Passing (MGMP), which injects the aggregated global prototypes into local graph neural network training. We evaluate on project-level cross-project splits of four public C/C++ corpora (Devign, BigVul, DiverseVul, PrimeVul) against baselines organised by privacy class and matched in data, budget, backbone and input representation, reporting mean and standard deviation over repeated runs with statistical tests. We compare against DP-FedAvg at an identical per-round budget, report both F1 and AUC, and communicate $\sim$11\,KB per client per round. We also report, candidly, where the design loses: non-private parameter averaging on the same abstracted graphs remains the stronger aggregator when no privacy constraint is imposed. The complete implementation and scripts regenerating every reported number are publicly released.
+Deep learning detectors of software vulnerabilities generalise poorly across
+projects, and the field has responded largely by proposing new architectures.
+We ask a different question: how much of the cross-project gap is attributable
+to the \emph{representation} rather than the model? We specify $\phi$, a total
+labelling function from the node alphabet of a C grammar onto a small
+operation taxonomy, together with a projection lattice that makes its three
+granularities nested by construction. Because the resulting alphabet is fixed
+by the grammar rather than by any project's vocabulary, the representation is
+identical across corpora by construction. We evaluate $\phi$ twice. As a
+static analysis, we annotate a stratified sample of call sites and report
+per-class precision and recall, which exposes failure modes that an
+accuracy-only evaluation hides --- notably that substring-based recognition of
+wrapped allocators misclassifies writes and logging macros as memory
+operations. As a representation, we hold graph topology, backbone, depth,
+readout and training budget fixed and vary only the node features, under
+project-level GroupKFold with deduplication, mega-projects held train-only,
+and cluster-bootstrap confidence intervals over held-out projects. Replacing
+lexical node features with the abstraction improves cross-project ranking by
+$+0.064$ AUC (95\% CI $[+0.028, +0.112]$, $p = 0.001$) and $+0.022$ AUPRC
+(95\% CI $[+0.000, +0.049]$, $p = 0.047$) on BigVul, winning 8 of 10 folds.
+We report negative results with equal weight: learned edge weighting and
+affinity-weighted federated aggregation do not help, and refining the taxonomy
+beyond eight types does not either. All code, annotations and the scripts that
+regenerate every number are released.
 \end{abstract}

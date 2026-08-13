@@ -23,7 +23,7 @@
 
 \begin{frontmatter}
 
-\title{Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection}
+\title{VulMorph-Fed: Cross-Project Software Vulnerability Detection via Federated Vulnerability Morphology Learning}
 
 \author{Anonymous Authors}
 

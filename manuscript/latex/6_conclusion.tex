@@ -1,6 +1,27 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented VulMorph-Fed, a federated framework for cross-project software vulnerability detection that shares CWE-conditioned structural prototypes instead of model parameters. Its three components are now fully specified: VCSA maps code tokens onto an exhaustively listed semantic taxonomy through deterministic, context-aware rules and learns to down-weight irrelevant edges; MCFPA aggregates clipped, per-class-calibrated Laplace-noised prototypes with a proven per-round $\varepsilon$-DP guarantee and explicit composition accounting; and MGMP injects the aggregated bank into local message passing so clients benefit from CWE types they never observed.
+We asked how much of the cross-project gap in vulnerability detection is
+attributable to the program representation rather than the model, and answered
+it by specifying an abstraction and measuring it under controls.
 
-On project-level cross-project splits of four public corpora, evaluated over repeated seeds with statistical tests and a baseline suite organised by privacy class, we compare methods within privacy classes rather than across them, reporting both F1 and threshold-free AUC so that the cost of each design choice is visible. We are equally explicit about what is not shown: cross-project detection remains a hard, open problem; our AST graphs do not reproduce compiler-grade CPGs; and the value federation adds over public data alone is a measured, dataset-dependent quantity rather than an axiom. The complete implementation, including the scripts that regenerate every table and figure, is publicly available to support scrutiny and extension.
+$\phi$ is a total labelling from a C grammar's node alphabet onto an operation
+taxonomy, with a projection lattice that makes its granularities nested by
+construction. Evaluated as a static analysis it exposes failure modes that
+downstream accuracy hides; evaluated as a representation, with graph,
+backbone, depth, readout and training budget all held fixed, it improves
+cross-project ranking by $+0.064$ AUC ($p = 0.001$) and $+0.022$ AUPRC
+($p = 0.047$), winning 8 of 10 project-level folds, and roughly halves
+fold-to-fold variance.
+
+We are equally clear about what we did not find. A learned edge-weighting
+module, an affinity-weighted federated aggregation, and taxonomy refinement
+beyond eight types all fail to improve on their ablations. Absolute
+performance stays modest --- an AUPRC lift of about $1.9\times$ over base rate
+--- and cross-project detection remains open.
+
+The methodological suggestion we would most like to see adopted is the
+cheapest one: when a paper introduces a code abstraction, evaluate it as an
+analysis. A few hundred annotated call sites caught two defects in our own
+mapping that no downstream metric revealed, and that would otherwise have
+inflated the statistic used to motivate the design.

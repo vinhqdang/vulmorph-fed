@@ -1,23 +1,81 @@
 \section{Introduction}
 
-Software vulnerabilities are a critical and growing threat to modern computing systems. The National Vulnerability Database (NVD) reported over 25,000 new Common Vulnerabilities and Exposures (CVEs) in 2024 alone, highlighting the urgent need for automated and scalable vulnerability detection mechanisms. While Deep Learning-based Vulnerability Detection (DLVD) methods have demonstrated significant promise, they continue to suffer from two fundamental barriers that impede their adoption in real-world scenarios: the generalisation gap and the data silo problem.
+Automated vulnerability detection has become a proving ground for graph
+learning: a function is parsed into a graph, a neural network is trained over
+it, and detection accuracy is reported. Progress is usually claimed
+architecturally --- a different message-passing scheme, an attention variant,
+a language-model hybrid. Yet replication studies keep finding the same thing:
+whatever the architecture, performance collapses when the model is evaluated
+on projects it has never seen~\cite{chakraborty2022deep, chakraborty2024realvul,
+ding2025primevul}. Detectors that appear strong within a project transfer
+poorly across projects, and successive architectures have not closed that gap.
 
-First, state-of-the-art DLVD models exhibit a catastrophic \emph{generalisation gap} when applied across different software projects \cite{chakraborty2022deep}. For instance, a model trained on the source code of FFmpeg typically fails to reliably detect vulnerabilities in OpenSSL, even when both projects manifest the identical Common Weakness Enumeration (CWE) type. Replication studies consistently report performance drops of 50\% to 90\% in cross-project evaluation settings compared to within-project evaluations \cite{chakraborty2024realvul, ding2025primevul}. This degradation occurs because existing models tend to overfit to project-specific lexical patterns (e.g., API names, variable naming conventions) rather than learning the underlying structural semantics of the vulnerability.
+This paper examines a factor that most of that work holds constant: what a
+node in the graph actually \emph{carries}. Nearly all graph-based detectors
+embed the node's lexical content --- an identifier, an API name, a literal.
+Such a vocabulary is a property of a codebase, not of a language. FFmpeg
+allocates with \texttt{av\_malloc}, GLib with \texttt{g\_malloc}, the Linux
+kernel with \texttt{kmalloc}, OpenSSL with \texttt{OPENSSL\_malloc}. A model
+whose features are drawn from one project's vocabulary has, at test time on
+another project, largely out-of-vocabulary input. The mechanism the model
+must learn --- an allocation whose size is computed, an indexed write, a
+missing bound --- is shared; the tokens denoting it are not.
 
-Second, the \emph{data silo problem} prevents the aggregation of sufficient training data. Real-world vulnerability data is highly sensitive and routinely proprietary. Organisations such as financial institutions, cloud service providers, and defence contractors cannot legally or practically share their raw source code with external entities due to intellectual property concerns and privacy regulations. Consequently, a centralised DLVD model trained on one organisation's codebase cannot leverage the knowledge embedded in another organisation's repositories, severely restricting the model's exposure to diverse vulnerability manifestations.
+We therefore study a program abstraction rather than an architecture. We
+define $\phi$, a total labelling function from the node-kind alphabet of the
+tree-sitter C grammar onto an operation taxonomy of eight types, with finer
+16- and 32-type refinements related by explicit surjections so that the three
+granularities are nested by construction (Proposition~\ref{prop:nesting}).
+The resulting node alphabet is fixed by the grammar and the taxonomy, so it is
+identical for every project and every corpus --- the property we claim is
+responsible for transfer.
 
-Federated Learning (FL) has emerged as a promising paradigm to address the data silo problem by enabling collaborative model training without centralising raw data \cite{mcmahan2017fedavg, abadi2016deep}. However, naively applying standard FL techniques, such as FedAvg, to vulnerability detection does not resolve the generalisation gap \cite{he2021fedgraphnn}. Weight averaging across highly heterogeneous, non-IID (Independent and Identically Distributed) codebases fails to transfer structural vulnerability knowledge effectively, leading to suboptimal cross-project detection performance \cite{yamamoto2023flr, hu2024vulfl}.
+Two evaluations follow, and we regard the first as being as important as the
+second. Abstractions of this kind are usually introduced as preprocessing and
+never validated: no precision, no recall, no error analysis. We instead
+evaluate $\phi$ \emph{as a static analysis}, annotating a stratified sample of
+call sites and reporting per-class precision and recall. That exercise is not
+ceremonial. It found that substring-based recognition of wrapped allocators
+labels \texttt{\_\_put\_user} and \texttt{skb\_put} --- both writes --- as
+release operations, treats a floating-point predicate as a block set, and
+misses \texttt{copy\_to\_user}; and that classifying \texttt{printf} and
+\texttt{fprintf} as buffer-writing formatters silently counts 655 stream-I/O
+call sites in one corpus as memory operations. Both defects are invisible to
+downstream accuracy and were corrected before the experiments reported here.
 
-The root cause of both barriers stems from the representation level: existing approaches primarily model code at the lexical or token level rather than at the structural or semantic level \cite{li2018vuldeepecker, zhou2019devign}. A buffer overflow in FFmpeg and a buffer overflow in OpenSSL are structurally identical within their Code Property Graphs (CPGs)---both typically involve a loop incrementing an index, an array access using that index, and a missing bounds check---yet they utilise completely different function names and API calls. 
+The second evaluation isolates the representation. Graph topology, backbone,
+depth, hidden width, readout, optimiser and gradient budget are held fixed;
+only the node features vary. Evaluation uses project-level GroupKFold with
+near-duplicate removal before splitting, mega-projects held train-only so that
+no ``cross-project'' fold is secretly a single repository, vocabularies fitted
+on training projects only, and cluster-bootstrap confidence intervals that
+resample held-out \emph{projects} rather than functions.
 
-To overcome these challenges, we propose \textbf{VulMorph-Fed} (Vulnerability Morphology-Guided Federated Learning), a novel federated learning framework designed to achieve robust cross-project vulnerability detection while preserving data privacy. VulMorph-Fed operates on the principle that vulnerability patterns are structurally invariant across projects but lexically heterogeneous. By extracting and federating \emph{vulnerability morphologies} rather than raw parameters or lexical features, VulMorph-Fed successfully bridges the generalisation gap without requiring centralised code sharing.
+Our contributions are:
 
-The primary contributions of this paper are:
 \begin{itemize}
-    \item We introduce the \textbf{Vulnerability-Critical Subgraph Abstraction (VCSA)}, which combines a fully specified, deterministic mapping of code tokens onto a small taxonomy of abstract semantic operation types (given exhaustively in Table~\ref{tab:taxonomy}) with a learned, trainable edge-weighting module that down-weights vulnerability-irrelevant structure.
-    \item We propose \textbf{Morphology-Conditioned Federated Prototype Aggregation (MCFPA)}, an FL aggregation mechanism that shares CWE-conditioned semantic prototypes instead of model parameters. Combining this with DP-SGD on the local encoders, we prove an \emph{end-to-end} $(\varepsilon,\delta)$-differential-privacy guarantee (Theorem~\ref{thm:total}) covering both the transmitted prototypes and the locally trained model, with explicit norm clipping, per-class noise calibration, R\'enyi accounting of the training budget, and composition over rounds. We are explicit that a prototype guarantee alone would be conditional on a non-private encoder, and we state the residual leakage channels our analysis does not cover.
-    \item We design \textbf{Morphology-Guided Message Passing (MGMP)} to inject global prototype signals into local Graph Neural Network (GNN) training, allowing clients to benefit from structural knowledge of CWE types they have never observed locally.
-    \item We evaluate on project-level cross-project splits of four public corpora with multi-seed repetition, statistical testing, and a baseline suite organised by \emph{privacy class}: methods with a formal $\varepsilon$-DP guarantee (DP-FedAvg at our exact per-round budget) are compared as peers, while centralised training and parameter-sharing FedAvg --- including FedAvg on our own abstracted representation --- serve as non-private references. This design isolates the representation from the federation mechanism and prices privacy explicitly. We release the complete implementation and the scripts that regenerate every reported number.\footnote{\url{https://github.com/vinhqdang/vulmorph-fed}}
+    \item \textbf{A specified abstraction.} $\phi$ as a total, deterministic
+          labelling over a grammar alphabet, with a projection lattice and a
+          nesting proposition, requiring no name resolution, build system or
+          whole-program context (Section~\ref{sec:method}).
+    \item \textbf{Validation as an analysis.} Per-class precision and recall
+          against annotated ground truth, with the measured precision/coverage
+          trade-off between exact allow-listing and component-based
+          recognition of project-wrapped APIs, and the failure modes each
+          admits (Section~\ref{sec:rq_analysis}).
+    \item \textbf{The representation effect, measured under controls.}
+          Replacing lexical features with the abstraction improves
+          cross-project ranking by $+0.064$ AUC ($p = 0.001$) and $+0.022$
+          AUPRC ($p = 0.047$), winning 8 of 10 folds, with every other factor
+          held constant (Section~\ref{sec:rq_representation}).
+    \item \textbf{Negative results, reported with equal weight.} A learned
+          edge-weighting module and an affinity-weighted federated aggregation
+          scheme --- both of which we implemented and initially believed in ---
+          do not improve on their ablations; nor does refining the taxonomy
+          beyond eight types (Section~\ref{sec:rq_negative}).
 \end{itemize}
 
-The remainder of this paper is structured as follows. Section \ref{sec:background} reviews related work in deep learning for vulnerability detection, cross-project prediction, and federated learning. Section \ref{sec:method} details the proposed VulMorph-Fed framework, including its label model, privacy analysis, and inference protocol. Section \ref{sec:experiment} presents the experimental setup and results. Section \ref{sec:discussion} discusses implications and limitations, and Section \ref{sec:conclusion} concludes.
+Section~\ref{sec:background} positions the work, Section~\ref{sec:method}
+specifies the abstraction, Section~\ref{sec:experiment} reports both
+evaluations, and Section~\ref{sec:discussion} discusses what the result does
+and does not license.
