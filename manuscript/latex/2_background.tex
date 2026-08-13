@@ -92,9 +92,9 @@ detection~\cite{zhang2024flvul, hu2024vulfl}, typically with token or metric
 features; FedProto~\cite{tan2022fedproto} introduced sharing class prototypes
 rather than parameters, and differential privacy for learned models follows
 DP-SGD~\cite{abadi2016deep} with R\'enyi accounting~\cite{mironov2019rdp}.
-Because our abstraction removes project-specific vocabulary from every
-statistic computed over the graph, it composes naturally with such settings,
-and we report that as a corollary in Section~\ref{sec:discussion}. We do not
-claim a federated contribution: in our own experiments ordinary parameter
-averaging, without privacy constraints, remained the stronger aggregation
-strategy.
+We mention this line of work only to place the present paper against it. This
+paper makes no federated or privacy claim, reports no federated experiment, and
+evaluates a single centrally trained model throughout. A representation whose
+alphabet is fixed by the grammar is a plausible ingredient for such settings,
+since it carries no project-specific vocabulary, but we have not tested that
+and do not assert it.

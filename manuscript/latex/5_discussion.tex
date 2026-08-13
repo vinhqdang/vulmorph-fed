@@ -34,13 +34,22 @@ practice as a default for work that introduces a code abstraction, in the same
 way that a static analysis is expected to report precision and recall.
 
 \subsection{Negative results}
-We implemented a learned edge-weighting module and an affinity-weighted
-federated aggregation, and expected both to help. Neither improves on its
-ablation. We report them because the alternative --- keeping components a
-paper names but its data does not support --- is how unreproducible results
-enter the literature, and because the negative result is itself informative:
-it locates the effect in the representation rather than in the machinery built
-around it.
+The two nulls this paper does report --- the operation taxonomy as a
+representation, and its granularity --- are measured under the protocol of
+Section~\ref{sec:protocol} and are the substance of
+Sections~\ref{sec:rq_representation} and~\ref{sec:rq_negative}. We report them
+because the alternative, keeping a component a paper names but its data does
+not support, is how unreproducible results enter the literature, and because
+each null is informative: together they locate the effect in the grammar
+alphabet rather than in the abstraction built on top of it.
+
+We separately implemented a learned edge-weighting module and an
+affinity-weighted federated aggregation. We make \emph{no} empirical claim
+about either. Their numbers came from a pipeline in which the analysis
+validation of Section~\ref{sec:rq_analysis} later exposed defects, and we
+withdrew rather than re-ran them; neither is part of the system evaluated here.
+Stating that they ``did not help'' would assert a measurement we no longer
+stand behind, which is why this paper does not say it.
 
 The taxonomy-refinement result has a concrete explanation worth recording. The
 memory-operation class fires on under $1\%$ of AST nodes, so subdividing it
@@ -77,12 +86,3 @@ bound is at zero. The claim we defend is that the representation matters more
 than the architecture choices it is usually compared against --- not that
 cross-project detection is solved.
 
-\subsection{A corollary for federated deployment}
-Because statistics computed over the abstracted graphs contain no
-project-specific vocabulary, class-conditioned summaries can be shared between
-organisations without transmitting code, and perturbed to satisfy differential
-privacy at low dimensionality. We report this as a corollary rather than a
-contribution: in our experiments, ordinary parameter averaging without any
-privacy constraint remained the stronger aggregation strategy, and we found no
-evidence that the prototype-based alternative beats it absent a formal privacy
-requirement.

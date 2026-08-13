@@ -5,25 +5,28 @@ the gap is attributable to the node representation, and find that the answer is
 both larger than the architecture effect and simpler than expected. Holding
 graph topology, backbone, depth, readout and training budget fixed, and varying
 only what a node carries, we compare project-specific lexical tokens against
-two project-invariant alternatives: a hand-designed taxonomy of operation types
-built from API allow-lists and identifier rules, and the parser's own grammar
-node kinds, which are free. Under project-level GroupKFold with deduplication,
-mega-projects held train-only, and cluster-bootstrap intervals over held-out
-projects, both invariant representations beat lexical tokens in every one of eight
-comparisons across two corpora and three message-passing schemes ($+0.049$ to
-$+0.106$ AUC, seven of eight intervals excluding zero), while the same
-architectures under a fixed representation differ by roughly a third as much.
-The engineered taxonomy is not, however, what produces this: on its own it is
-indistinguishable from lexical features ($p \approx 0.9$), and adding it to
-grammar kinds gives no consistent gain. We explain this rather than merely reporting it: an
-information-theoretic analysis shows the taxonomy is $98.2\%$ predictable from
-the grammar kind alone ($H(\phi \mid \kappa) = 0.06$ bits), so it supplies
-almost nothing the parser has not already provided, with its residual
-contribution confined to callee names and operator tokens. We also validate the
-taxonomy as a static analysis against annotated ground truth ($0.976$
-call-site-weighted accuracy), which exposed three defects invisible to
-downstream accuracy. The practical implication is a one-line change ---
-substitute grammar kinds for lexical tokens --- and a methodological one: an
-engineered abstraction should be checked for redundancy against the free
-alternative before it is credited with an effect.
+three alternatives: a hand-designed taxonomy of operation types built from API
+allow-lists and identifier rules, the parser's own grammar node kinds, which
+are free, and their combination. Under project-level GroupKFold with
+deduplication, mega-projects held train-only, and cluster-bootstrap intervals
+over held-out projects, the two representations that contain grammar kinds beat
+lexical tokens in all eight comparisons across two corpora and three
+message-passing schemes ($+0.049$ to $+0.106$ AUC, seven of eight intervals
+excluding zero), while the same architectures under a fixed representation
+differ by roughly a third as much. The engineered taxonomy is not what produces
+this. On its own it is indistinguishable from lexical features
+($p \approx 0.9$); adding it to grammar kinds gives no consistent gain; and
+refining it from eight to thirty-two operation types, on matched folds, changes
+nothing. We explain these null results rather than merely reporting them. An
+exact information-theoretic analysis shows the taxonomy is $98.2\%$ predictable
+from the grammar kind ($H(\phi \mid \kappa) = 0.06$ bits), so it adds almost
+nothing the parser has not already supplied, while discarding $69\%$ of the
+kind's information ($H(\kappa \mid \phi) = 3.12$ bits), which is why it is weak
+alone. We also validate the taxonomy as a static analysis against annotated
+ground truth ($0.976$ call-site-weighted accuracy), which exposed three defects
+invisible to downstream accuracy. The practical implication is a one-line
+change --- substitute grammar kinds for lexical tokens --- and a methodological
+one: an engineered abstraction over a parse tree should be checked for
+redundancy against the grammar alphabet, in both directions, before it is
+credited with an effect.
 \end{abstract}

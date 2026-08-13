@@ -1,4 +1,4 @@
-"""
+r"""
 Emit the manuscript's result tables mechanically from the result JSONs.
 
 Every number in the paper's tables is produced here. Hand-typing them is what
