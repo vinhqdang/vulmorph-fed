@@ -31,15 +31,14 @@ procedure) is the same in every experiment.
   \node[box] (src) {C function\\(source text)};
   \node[box, right=7mm of src] (parse) {tree-sitter\\parse};
   \node[box, right=7mm of parse] (graph) {Program graph\\AST + SIB + DU edges\\$\le 200$ nodes};
-  \node[view, below=9mm of parse, xshift=-18mm] (lex) {lexical\\token text};
+  \node[view, below=11mm of parse, xshift=-18mm] (lex) {lexical\\token text};
   \node[view, right=2mm of lex] (anon) {anonymised\\token};
   \node[view, right=2mm of anon] (kind) {grammar\\kind $\kappa$};
   \node[view, right=2mm of kind] (op) {operation\\type $\phi_8$};
-  \node[box, below=8mm of anon, xshift=14mm] (emb) {node embedding\\(sum of selected views)};
+  \node[box, below=11mm of anon, xshift=14mm] (emb) {node embedding\\(sum of selected views)};
   \node[box, right=7mm of emb] (gnn) {backbone\\GGNN / GAT / GIN\\or Transformer};
   \node[box, right=7mm of gnn] (head) {mean--max\\readout + MLP};
-  \node[box, below=7mm of head] (out) {vulnerability\\score};
-  \node[box, below=7mm of emb] (cv) {project-level\\GroupKFold};
+  \node[box, below=9mm of head] (out) {vulnerability\\score};
   \draw[arr] (src) -- (parse);
   \draw[arr] (parse) -- (graph);
   \draw[arr] (graph.south) -- ++(0,-3mm) -| (op.north);
@@ -50,9 +49,8 @@ procedure) is the same in every experiment.
   \draw[arr] (emb) -- (gnn);
   \draw[arr] (gnn) -- (head);
   \draw[arr] (head) -- (out);
-  \draw[arr] (cv.east) -| node[pos=0.25, below, font=\footnotesize]{train / held-out projects} (out.south);
   \begin{pgfonlayer}{background}
-    \node[fixed, fit=(emb)(gnn)(head), label={[font=\footnotesize]below:held fixed in every comparison}] {};
+    \node[fixed, fit=(emb)(gnn)(head), label={[font=\footnotesize]above:held fixed in every comparison}] {};
   \end{pgfonlayer}
 \end{tikzpicture}
 \caption{Pipeline. The only component that varies between compared systems is

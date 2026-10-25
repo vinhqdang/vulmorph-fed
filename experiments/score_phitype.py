@@ -130,6 +130,19 @@ def macro(pc, key):
     return sum(v) / len(v) if v else float("nan")
 
 
+def memop_binary(pred, truth):
+    """The question phi_8 actually answers: is this callee a memory/string
+    operation (any of the nine memory classes) or not? Distinctions inside the
+    group (alloc vs copy, ...) vanish at |T|=8."""
+    is_mem = lambda l: l not in ("IO_CALL", "NONE")
+    tp = sum(is_mem(pred[n]) and is_mem(truth[n]) for n in pred)
+    fp = sum(is_mem(pred[n]) and not is_mem(truth[n]) for n in pred)
+    fn = sum(not is_mem(pred[n]) and is_mem(truth[n]) for n in pred)
+    return {"tp": tp, "fp": fp, "fn": fn,
+            "precision": tp / (tp + fp) if tp + fp else None,
+            "recall": tp / (tp + fn) if tp + fn else None}
+
+
 def main():
     res = {"corpora": {}, "agreement": {}, "pooled": {}}
     TP, FP, FN = Counter(), Counter(), Counter()
@@ -163,6 +176,7 @@ def main():
                  "per_class": pc, "macro_precision": macro(pc, "precision"),
                  "macro_recall": macro(pc, "recall"),
                  "weighted_accuracy": wacc, "sensitivity": sens,
+                 "memop_binary": memop_binary(pred, truth),
                  "errors": [{"name": n, "predicted": pred[n], "true": truth[n],
                              "occurrences": occ[n]}
                             for n in names if pred[n] != truth[n]]}
@@ -180,6 +194,13 @@ def main():
               f"macroR={entry['macro_recall']:.3f}")
     pc = per_class(TP, FP, FN)
     po, k = kappa(all_a, all_b)
+    res["pooled_memop"] = {k: sum(v["memop_binary"][k]
+                                  for v in res["corpora"].values())
+                           for k in ("tp", "fp", "fn")}
+    m = res["pooled_memop"]
+    m["precision"] = m["tp"] / (m["tp"] + m["fp"])
+    m["recall"] = m["tp"] / (m["tp"] + m["fn"])
+    print("memory-op (T8-relevant) pooled:", m)
     res["pooled"] = {"per_class": pc, "macro_precision": macro(pc, "precision"),
                      "macro_recall": macro(pc, "recall"),
                      "agreement": po, "kappa": k, "n_names": len(all_a)}

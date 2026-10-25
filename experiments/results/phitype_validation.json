@@ -1,0 +1,1169 @@
+{
+  "corpora": {
+    "devign": {
+      "n_names": 212,
+      "agreement": 0.9245283018867925,
+      "kappa": 0.8916536237902067,
+      "disagreements": 16,
+      "adjudicated": 16,
+      "unresolved_three_way": 1,
+      "per_class": {
+        "MEMORY_ALLOC": {
+          "tp": 18,
+          "fp": 2,
+          "fn": 3,
+          "precision": 0.9,
+          "recall": 0.8571428571428571,
+          "p_ci": [
+            0.6989617935882066,
+            0.9721341060158467
+          ],
+          "r_ci": [
+            0.6536350585077049,
+            0.950190782017865
+          ]
+        },
+        "MEMORY_REALLOC": {
+          "tp": 9,
+          "fp": 1,
+          "fn": 1,
+          "precision": 0.9,
+          "recall": 0.9,
+          "p_ci": [
+            0.5958436145024278,
+            0.9821242504842789
+          ],
+          "r_ci": [
+            0.5958436145024278,
+            0.9821242504842789
+          ]
+        },
+        "MEMORY_FREE": {
+          "tp": 15,
+          "fp": 5,
+          "fn": 0,
+          "precision": 0.75,
+          "recall": 1.0,
+          "p_ci": [
+            0.5312949900419365,
+            0.888139947210597
+          ],
+          "r_ci": [
+            0.7961107336956521,
+            1.0
+          ]
+        },
+        "MEMORY_COPY": {
+          "tp": 4,
+          "fp": 3,
+          "fn": 2,
+          "precision": 0.5714285714285714,
+          "recall": 0.6666666666666666,
+          "p_ci": [
+            0.2504542304090258,
+            0.8417830777373732
+          ],
+          "r_ci": [
+            0.2999883213415286,
+            0.903230667440783
+          ]
+        },
+        "MEMORY_SET": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "p_ci": [
+            0.3423719528896193,
+            1.0
+          ],
+          "r_ci": [
+            0.3423719528896193,
+            1.0
+          ]
+        },
+        "STRING_COPY": {
+          "tp": 5,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.7142857142857143,
+          "p_ci": [
+            0.565508505247919,
+            1.0000000000000002
+          ],
+          "r_ci": [
+            0.35892909014821267,
+            0.9177828342909845
+          ]
+        },
+        "STRING_CONCAT": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.8,
+          "p_ci": [
+            0.5100999795960008,
+            1.0
+          ],
+          "r_ci": [
+            0.37552826411853885,
+            0.9637768390302125
+          ]
+        },
+        "STRING_FORMAT": {
+          "tp": 6,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "p_ci": [
+            0.4868654966809702,
+            0.9743210440510253
+          ],
+          "r_ci": [
+            0.6096569663469354,
+            1.0
+          ]
+        },
+        "STRING_LENGTH": {
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "p_ci": [
+            0.3423719528896193,
+            1.0
+          ],
+          "r_ci": [
+            0.3423719528896193,
+            1.0
+          ]
+        },
+        "IO_CALL": {
+          "tp": 22,
+          "fp": 0,
+          "fn": 6,
+          "precision": 1.0,
+          "recall": 0.7857142857142857,
+          "p_ci": [
+            0.8513404742740388,
+            1.0000000000000002
+          ],
+          "r_ci": [
+            0.6046105292072612,
+            0.8978767829881058
+          ]
+        }
+      },
+      "macro_precision": 0.8978571428571428,
+      "macro_recall": 0.8723809523809523,
+      "weighted_accuracy": 0.8442166258078895,
+      "sensitivity": {
+        "A": {
+          "macro_precision": 0.8928571428571429,
+          "macro_recall": 0.9117582417582417,
+          "weighted_accuracy": 0.8078894584354803
+        },
+        "B": {
+          "macro_precision": 0.9321428571428572,
+          "macro_recall": 0.8666666666666666,
+          "weighted_accuracy": 0.9618899041675952
+        }
+      },
+      "memop_binary": {
+        "tp": 69,
+        "fp": 8,
+        "fn": 5,
+        "precision": 0.8961038961038961,
+        "recall": 0.9324324324324325
+      },
+      "errors": [
+        {
+          "name": "trace_xics_alloc_block",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "bios_linker_loader_alloc",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 2
+        },
+        {
+          "name": "g_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 55
+        },
+        {
+          "name": "AV_COPY32",
+          "predicted": "NONE",
+          "true": "MEMORY_COPY",
+          "occurrences": 21
+        },
+        {
+          "name": "g_strdup_printf",
+          "predicted": "MEMORY_COPY",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 18
+        },
+        {
+          "name": "av_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 14
+        },
+        {
+          "name": "copy_bits",
+          "predicted": "NONE",
+          "true": "MEMORY_COPY",
+          "occurrences": 2
+        },
+        {
+          "name": "tcg_temp_free_i32",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 267
+        },
+        {
+          "name": "tcg_temp_free_i64",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 169
+        },
+        {
+          "name": "tcg_temp_free",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 82
+        },
+        {
+          "name": "g_ptr_array_new_with_free_func",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 4
+        },
+        {
+          "name": "tcg_temp_free_internal",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 3
+        },
+        {
+          "name": "realloc_texture",
+          "predicted": "MEMORY_REALLOC",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "path_combine",
+          "predicted": "NONE",
+          "true": "STRING_CONCAT",
+          "occurrences": 3
+        },
+        {
+          "name": "GROW_ARRAY",
+          "predicted": "NONE",
+          "true": "MEMORY_REALLOC",
+          "occurrences": 1
+        },
+        {
+          "name": "mov_write_source_reference_tag",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "mxf_write_generic_desc",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "asprintf",
+          "predicted": "NONE",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 2
+        },
+        {
+          "name": "DB_PRINT_L",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 10
+        },
+        {
+          "name": "qemu_fflush",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 4
+        },
+        {
+          "name": "qed_read_backing_file",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "bdrv_pread",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 36
+        },
+        {
+          "name": "v9fs_string_sprintf",
+          "predicted": "STRING_FORMAT",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 1
+        }
+      ],
+      "kappa_original_vs_consensus": 0.8653241431883874,
+      "agreement_original_vs_consensus": 0.9056603773584906
+    },
+    "bigvul": {
+      "n_names": 227,
+      "agreement": 0.9427312775330396,
+      "kappa": 0.9276538367246874,
+      "disagreements": 13,
+      "adjudicated": 13,
+      "unresolved_three_way": 0,
+      "per_class": {
+        "MEMORY_ALLOC": {
+          "tp": 12,
+          "fp": 2,
+          "fn": 5,
+          "precision": 0.8571428571428571,
+          "recall": 0.7058823529411765,
+          "p_ci": [
+            0.600580922361363,
+            0.9599069262620787
+          ],
+          "r_ci": [
+            0.468664666737861,
+            0.8672020613444361
+          ]
+        },
+        "MEMORY_REALLOC": {
+          "tp": 11,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9166666666666666,
+          "p_ci": [
+            0.7411599827511859,
+            1.0
+          ],
+          "r_ci": [
+            0.6461140782014047,
+            0.9851352905492264
+          ]
+        },
+        "MEMORY_FREE": {
+          "tp": 12,
+          "fp": 2,
+          "fn": 0,
+          "precision": 0.8571428571428571,
+          "recall": 1.0,
+          "p_ci": [
+            0.600580922361363,
+            0.9599069262620787
+          ],
+          "r_ci": [
+            0.7574992425007574,
+            0.9999999999999998
+          ]
+        },
+        "MEMORY_COPY": {
+          "tp": 9,
+          "fp": 5,
+          "fn": 1,
+          "precision": 0.6428571428571429,
+          "recall": 0.9,
+          "p_ci": [
+            0.3876400468214041,
+            0.8365550926279727
+          ],
+          "r_ci": [
+            0.5958436145024278,
+            0.9821242504842789
+          ]
+        },
+        "MEMORY_SET": {
+          "tp": 7,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "p_ci": [
+            0.6456611570247934,
+            1.0
+          ],
+          "r_ci": [
+            0.6456611570247934,
+            1.0
+          ]
+        },
+        "STRING_COPY": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.8235294117647058,
+          "p_ci": [
+            0.7846829880728186,
+            1.0
+          ],
+          "r_ci": [
+            0.5897007098262422,
+            0.9380898628745102
+          ]
+        },
+        "STRING_CONCAT": {
+          "tp": 11,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9166666666666666,
+          "p_ci": [
+            0.7411599827511859,
+            1.0
+          ],
+          "r_ci": [
+            0.6461140782014047,
+            0.9851352905492264
+          ]
+        },
+        "STRING_FORMAT": {
+          "tp": 11,
+          "fp": 3,
+          "fn": 1,
+          "precision": 0.7857142857142857,
+          "recall": 0.9166666666666666,
+          "p_ci": [
+            0.5241027622679172,
+            0.9242875166308363
+          ],
+          "r_ci": [
+            0.6461140782014047,
+            0.9851352905492264
+          ]
+        },
+        "STRING_LENGTH": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "p_ci": [
+            0.7846829880728186,
+            1.0
+          ],
+          "r_ci": [
+            0.7846829880728186,
+            1.0
+          ]
+        },
+        "IO_CALL": {
+          "tp": 12,
+          "fp": 2,
+          "fn": 10,
+          "precision": 0.8571428571428571,
+          "recall": 0.5454545454545454,
+          "p_ci": [
+            0.600580922361363,
+            0.9599069262620787
+          ],
+          "r_ci": [
+            0.3465947328904156,
+            0.7307998556799515
+          ]
+        }
+      },
+      "macro_precision": 0.9,
+      "macro_recall": 0.8724866310160427,
+      "weighted_accuracy": 0.9582441113490364,
+      "sensitivity": {
+        "A": {
+          "macro_precision": 0.8785714285714287,
+          "macro_recall": 0.8795751633986928,
+          "weighted_accuracy": 0.9507494646680942
+        },
+        "B": {
+          "macro_precision": 0.9285714285714286,
+          "macro_recall": 0.9014005602240897,
+          "weighted_accuracy": 0.9732334047109208
+        }
+      },
+      "memop_binary": {
+        "tp": 107,
+        "fp": 6,
+        "fn": 6,
+        "precision": 0.9469026548672567,
+        "recall": 0.9469026548672567
+      },
+      "errors": [
+        {
+          "name": "git_buf_printf",
+          "predicted": "IO_CALL",
+          "true": "STRING_FORMAT",
+          "occurrences": 6
+        },
+        {
+          "name": "PRINTF_4CC",
+          "predicted": "IO_CALL",
+          "true": "NONE",
+          "occurrences": 3
+        },
+        {
+          "name": "zend_shared_alloc_unlock_win32",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "dma_kmalloc_cache",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "g_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 24
+        },
+        {
+          "name": "wmem_strdup_printf",
+          "predicted": "MEMORY_COPY",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 1
+        },
+        {
+          "name": "gf_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 1
+        },
+        {
+          "name": "php_stream_copy_to_stream_ex",
+          "predicted": "MEMORY_COPY",
+          "true": "IO_CALL",
+          "occurrences": 2
+        },
+        {
+          "name": "CopyToTexture",
+          "predicted": "MEMORY_COPY",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "trace_xfs_inode_free_eofblocks_invalid",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "task_will_free_mem",
+          "predicted": "MEMORY_FREE",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "gf_isom_box_dump_start",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 12
+        },
+        {
+          "name": "init_sdesc",
+          "predicted": "NONE",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 1
+        },
+        {
+          "name": "ReadBlobMSBLong",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 42
+        },
+        {
+          "name": "av_reallocp_array",
+          "predicted": "NONE",
+          "true": "MEMORY_REALLOC",
+          "occurrences": 1
+        },
+        {
+          "name": "mov_write_nmhd_tag",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 2
+        },
+        {
+          "name": "k5alloc",
+          "predicted": "NONE",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 4
+        },
+        {
+          "name": "dump_long",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 6
+        },
+        {
+          "name": "vread",
+          "predicted": "NONE",
+          "true": "MEMORY_COPY",
+          "occurrences": 1
+        },
+        {
+          "name": "dump_buffer",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 3
+        },
+        {
+          "name": "unparsedEntityDeclDebug",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "FS_Write",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "estrndup",
+          "predicted": "NONE",
+          "true": "STRING_COPY",
+          "occurrences": 9
+        },
+        {
+          "name": "jas_stream_getc",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 2
+        },
+        {
+          "name": "license_send",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "string_sprintf",
+          "predicted": "STRING_FORMAT",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 58
+        },
+        {
+          "name": "v9fs_string_sprintf",
+          "predicted": "STRING_FORMAT",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 5
+        },
+        {
+          "name": "sprintf_cat",
+          "predicted": "STRING_FORMAT",
+          "true": "STRING_CONCAT",
+          "occurrences": 4
+        }
+      ]
+    },
+    "diversevul": {
+      "n_names": 236,
+      "agreement": 0.923728813559322,
+      "kappa": 0.902340337486781,
+      "disagreements": 18,
+      "adjudicated": 18,
+      "unresolved_three_way": 0,
+      "per_class": {
+        "MEMORY_ALLOC": {
+          "tp": 12,
+          "fp": 2,
+          "fn": 4,
+          "precision": 0.8571428571428571,
+          "recall": 0.75,
+          "p_ci": [
+            0.600580922361363,
+            0.9599069262620787
+          ],
+          "r_ci": [
+            0.5050123107060135,
+            0.8981809801576265
+          ]
+        },
+        "MEMORY_REALLOC": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "p_ci": [
+            0.7846829880728186,
+            1.0
+          ],
+          "r_ci": [
+            0.7846829880728186,
+            1.0
+          ]
+        },
+        "MEMORY_FREE": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.875,
+          "p_ci": [
+            0.7846829880728186,
+            1.0
+          ],
+          "r_ci": [
+            0.6397666856325172,
+            0.9650232506629429
+          ]
+        },
+        "MEMORY_COPY": {
+          "tp": 9,
+          "fp": 5,
+          "fn": 0,
+          "precision": 0.6428571428571429,
+          "recall": 1.0,
+          "p_ci": [
+            0.3876400468214041,
+            0.8365550926279727
+          ],
+          "r_ci": [
+            0.7008472464490406,
+            1.0
+          ]
+        },
+        "MEMORY_SET": {
+          "tp": 10,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.9090909090909091,
+          "p_ci": [
+            0.7224598312333834,
+            1.0
+          ],
+          "r_ci": [
+            0.6226353745137962,
+            0.9837682477371741
+          ]
+        },
+        "STRING_COPY": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 2,
+          "precision": 1.0,
+          "recall": 0.875,
+          "p_ci": [
+            0.7846829880728186,
+            1.0
+          ],
+          "r_ci": [
+            0.6397666856325172,
+            0.9650232506629429
+          ]
+        },
+        "STRING_CONCAT": {
+          "tp": 13,
+          "fp": 1,
+          "fn": 0,
+          "precision": 0.9285714285714286,
+          "recall": 1.0,
+          "p_ci": [
+            0.6853073044604219,
+            0.9872781138877085
+          ],
+          "r_ci": [
+            0.7718981569447084,
+            1.0
+          ]
+        },
+        "STRING_FORMAT": {
+          "tp": 13,
+          "fp": 1,
+          "fn": 3,
+          "precision": 0.9285714285714286,
+          "recall": 0.8125,
+          "p_ci": [
+            0.6853073044604219,
+            0.9872781138877085
+          ],
+          "r_ci": [
+            0.5699064013154177,
+            0.9340852122641323
+          ]
+        },
+        "STRING_LENGTH": {
+          "tp": 13,
+          "fp": 1,
+          "fn": 1,
+          "precision": 0.9285714285714286,
+          "recall": 0.9285714285714286,
+          "p_ci": [
+            0.6853073044604219,
+            0.9872781138877085
+          ],
+          "r_ci": [
+            0.6853073044604219,
+            0.9872781138877085
+          ]
+        },
+        "IO_CALL": {
+          "tp": 9,
+          "fp": 5,
+          "fn": 3,
+          "precision": 0.6428571428571429,
+          "recall": 0.75,
+          "p_ci": [
+            0.3876400468214041,
+            0.8365550926279727
+          ],
+          "r_ci": [
+            0.4676896608793401,
+            0.9110599603710388
+          ]
+        }
+      },
+      "macro_precision": 0.8928571428571429,
+      "macro_recall": 0.8900162337662337,
+      "weighted_accuracy": 0.939747671265181,
+      "sensitivity": {
+        "A": {
+          "macro_precision": 0.8285714285714286,
+          "macro_recall": 0.8913582251082252,
+          "weighted_accuracy": 0.9340879613253155
+        },
+        "B": {
+          "macro_precision": 0.9071428571428571,
+          "macro_recall": 0.8824504442925495,
+          "weighted_accuracy": 0.9425775262351138
+        }
+      },
+      "memop_binary": {
+        "tp": 117,
+        "fp": 5,
+        "fn": 8,
+        "precision": 0.9590163934426229,
+        "recall": 0.936
+      },
+      "errors": [
+        {
+          "name": "file_printf",
+          "predicted": "IO_CALL",
+          "true": "STRING_FORMAT",
+          "occurrences": 81
+        },
+        {
+          "name": "flatpak_bwrap_add_arg_printf",
+          "predicted": "IO_CALL",
+          "true": "NONE",
+          "occurrences": 3
+        },
+        {
+          "name": "dwarfstring_append_printf_s",
+          "predicted": "IO_CALL",
+          "true": "STRING_FORMAT",
+          "occurrences": 2
+        },
+        {
+          "name": "U64_PRINTF_ARG",
+          "predicted": "IO_CALL",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "chunk_printf",
+          "predicted": "IO_CALL",
+          "true": "STRING_FORMAT",
+          "occurrences": 2
+        },
+        {
+          "name": "pcpu_verify_alloc_info",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "malloc_base",
+          "predicted": "MEMORY_ALLOC",
+          "true": "NONE",
+          "occurrences": 2
+        },
+        {
+          "name": "g_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 84
+        },
+        {
+          "name": "g_strdup_printf",
+          "predicted": "MEMORY_COPY",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 41
+        },
+        {
+          "name": "pj_strdup",
+          "predicted": "MEMORY_COPY",
+          "true": "STRING_COPY",
+          "occurrences": 27
+        },
+        {
+          "name": "CopyFrom",
+          "predicted": "MEMORY_COPY",
+          "true": "NONE",
+          "occurrences": 4
+        },
+        {
+          "name": "copyToPointerSize",
+          "predicted": "MEMORY_COPY",
+          "true": "NONE",
+          "occurrences": 1
+        },
+        {
+          "name": "ReadOnePNGImage",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 1
+        },
+        {
+          "name": "RelinquishMagickMemory",
+          "predicted": "NONE",
+          "true": "MEMORY_FREE",
+          "occurrences": 203
+        },
+        {
+          "name": "t1_putline",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 4
+        },
+        {
+          "name": "isc_safe_memwipe",
+          "predicted": "NONE",
+          "true": "MEMORY_SET",
+          "occurrences": 2
+        },
+        {
+          "name": "gf_isom_box_del",
+          "predicted": "NONE",
+          "true": "MEMORY_FREE",
+          "occurrences": 6
+        },
+        {
+          "name": "tvb_strsize",
+          "predicted": "NONE",
+          "true": "STRING_LENGTH",
+          "occurrences": 4
+        },
+        {
+          "name": "PrintFormatNumber",
+          "predicted": "NONE",
+          "true": "IO_CALL",
+          "occurrences": 2
+        },
+        {
+          "name": "g_string_new",
+          "predicted": "NONE",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 4
+        },
+        {
+          "name": "xmlStrncatNew",
+          "predicted": "STRING_CONCAT",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 1
+        },
+        {
+          "name": "string_sprintf",
+          "predicted": "STRING_FORMAT",
+          "true": "MEMORY_ALLOC",
+          "occurrences": 34
+        },
+        {
+          "name": "INT_STRLEN_BOUND",
+          "predicted": "STRING_LENGTH",
+          "true": "NONE",
+          "occurrences": 1
+        }
+      ]
+    }
+  },
+  "agreement": {},
+  "pooled": {
+    "per_class": {
+      "MEMORY_ALLOC": {
+        "tp": 42,
+        "fp": 6,
+        "fn": 12,
+        "precision": 0.875,
+        "recall": 0.7777777777777778,
+        "p_ci": [
+          0.7529927291394518,
+          0.9414302824959915
+        ],
+        "r_ci": [
+          0.6506107316841219,
+          0.8680471201042104
+        ]
+      },
+      "MEMORY_REALLOC": {
+        "tp": 34,
+        "fp": 1,
+        "fn": 2,
+        "precision": 0.9714285714285714,
+        "recall": 0.9444444444444444,
+        "p_ci": [
+          0.8546659090672867,
+          0.9949386386341464
+        ],
+        "r_ci": [
+          0.8185502589238879,
+          0.9846303362329331
+        ]
+      },
+      "MEMORY_FREE": {
+        "tp": 41,
+        "fp": 7,
+        "fn": 2,
+        "precision": 0.8541666666666666,
+        "recall": 0.9534883720930233,
+        "p_ci": [
+          0.7283255295714138,
+          0.9275184258620602
+        ],
+        "r_ci": [
+          0.8454422407613695,
+          0.9871510096826803
+        ]
+      },
+      "MEMORY_COPY": {
+        "tp": 22,
+        "fp": 13,
+        "fn": 3,
+        "precision": 0.6285714285714286,
+        "recall": 0.88,
+        "p_ci": [
+          0.4633664048802107,
+          0.7683439263110893
+        ],
+        "r_ci": [
+          0.7004380781662651,
+          0.9583325864293191
+        ]
+      },
+      "MEMORY_SET": {
+        "tp": 19,
+        "fp": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.95,
+        "p_ci": [
+          0.8318156346315495,
+          1.0000000000000002
+        ],
+        "r_ci": [
+          0.7638641064874331,
+          0.9911187805671267
+        ]
+      },
+      "STRING_COPY": {
+        "tp": 33,
+        "fp": 0,
+        "fn": 7,
+        "precision": 1.0,
+        "recall": 0.825,
+        "p_ci": [
+          0.8957265699643882,
+          1.0
+        ],
+        "r_ci": [
+          0.6804970794560756,
+          0.9125469700311694
+        ]
+      },
+      "STRING_CONCAT": {
+        "tp": 28,
+        "fp": 1,
+        "fn": 2,
+        "precision": 0.9655172413793104,
+        "recall": 0.9333333333333333,
+        "p_ci": [
+          0.8282410893529976,
+          0.9938869433859677
+        ],
+        "r_ci": [
+          0.7867618227892791,
+          0.9815233646723066
+        ]
+      },
+      "STRING_FORMAT": {
+        "tp": 30,
+        "fp": 5,
+        "fn": 4,
+        "precision": 0.8571428571428571,
+        "recall": 0.8823529411764706,
+        "p_ci": [
+          0.7062411969132573,
+          0.9373986119514649
+        ],
+        "r_ci": [
+          0.7337882520370123,
+          0.9532862902656388
+        ]
+      },
+      "STRING_LENGTH": {
+        "tp": 29,
+        "fp": 1,
+        "fn": 1,
+        "precision": 0.9666666666666667,
+        "recall": 0.9666666666666667,
+        "p_ci": [
+          0.8332924860304112,
+          0.9940915620051425
+        ],
+        "r_ci": [
+          0.8332924860304112,
+          0.9940915620051425
+        ]
+      },
+      "IO_CALL": {
+        "tp": 43,
+        "fp": 7,
+        "fn": 19,
+        "precision": 0.86,
+        "recall": 0.6935483870967742,
+        "p_ci": [
+          0.7381354280147191,
+          0.9304925473797714
+        ],
+        "r_ci": [
+          0.5703254906920545,
+          0.7941856998014938
+        ]
+      }
+    },
+    "macro_precision": 0.8978493431855501,
+    "macro_recall": 0.8806611922588491,
+    "agreement": 0.9303703703703704,
+    "kappa": 0.9086882188374261,
+    "n_names": 675
+  },
+  "pooled_memop": {
+    "tp": 293,
+    "fp": 19,
+    "fn": 19,
+    "precision": 0.9391025641025641,
+    "recall": 0.9391025641025641
+  }
+}
