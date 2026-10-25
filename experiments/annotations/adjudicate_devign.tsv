@@ -1,0 +1,17 @@
+id	name	occurrences	example_call	option_1	option_2
+5	av_free	170	av_free(ost_table)	NONE	MEMORY_FREE
+17	qemu_coroutine_create	13	qemu_coroutine_create(nest)	MEMORY_ALLOC	NONE
+22	AV_COPY32	21	AV_COPY32(&mv[x].mv[0], &b->mv[3][0])	MEMORY_COPY	NONE
+33	asprintf	2	"asprintf(&nodename, ""%s@%x"", modelname, index)"	STRING_FORMAT	MEMORY_ALLOC
+41	tcg_temp_free_internal	3	tcg_temp_free_internal(args[i])	MEMORY_FREE	NONE
+102	g_strdup_printf	18	"g_strdup_printf(""-machine q35 %s %s"", d->noreboot ? """" : ""-global ICH9-LPC.noreboot=false"", !d->args ? """" : d->args)"	STRING_FORMAT	MEMORY_ALLOC
+114	tcg_temp_free_i64	169	tcg_temp_free_i64(tcg_op)	NONE	MEMORY_FREE
+126	tcg_temp_free_i32	267	tcg_temp_free_i32(tcg_op)	MEMORY_FREE	NONE
+129	path_combine	3	path_combine(extent_path, sizeof(extent_path), desc_file_path, fname)	STRING_FORMAT	NONE
+154	v9fs_string_sprintf	1	"v9fs_string_sprintf(&fullname, ""%s/%s"", fidp->path.data, name.data)"	STRING_FORMAT	MEMORY_ALLOC
+161	g_ptr_array_new_with_free_func	4	g_ptr_array_new_with_free_func(crs_range_free)	MEMORY_ALLOC	NONE
+166	copy_bits	2	copy_bits(&s->pb, avpkt->data, size, gb, s->sframe_cache_size)	NONE	MEMORY_COPY
+167	mxf_write_generic_desc	1	mxf_write_generic_desc(s, st, key, size+5+12+8+8)	NONE	IO_CALL
+186	copy	2	copy(&tmp, in, in_count)	MEMORY_COPY	NONE
+201	mov_write_source_reference_tag	1	mov_write_source_reference_tag(pb, track, t->value)	IO_CALL	NONE
+206	tcg_temp_free	82	tcg_temp_free(t0)	MEMORY_FREE	NONE

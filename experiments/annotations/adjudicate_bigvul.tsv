@@ -1,0 +1,14 @@
+id	name	occurrences	example_call	option_1	option_2
+23	PRINTF_4CC	3	PRINTF_4CC(fourcc)	NONE	IO_CALL
+24	wmem_strdup_printf	1		STRING_FORMAT	MEMORY_ALLOC
+89	archive_strlen	2	archive_strlen(&mtree->current_dir)	STRING_LENGTH	NONE
+94	v9fs_string_sprintf	5	"v9fs_string_sprintf(&v9stat->name, ""%s"", str)"	STRING_FORMAT	MEMORY_ALLOC
+103	vread	1	vread(kbuf, (char *)p, sz)	IO_CALL	MEMORY_COPY
+130	Z_STRLEN_PP	13	Z_STRLEN_PP(varname)	NONE	STRING_LENGTH
+167	unparsedEntityDeclDebug	1	unparsedEntityDeclDebug(void *ctx ATTRIBUTE_UNUSED, const xmlChar *name, const xmlChar *publicId, const xmlChar *systemId, const xmlChar *notationName)	IO_CALL	NONE
+190	Z_STRLEN_P	17	Z_STRLEN_P(arg3)	STRING_LENGTH	NONE
+195	dma_kmalloc_cache	1	dma_kmalloc_cache(index, flags)	NONE	MEMORY_ALLOC
+212	string_sprintf	58	"string_sprintf(""bad field selector \""%s\"" for certextract"", field)"	STRING_FORMAT	MEMORY_ALLOC
+213	mov_write_nmhd_tag	2	mov_write_nmhd_tag(pb)	NONE	IO_CALL
+223	sprintf_cat	4	"env_errors->sprintf_cat( "" (This error was from the environment string in the job "" ""ClassAd.)"")"	STRING_CONCAT	STRING_FORMAT
+224	Z_STRLEN	7	Z_STRLEN(tmp_val)	STRING_LENGTH	NONE

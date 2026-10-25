@@ -1,0 +1,19 @@
+id	name	occurrences	example_call	option_1	option_2
+12	ovs_strlcpy_arrays	1	ovs_strlcpy_arrays(pp->name, op->name)	STRING_COPY	NONE
+32	dso_json_list_new	1	dso_json_list_new ()	NONE	MEMORY_ALLOC
+47	g_strdup_printf	41	"g_strdup_printf(""%s/%s"", path, ent->d_name)"	STRING_FORMAT	MEMORY_ALLOC
+91	TIFFWriteDirectoryTagShortLong	1	TIFFWriteDirectoryTagShortLong(TIFF* tif, uint32* ndir, TIFFDirEntry* dir, uint16 tag, uint32 value)	IO_CALL	NONE
+92	_php_iconv_strlen	1	_php_iconv_strlen(&haystk_len, ZSTR_VAL(haystk), ZSTR_LEN(haystk), charset)	STRING_LENGTH	NONE
+97	free_palette_update	1	free_palette_update(context, palette_update)	NONE	MEMORY_FREE
+109	string_sprintf	34	"string_sprintf(""\""%s\"" "", name2)"	STRING_FORMAT	MEMORY_ALLOC
+136	Z_STRLEN_P	31	Z_STRLEN_P(class_name)	STRING_LENGTH	NONE
+137	r_cons_strcat	2	r_cons_strcat (buf)	STRING_CONCAT	IO_CALL
+140	PrintFormatNumber	2	PrintFormatNumber(ValuePtr, Format, ByteCount)	IO_CALL	NONE
+142	skb_copy_from_linear_data	1	skb_copy_from_linear_data(skb, skb_network_header(skb2), hlen)	NONE	MEMORY_COPY
+149	ReadOnePNGImage	1	ReadOnePNGImage(mng_info,image_info,exception)	NONE	IO_CALL
+151	xmlStrncatNew	1	xmlStrncatNew(cur->content, content, len)	MEMORY_ALLOC	STRING_CONCAT
+164	safe_query	9	"m_sql.safe_query(""UPDATE DeviceToPlansMap SET [Order] = '%q' WHERE (ID='%q')"", aOrder.c_str(), oID.c_str())"	NONE	IO_CALL
+168	Z_STRLEN_PP	5	Z_STRLEN_PP(tmp_type)	NONE	STRING_LENGTH
+176	vim_strncpy	5	vim_strncpy(wcopy + stp->st_wordlen, sug.su_badptr + stp->st_orglen, sug.su_badlen - stp->st_orglen)	NONE	STRING_COPY
+212	Z_STRLEN	4	Z_STRLEN(matchcopy)	NONE	STRING_LENGTH
+217	flatpak_bwrap_add_arg_printf	3	"flatpak_bwrap_add_arg_printf (bwrap, ""/%s"", dent->d_name)"	STRING_FORMAT	NONE
