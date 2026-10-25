@@ -101,8 +101,8 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     res = {}
-    for name, ff in (("bigvul", "bigvul_core.json"),
-                     ("diversevul", "diversevul_core.json"),
+    for name, ff in (("bigvul", "bigvul_core_f01.json"),
+                     ("diversevul", "diversevul_core_f01.json"),
                      ("devign", None)):
         res[name] = stats_for(name, args.n, args.seed, ff)
         s = res[name]

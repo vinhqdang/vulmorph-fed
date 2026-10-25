@@ -3,26 +3,48 @@
 
 \begin{table}[t]
 \centering
-\caption{RQ1: $\phi$ evaluated as a static analysis on 212 annotated callee
-names from Devign. Call-site-weighted accuracy is $0.976$; macro precision
-$0.976$, macro recall $0.938$. Generated mechanically from result files.}
+\caption{RQ1: $\phi$ as a static analysis, scored against the consensus of two
+blind annotators and a third pass on disagreements, pooled over the three
+corpora. Brackets are 95\% Wilson intervals; tp/fp/fn are counts of distinct
+callee names. The final column group reports the question $\phi_8$ actually
+answers (memory or string operation vs. not).}
 \label{tab:rq1_analysis}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-Class & Precision & Recall & $F_1$ & tp/fp/fn \\
+Class & Precision & Recall & tp/fp/fn \\
 \midrule
-\texttt{IO\_CALL} & 1.000 & 0.880 & 0.936 & 22/0/3 \\
-\texttt{MEMORY\_ALLOC} & 0.950 & 0.905 & 0.927 & 19/1/2 \\
-\texttt{MEMORY\_COPY} & 0.857 & 0.600 & 0.706 & 6/1/4 \\
-\texttt{MEMORY\_FREE} & 0.950 & 1.000 & 0.974 & 19/1/0 \\
-\texttt{MEMORY\_REALLOC} & 1.000 & 1.000 & 1.000 & 10/0/0 \\
-\texttt{MEMORY\_SET} & 1.000 & 1.000 & 1.000 & 2/0/0 \\
-\texttt{STRING\_CONCAT} & 1.000 & 1.000 & 1.000 & 4/0/0 \\
-\texttt{STRING\_COPY} & 1.000 & 1.000 & 1.000 & 5/0/0 \\
-\texttt{STRING\_FORMAT} & 1.000 & 1.000 & 1.000 & 7/0/0 \\
-\texttt{STRING\_LENGTH} & 1.000 & 1.000 & 1.000 & 2/0/0 \\
+\texttt{MEMORY\_ALLOC} & 0.88 $[0.75,0.94]$ & 0.78 $[0.65,0.87]$ & 42/6/12 \\
+\texttt{MEMORY\_REALLOC} & 0.97 $[0.85,0.99]$ & 0.94 $[0.82,0.98]$ & 34/1/2 \\
+\texttt{MEMORY\_FREE} & 0.85 $[0.73,0.93]$ & 0.95 $[0.85,0.99]$ & 41/7/2 \\
+\texttt{MEMORY\_COPY} & 0.63 $[0.46,0.77]$ & 0.88 $[0.70,0.96]$ & 22/13/3 \\
+\texttt{MEMORY\_SET} & 1.00 $[0.83,1.00]$ & 0.95 $[0.76,0.99]$ & 19/0/1 \\
+\texttt{STRING\_COPY} & 1.00 $[0.90,1.00]$ & 0.82 $[0.68,0.91]$ & 33/0/7 \\
+\texttt{STRING\_CONCAT} & 0.97 $[0.83,0.99]$ & 0.93 $[0.79,0.98]$ & 28/1/2 \\
+\texttt{STRING\_FORMAT} & 0.86 $[0.71,0.94]$ & 0.88 $[0.73,0.95]$ & 30/5/4 \\
+\texttt{STRING\_LENGTH} & 0.97 $[0.83,0.99]$ & 0.97 $[0.83,0.99]$ & 29/1/1 \\
+\texttt{IO\_CALL} & 0.86 $[0.74,0.93]$ & 0.69 $[0.57,0.79]$ & 43/7/19 \\
 \midrule
-Macro & 0.976 & 0.938 & --- & \\
+Macro & 0.90 & 0.88 & \\
+Memory operation (any of the 9) & 0.94 & 0.94 & 293/19/19 \\
 \bottomrule
 \end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{RQ1: annotation agreement and per-corpus scores. Agreement and
+Cohen's $\kappa$ are between the two blind annotators before adjudication;
+precision and recall are macro-averaged over classes against the consensus; the
+last column is precision / recall for ``memory or string operation''.}
+\label{tab:rq1_agreement}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+Corpus & Names & Agreement & $\kappa$ & Macro P & Macro R & Memory-op P / R \\
+\midrule
+Devign & 212 & 0.92 & 0.89 & 0.90 & 0.87 & 0.90 / 0.93 \\
+BigVul & 227 & 0.94 & 0.93 & 0.90 & 0.87 & 0.95 / 0.95 \\
+DiverseVul & 236 & 0.92 & 0.90 & 0.89 & 0.89 & 0.96 / 0.94 \\
+\bottomrule
+\end{tabular}}
 \end{table}

@@ -1,12 +1,11 @@
 r"""
-Emit the manuscript's result tables mechanically from the result JSONs.
+Emit the manuscript's result tables and numeric macros from the result JSONs.
 
-Every number in the paper's tables is produced here. Hand-typing them is what
-allowed a stale value to survive a re-run. Nothing in this file rounds a
-confidence bound toward zero, and any cell without backing data is emitted
-as "---", never guessed.
-
-Outputs: manuscript/latex/tab_*.tex, \input by the experiment section.
+Every number in the paper's tables, and every number the prose quotes, comes
+from here: tables are written to manuscript/latex/tab_*.tex, and prose numbers
+are LaTeX macros in manuscript/latex/numbers.tex (\num...). Nothing in this
+file rounds a confidence bound toward zero, and a cell without backing data is
+emitted as "---", never guessed.
 """
 
 import sys
@@ -21,13 +20,17 @@ LATEX_DIR = Path(__file__).parent.parent / "manuscript" / "latex"
 
 MODE_LABEL = {
     "lexical": "Lexical token",
+    "anon": "Anonymised token",
     "op": "Operation type $\\phi_8$",
     "kind": "Grammar kind $\\kappa$",
-    "op_kind": "Operation $+$ kind",
+    "op_kind": "Operation $+$ kind ($\\kappa{+}\\phi$)",
+    "lex_kind": "Lexical $+$ kind",
+    "anon_kind": "Anonymised $+$ kind",
+    "kind_low": "Kind via 9-dim bottleneck",
 }
-BACKBONE = {"ggnn": "GGNN", "gat": "GAT", "gin": "GIN"}
-CORPUS = {"core_bigvul": "BigVul", "core_diversevul": "DiverseVul",
-          "backbone_bigvul": "BigVul"}
+BACKBONE = {"ggnn": "GGNN", "gat": "GAT", "gin": "GIN", "tf": "Transformer"}
+CORPUS = {"bigvul": "BigVul", "diversevul": "DiverseVul", "devign": "Devign"}
+NUMS = {}
 
 
 def load(name):
@@ -35,69 +38,111 @@ def load(name):
     return json.load(open(p)) if p.exists() else None
 
 
+def merged(corpus):
+    from experiments.analyze_representation import merge_corpus
+    return merge_corpus(corpus)
+
+
 def ms(vals, prec=3):
-    """mean +- population std, or --- when absent."""
     if not vals:
         return "---"
     return f"{np.mean(vals):.{prec}f} $\\pm$ {np.std(vals):.{prec}f}"
 
 
 def sf(x, prec=3):
-    """Signed fixed-point number for LaTeX."""
-    s = f"{abs(x):.{prec}f}"
-    return ("-" if x < 0 else "+") + s
+    return ("-" if x < 0 else "+") + f"{abs(x):.{prec}f}"
 
 
-def ci(stat, prec=3):
-    """Point estimate with interval and p-value inside math mode."""
+def pfmt(p):
+    return "$<0.001$" if p < 0.001 else f"{p:.3f}"
+
+
+def ci(stat, prec=3, wilcoxon=True):
+    """Point estimate, interval, bootstrap p and Wilcoxon p."""
     if not stat:
         return "---"
-    lo, hi, d, p = stat["lo"], stat["hi"], stat["diff"], stat["p_two_sided"]
+    lo, hi, d = stat["lo"], stat["hi"], stat["diff"]
     stab = stat.get("seed_stability")
+    mark = ""
     if not (lo > 0 or hi < 0):
         mark = "\\,n.s."
     elif stab is not None and stab == stab and stab < 0.9:
         mark = "$^{\\dagger}$"
-    else:
-        mark = ""
-    return (f"${sf(d, prec)}$ $[{sf(lo, prec)}, {sf(hi, prec)}]$ "
-            f"{p:.3f}{mark}")
+    out = (f"${sf(d, prec)}$ $[{sf(lo, prec)}, {sf(hi, prec)}]$ "
+           f"{pfmt(stat['p_two_sided'])}{mark}")
+    if wilcoxon:
+        out += f" / {pfmt(stat['wilcoxon_p'])}"
+    return out
 
+
+def get(a, corpus, metric, key):
+    return (a.get(corpus, {}).get(metric, {}) or {}).get(key)
+
+
+def macro(name, value):
+    NUMS[name] = value
+
+
+def cellmean(cells, key, metric="auc"):
+    c = cells.get(key)
+    return float(np.mean(c[metric])) if c else None
+
+
+# ── corpora ──────────────────────────────────────────────────────────────────
 
 def table_corpora():
     d = load("corpus_stats.json")
     if not d:
         return ""
     rows = []
-    names = [("bigvul", "BigVul"), ("diversevul", "DiverseVul"), ("devign", "Devign")]
-    for key, name in names:
-        if key not in d:
+    for key in ("bigvul", "diversevul", "devign"):
+        c = d.get(key)
+        if not c:
             continue
-        c = d[key]
-        n_func = f"{c['n']:,}"
-        prev = f"{c['prev']:.3f}"
-        projs = f"{c['projects']:,}"
-        share = f"{c['top2_share']:.1f}\\%"
-        ne = f"{c['nodes']:.0f} / {c['edges']:.0f}"
-        rows.append(f"{name} & {n_func} & {prev} & {projs} & {share} & {ne} \\\\")
-    
+        tp = f"{c['test_prev_pooled']:.3f}" if "test_prev_pooled" in c else "---"
+        rows.append(
+            f"{CORPUS[key]} & {c['n']:,} & {c['vulnerable']:,} & {c['prev']:.3f} & "
+            f"{tp} & {c['projects']:,} & {c['top2_share']:.1f}\\% & "
+            f"{c['nodes']:.0f} & {100*c['trunc_rate']:.1f} / "
+            f"{100*c['trunc_rate_vuln']:.1f} / {100*c['trunc_rate_benign']:.1f} \\\\")
+        macro(f"{key}N", f"{c['n']:,}")
+        macro(f"{key}Vuln", f"{c['vulnerable']:,}")
+        macro(f"{key}Prev", f"{c['prev']:.3f}")
+        macro(f"{key}Projects", f"{c['projects']:,}")
+        macro(f"{key}TruncPct", f"{100*c['trunc_rate']:.1f}")
+        macro(f"{key}TruncVulnPct", f"{100*c['trunc_rate_vuln']:.1f}")
+        macro(f"{key}TruncBenignPct", f"{100*c['trunc_rate_benign']:.1f}")
+        macro(f"{key}TruncP", pfmt(c["trunc_fisher_p"]))
+        macro(f"{key}TopTwoShare", f"{c['top2_share']:.0f}")
+        if "test_prev_pooled" in c:
+            macro(f"{key}TestPrev", f"{c['test_prev_pooled']:.3f}")
+            macro(f"{key}TrainOnlyN", f"{c['train_only_n']:,}")
+            macro(f"{key}TrainOnlyPrev", f"{c['train_only_prev']:.3f}")
+            macro(f"{key}TopTestShareMax",
+                  f"{100*max(f['top_share'] for f in c['folds']):.0f}")
+            macro(f"{key}TopTestProject",
+                  max(c['folds'], key=lambda f: f['top_share'])['top_project'])
     return r"""
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{Corpus properties measured on our samples. Project concentration is
-reported because it determines whether a nominally cross-project split is
-meaningful: in BigVul the two largest repositories supply two thirds of the
-functions, which is why they are held train-only
-(Section~\ref{sec:protocol}). Generated mechanically from result files.}
+\caption{Corpus properties measured on our uniform random samples
+(10{,}000 functions drawn per corpus, then de-duplicated). \emph{Prevalence} is
+the fraction of vulnerable functions in the whole sample; \emph{Test prev.} is
+the pooled fraction over the held-out folds. They differ because the largest
+repositories, which have a lower share of vulnerable functions, are held
+train-only and never appear in a test fold (Section~\ref{sec:protocol}).
+\emph{Truncated} is the percentage of functions with more than 200 named AST
+nodes, overall / vulnerable / benign.}
 \label{tab:corpora}
-\begin{tabular}{lrrrrr}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrrrr}
 \toprule
-Corpus & Functions & Prevalence & Projects & Top-2 share & Nodes/Edges \\
+Corpus & Functions & Vulnerable & Prevalence & Test prev. & Projects & Top-2 share & Nodes (mean) & Truncated (\%) \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
-\end{tabular}
-\end{table}
+\end{tabular}}
+\end{table*}
 """
 
 
@@ -107,29 +152,25 @@ def table_node_dist():
         return ""
     dist = d["_node_dist_bigvul"]
     items = sorted(dist.items(), key=lambda kv: kv[1], reverse=True)
-    # Split into 2 columns
     mid = (len(items) + 1) // 2
-    left = items[:mid]
-    right = items[mid:]
+    left, right = items[:mid], items[mid:]
+
+    def nm(n):
+        t = n.replace("_", "\\_")
+        return f"$\\bot$ (\\texttt{{{t}}})" if n == "UNKNOWN" else f"\\texttt{{{t}}}"
     rows = []
     for i in range(mid):
-        l_name, l_val = left[i]
-        l_tex = l_name.replace("_", "\\_")
-        l_str = f"$\\bot$ (\\texttt{{{l_tex}}})" if l_name == "UNKNOWN" else f"\\texttt{{{l_tex}}}"
-        if i < len(right):
-            r_name, r_val = right[i]
-            r_tex = r_name.replace("_", "\\_")
-            r_str = f"$\\bot$ (\\texttt{{{r_tex}}})" if r_name == "UNKNOWN" else f"\\texttt{{{r_tex}}}"
-            rows.append(f"{l_str} & {l_val:.2f}\\% & {r_str} & {r_val:.2f}\\% \\\\")
-        else:
-            rows.append(f"{l_str} & {l_val:.2f}\\% & & \\\\")
-            
+        l = f"{nm(left[i][0])} & {left[i][1]:.2f}\\%"
+        r = (f"{nm(right[i][0])} & {right[i][1]:.2f}\\%" if i < len(right)
+             else " & ")
+        rows.append(f"{l} & {r} \\\\")
+    macro("bvUnknownPct", f"{dist.get('UNKNOWN', 0):.0f}")
+    macro("bvMemoryPct", f"{dist.get('MEMORY_ACCESS', 0):.2f}")
     return r"""
 \begin{table}[t]
 \centering
-\caption{Node-type distribution under $\phi_8$ (BigVul). $\bot$
-(\texttt{UNKNOWN}) nodes carry no operation label but retain their grammar
-kind. Generated mechanically from result files.}
+\caption{Node-type distribution under $\phi_8$ (BigVul sample). $\bot$
+(\texttt{UNKNOWN}) nodes carry no operation label but keep their grammar kind.}
 \label{tab:node_dist}
 \begin{tabular}{lr@{\hskip 2em}lr}
 \toprule
@@ -142,105 +183,211 @@ Type & Share & Type & Share \\
 """
 
 
-def table_rq1_analysis():
-    d = load("phitype_eval.json")
-    if not d or "per_class" not in d:
+# ── RQ1 ──────────────────────────────────────────────────────────────────────
+
+def table_rq1():
+    d = load("phitype_validation.json")
+    if not d:
         return ""
-    pc = d["per_class"]
+    pc = d["pooled"]["per_class"]
     rows = []
-    for cls_name, stats in sorted(pc.items()):
-        cls_tex = cls_name.replace("_", "\\_")
-        p = f"{stats['precision']:.3f}"
-        r = f"{stats['recall']:.3f}"
-        f1 = f"{stats['f1']:.3f}"
-        counts = f"{stats['tp']}/{stats['fp']}/{stats['fn']}"
-        rows.append(f"\\texttt{{{cls_tex}}} & {p} & {r} & {f1} & {counts} \\\\")
-    
-    macro_p = f"{d['macro_precision']:.3f}"
-    macro_r = f"{d['macro_recall']:.3f}"
-    w_acc = d.get("weighted_accuracy", 0.976)
-    
+    for cls, v in pc.items():
+        t = cls.replace("_", "\\_")
+
+        def f(x, ci_):
+            if x is None:
+                return "---"
+            return f"{x:.2f} $[{ci_[0]:.2f},{ci_[1]:.2f}]$"
+        rows.append(f"\\texttt{{{t}}} & {f(v['precision'], v['p_ci'] or (0, 0))} & "
+                    f"{f(v['recall'], v['r_ci'] or (0, 0))} & "
+                    f"{v['tp']}/{v['fp']}/{v['fn']} \\\\")
+    cr = []
+    for c in ("devign", "bigvul", "diversevul"):
+        v = d["corpora"].get(c)
+        if not v:
+            continue
+        mb = v["memop_binary"]
+        cr.append(f"{CORPUS[c]} & {v['n_names']} & {v['agreement']:.2f} & "
+                  f"{v['kappa']:.2f} & {v['macro_precision']:.2f} & "
+                  f"{v['macro_recall']:.2f} & {mb['precision']:.2f} / "
+                  f"{mb['recall']:.2f} \\\\")
+        macro(f"{c}Kappa", f"{v['kappa']:.2f}")
+        macro(f"{c}Agree", f"{v['agreement']:.2f}")
+        macro(f"{c}NNames", str(v["n_names"]))
+        macro(f"{c}MacroP", f"{v['macro_precision']:.2f}")
+        macro(f"{c}MacroR", f"{v['macro_recall']:.2f}")
+        macro(f"{c}Adjudicated", str(v["adjudicated"]))
+        macro(f"{c}MemopP", f"{mb['precision']:.2f}")
+        macro(f"{c}MemopR", f"{mb['recall']:.2f}")
+    po = d["pooled"]
+    macro("pooledKappa", f"{po['kappa']:.2f}")
+    macro("pooledAgree", f"{po['agreement']:.2f}")
+    macro("pooledNNames", str(po["n_names"]))
+    macro("pooledMacroP", f"{po['macro_precision']:.2f}")
+    macro("pooledMacroR", f"{po['macro_recall']:.2f}")
+    pm = d["pooled_memop"]
+    macro("pooledMemopP", f"{pm['precision']:.2f}")
+    macro("pooledMemopR", f"{pm['recall']:.2f}")
+    macro("devignOrigKappa", f"{d['corpora']['devign'].get('kappa_original_vs_consensus', float('nan')):.2f}")
+    mincls = min((v for v in pc.values() if v["precision"] is not None),
+                 key=lambda v: v["tp"] + v["fn"])
+    macro("minClassPositives", str(mincls["tp"] + mincls["fn"]))
+    cp = pc.get("MEMORY_COPY")
+    if cp:
+        macro("copyPrecision", f"{cp['precision']:.2f}")
     return r"""
 \begin{table}[t]
 \centering
-\caption{RQ1: $\phi$ evaluated as a static analysis on """ + f"{d.get('n_names', 212)}" + r""" annotated callee
-names from Devign. Call-site-weighted accuracy is """ + f"${w_acc:.3f}$" + r"""; macro precision
-""" + f"${macro_p}$" + r""", macro recall """ + f"${macro_r}$" + r""". Generated mechanically from result files.}
+\caption{RQ1: $\phi$ as a static analysis, scored against the consensus of two
+blind annotators and a third pass on disagreements, pooled over the three
+corpora. Brackets are 95\% Wilson intervals; tp/fp/fn are counts of distinct
+callee names. The final column group reports the question $\phi_8$ actually
+answers (memory or string operation vs. not).}
 \label{tab:rq1_analysis}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrr}
 \toprule
-Class & Precision & Recall & $F_1$ & tp/fp/fn \\
+Class & Precision & Recall & tp/fp/fn \\
 \midrule
 """ + "\n".join(rows) + r"""
 \midrule
-Macro & """ + f"{macro_p} & {macro_r}" + r""" & --- & \\
+Macro & """ + f"{po['macro_precision']:.2f} & {po['macro_recall']:.2f}" + r""" & \\
+Memory operation (any of the 9) & """ + f"{pm['precision']:.2f} & {pm['recall']:.2f}" + r""" & """ + f"{pm['tp']}/{pm['fp']}/{pm['fn']}" + r""" \\
 \bottomrule
 \end{tabular}
 \end{table}
-"""
 
-
-def table_rq1_tradeoff():
-    d = load("phitype_eval.json")
-
-    return r"""
 \begin{table}[t]
 \centering
-\caption{RQ1: the copy rule at two operating points, showing the
-precision/recall trade-off the gold set exposed. Generated mechanically from result files.}
-\label{tab:rq1_tradeoff}
-\begin{tabular}{lrrrrr}
+\caption{RQ1: annotation agreement and per-corpus scores. Agreement and
+Cohen's $\kappa$ are between the two blind annotators before adjudication;
+precision and recall are macro-averaged over classes against the consensus; the
+last column is precision / recall for ``memory or string operation''.}
+\label{tab:rq1_agreement}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
 \toprule
-Rule & \multicolumn{3}{c}{\texttt{MEMORY\_COPY}} & Macro-P & Weighted acc. \\
-     & P & R & $F_1$ & & \\
+Corpus & Names & Agreement & $\kappa$ & Macro P & Macro R & Memory-op P / R \\
 \midrule
-Permissive (any ``copy'') & 0.450 & 0.900 & 0.600 & 0.935 & 0.971 \\
-Precise (adopted)         & 0.857 & 0.600 & 0.706 & 0.976 & 0.976 \\
+""" + "\n".join(cr) + r"""
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 """
 
 
-def table_rq2():
-    d = load("core_bigvul.json")
-    a = load("representation_analysis.json") or {}
-    if not d:
-        return ""
-    auc_st = a.get("core_bigvul:auc", {})
-    ap_st = a.get("core_bigvul:auprc", {})
-    triv = d.get("_trivial", [])
-    prev = np.mean([t["precision"] for t in triv]) if triv else 0.088
+# ── RQ2 / RQ3 ────────────────────────────────────────────────────────────────
 
+def table_rq2(a):
+    corpus = "bigvul"
+    cells, _, _ = merged(corpus)
+    if not cells:
+        return ""
     rows = []
-    rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & {prev:.3f} & --- \\\\")
-    for mode in ("lexical", "op", "kind", "op_kind"):
-        cell = d.get(f"{mode}|ggnn")
+    trivial = load("bigvul_core_f01.json") or {}
+    prevs = [t["precision"] for t in (trivial.get("_trivial") or {}).values()]
+    rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & "
+                f"{np.mean(prevs):.3f} & --- \\\\" if prevs else "")
+    for mode in ("lexical", "anon", "op", "kind", "op_kind", "lex_kind",
+                 "anon_kind"):
+        cell = cells.get(f"{mode}|ggnn")
         if not cell:
             continue
+        st = get(a, corpus, "auc", f"ggnn|{mode}~lexical")
+        sp = get(a, corpus, "auprc", f"ggnn|{mode}~lexical")
         if mode == "lexical":
-            rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & "
-                        f"{ms(cell['auc'])} & --- & {ms(cell['auprc'])} & --- \\\\")
+            rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
+                        f"& --- & {ms(cell['auprc'])} & --- \\\\")
         else:
-            st = auc_st.get(f"ggnn|{mode}") or {}
-            rows.append(f"{MODE_LABEL[mode]} & {st.get('n_folds', len(cell['auc']))} & "
-                        f"{ms(cell['auc'])} & "
-                        f"{ci(st)} & {ms(cell['auprc'])} & "
-                        f"{ci(ap_st.get(f'ggnn|{mode}'))} \\\\")
-
+            rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
+                        f"& {ci(st)} & {ms(cell['auprc'])} & {ci(sp)} \\\\")
+        if st:
+            m = {"kind": "Kind", "op": "Op", "op_kind": "OpKind", "lex_kind": "LexKind",
+                 "anon": "Anon", "anon_kind": "AnonKind"}[mode]
+            macro(f"bvGgnn{m}AucDiff", sf(st["diff"]))
+            macro(f"bvGgnn{m}AucLo", sf(st["lo"]))
+            macro(f"bvGgnn{m}AucHi", sf(st["hi"]))
+            macro(f"bvGgnn{m}AucP", pfmt(st["p_two_sided"]))
+            macro(f"bvGgnn{m}AucWilcoxon", pfmt(st["wilcoxon_p"]))
+            macro(f"bvGgnn{m}AucWins", f"{st['wins']}/{st['n_folds']}")
+            if "without_android" in st:
+                w = st["without_android"]
+                macro(f"bvGgnn{m}AucNoAndroid",
+                      f"{sf(w['diff'])} [{sf(w['lo'])}, {sf(w['hi'])}]")
+        if sp:
+            m = {"kind": "Kind", "op": "Op", "op_kind": "OpKind", "lex_kind": "LexKind",
+                 "anon": "Anon", "anon_kind": "AnonKind"}.get(mode)
+            if m:
+                macro(f"bvGgnn{m}AuprcDiff", sf(sp["diff"]))
+                macro(f"bvGgnn{m}AuprcLo", sf(sp["lo"]))
+                macro(f"bvGgnn{m}AuprcHi", sf(sp["hi"]))
+        macro(f"bvGgnn{mode.replace('_','').title().replace('Op','Op')}AucMean",
+              f"{np.mean(cell['auc']):.3f}")
+        macro(f"bvGgnn{mode.replace('_','').title()}AucStd", f"{np.std(cell['auc']):.3f}")
     return r"""
 \begin{table*}[t]
 \centering
-\caption{RQ2: node-feature mode under an otherwise identical protocol (BigVul,
-GGNN, project-level folds; mean $\pm$ population std over 10 matched folds).
-Differences are paired against the lexical baseline with 95\%
-cluster-bootstrap intervals over held-out projects; \emph{n.s.} marks an
-interval containing zero. Generated mechanically from result files.}
+\caption{RQ2: node views on BigVul, GGNN, 10 matched project-level folds
+(mean $\pm$ population std over folds). Differences are paired against the
+lexical baseline. Each $\Delta$ cell reads: point estimate, 95\% cluster-bootstrap
+interval over held-out projects, bootstrap $p$ / Wilcoxon signed-rank $p$
+over folds; \emph{n.s.} marks an interval containing zero and $\dagger$ a
+verdict that holds under fewer than 9 of 10 bootstrap seeds.}
 \label{tab:rq2_representation}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrlrl}
 \toprule
-Node features & Folds & AUC & $\Delta$AUC $[$95\% CI$]$ $p$ & AUPRC & $\Delta$AUPRC $[$95\% CI$]$ $p$ \\
+Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUPRC & $\Delta$AUPRC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ \\
+\midrule
+""" + "\n".join(r for r in rows if r) + r"""
+\bottomrule
+\end{tabular}}
+\end{table*}
+"""
+
+
+def table_direct(a):
+    pairs = [("op_kind", "kind", "$\\kappa{+}\\phi$ vs $\\kappa$"),
+             ("kind", "lex_kind", "$\\kappa$ vs lexical$+\\kappa$"),
+             ("kind", "anon_kind", "$\\kappa$ vs anonymised$+\\kappa$"),
+             ("anon_kind", "lex_kind", "anonymised$+\\kappa$ vs lexical$+\\kappa$"),
+             ("lex_kind", "lexical", "lexical$+\\kappa$ vs lexical"),
+             ("anon", "lexical", "anonymised vs lexical"),
+             ("kind", "op", "$\\kappa$ vs $\\phi_8$"),
+             ("kind_low", "kind", "9-dim bottleneck $\\kappa$ vs $\\kappa$")]
+    rows = []
+    for ka, kb, label in pairs:
+        cs = []
+        for corpus in ("bigvul", "diversevul"):
+            s = get(a, corpus, "auc", f"ggnn|{ka}~{kb}")
+            cs.append(ci(s) if s else "---")
+            if s:
+                tag = {"op_kind~kind": "OpKindVsKind", "kind~lex_kind": "KindVsLexKind",
+                       "kind~anon_kind": "KindVsAnonKind",
+                       "anon_kind~lex_kind": "AnonKindVsLexKind",
+                       "lex_kind~lexical": "LexKindVsLex", "anon~lexical": "AnonVsLex",
+                       "kind~op": "KindVsOp", "kind_low~kind": "LowVsKind"}[f"{ka}~{kb}"]
+                pre = "bv" if corpus == "bigvul" else "dv"
+                macro(f"{pre}{tag}Diff", sf(s["diff"]))
+                macro(f"{pre}{tag}Lo", sf(s["lo"]))
+                macro(f"{pre}{tag}Hi", sf(s["hi"]))
+                macro(f"{pre}{tag}P", pfmt(s["p_two_sided"]))
+                macro(f"{pre}{tag}Wilcoxon", pfmt(s["wilcoxon_p"]))
+        rows.append(f"{label} & {cs[0]} & {cs[1]} \\\\")
+    if not any("---" != r for r in rows):
+        return ""
+    return r"""
+\begin{table*}[t]
+\centering
+\caption{Direct paired contrasts between node views (GGNN, 10 matched folds):
+$\Delta$AUC of the first view minus the second, with 95\% cluster-bootstrap
+interval, bootstrap $p$ / Wilcoxon $p$. These are the comparisons a reader
+needs to judge whether one view is better than another; a difference between
+two views' gaps to the lexical baseline is not a test of the difference.}
+\label{tab:direct}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lll}
+\toprule
+Contrast & BigVul & DiverseVul \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
@@ -249,33 +396,41 @@ Node features & Folds & AUC & $\Delta$AUC $[$95\% CI$]$ $p$ & AUPRC & $\Delta$AU
 """
 
 
-def table_rq3():
-    a = load("representation_analysis.json") or {}
+def table_generality(a):
     rows = []
-    for stem, backbones in (("core_bigvul", ["ggnn"]),
-                            ("backbone_bigvul", ["gat", "gin"]),
-                            ("core_diversevul", ["ggnn"])):
-        auc = a.get(f"{stem}:auc", {})
-        for bb in backbones:
-            k = auc.get(f"{bb}|kind")
-            ok = auc.get(f"{bb}|op_kind")
-            if not (k or ok):
+    for corpus in ("bigvul", "diversevul"):
+        cells, _, _ = merged(corpus)
+        for bb in ("ggnn", "gat", "gin", "tf"):
+            if f"lexical|{bb}" not in cells:
                 continue
-            rows.append(f"{CORPUS[stem]} & {BACKBONE[bb]} & {ci(k)} & {ci(ok)} \\\\")
+            vals = []
+            for mode in ("lexical", "lex_kind", "kind", "op_kind"):
+                m = cellmean(cells, f"{mode}|{bb}")
+                vals.append(f"{m:.3f}" if m is not None else "---")
+            k = get(a, corpus, "auc", f"{bb}|kind~lexical")
+            lk = get(a, corpus, "auc", f"{bb}|lex_kind~lexical")
+            rows.append(f"{CORPUS[corpus]} & {BACKBONE[bb]} & " + " & ".join(vals) +
+                        f" & {ci(k, wilcoxon=False) if k else '---'} "
+                        f"& {ci(lk, wilcoxon=False) if lk else '---'} \\\\")
+            pre = "bv" if corpus == "bigvul" else "dv"
+            if k:
+                macro(f"{pre}{bb.title()}KindDiff", sf(k["diff"]))
+                macro(f"{pre}{bb.title()}KindLo", sf(k["lo"]))
+                macro(f"{pre}{bb.title()}KindHi", sf(k["hi"]))
     if not rows:
         return ""
     return r"""
 \begin{table*}[t]
 \centering
-\caption{RQ3: both grammar-derived representations against the lexical
-baseline, across corpora and backbones. Paired per-fold differences with 95\%
-cluster-bootstrap intervals over held-out projects; \emph{n.s.} marks an
-interval containing zero. Generated mechanically from result files.}
+\caption{RQ3: mean AUC over 10 matched folds for four node views under every
+backbone and corpus, and the paired gain of $\kappa$ and of lexical$+\kappa$
+over the lexical view (point estimate, 95\% cluster-bootstrap interval,
+bootstrap $p$; \emph{n.s.}: interval contains zero).}
 \label{tab:rq3_generality}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{llll}
+\begin{tabular}{llrrrrll}
 \toprule
-Corpus & Backbone & $\kappa$ vs lexical: $\Delta$AUC $[$CI$]$ $p$ & $\kappa+\phi$ vs lexical: $\Delta$AUC $[$CI$]$ $p$ \\
+Corpus & Backbone & Lexical & Lex$+\kappa$ & $\kappa$ & $\kappa{+}\phi$ & $\kappa$ vs lexical & Lex$+\kappa$ vs lexical \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
@@ -284,34 +439,181 @@ Corpus & Backbone & $\kappa$ vs lexical: $\Delta$AUC $[$CI$]$ $p$ & $\kappa+\phi
 """
 
 
-def table_granularity():
-    g = load("granularity_analysis.json")
-    if not g:
-        return ""
-    ref = g["reference"]
+def table_ablation(a):
+    corpus = "bigvul"
+    cells, _, _ = merged(corpus)
     rows = []
-    for t, e in sorted(g["comparisons"].items(), key=lambda kv: int(kv[0])):
-        rows.append(
-            f"$|\\mathcal{{T}}| = {t}$ vs $|\\mathcal{{T}}| = {ref}$ & "
-            f"{e['n_folds']} & "
-            f"{e['auc']['mean_auc_fine']:.3f} & "
-            f"{ci(e['auc'])} & {ci(e['auprc'])} \\\\")
+    base = cellmean(cells, "kind|ggnn")
+    if base is None:
+        return ""
+    rows.append(f"All edges (AST+SIB+DU), $\\kappa$ & {len(cells['kind|ggnn']['auc'])} & "
+                f"{base:.3f} & --- \\\\")
+    for v, label in (("ast_sib", "no def-use edges"), ("ast_du", "no sibling edges"),
+                     ("ast", "AST edges only")):
+        k = f"kind|ggnn@{v}"
+        s = get(a, corpus, "auc", f"ggnn|kind@{v}~kind")
+        if k in cells:
+            rows.append(f"\\quad {label} & {len(cells[k]['auc'])} & "
+                        f"{cellmean(cells, k):.3f} & {ci(s) if s else '---'} \\\\")
+            if s:
+                tag = {"ast_sib": "NoDu", "ast_du": "NoSib", "ast": "AstOnly"}[v]
+                macro(f"edge{tag}Diff", sf(s["diff"]))
+                macro(f"edge{tag}Lo", sf(s["lo"]))
+                macro(f"edge{tag}Hi", sf(s["hi"]))
+    for t in (16, 32):
+        k = f"op_kind|ggnn@t{t}"
+        s = get(a, corpus, "auc", f"ggnn|op_kind@t{t}~op_kind")
+        if k in cells:
+            rows.append(f"$\\kappa{{+}}\\phi$ with $|\\mathcal{{T}}|={t}$ vs $8$ & "
+                        f"{len(cells[k]['auc'])} & {cellmean(cells, k):.3f} & "
+                        f"{ci(s) if s else '---'} \\\\")
+            if s:
+                macro(f"granT{t}Diff", sf(s["diff"]))
+                macro(f"granT{t}Lo", sf(s["lo"]))
+                macro(f"granT{t}Hi", sf(s["hi"]))
+                macro(f"granT{t}Folds", str(s["n_folds"]))
+    return r"""
+\begin{table}[t]
+\centering
+\caption{Ablations on BigVul (GGNN). First block: removing edge types from the
+graph under the $\kappa$ view. Second block: refining the operation alphabet
+under the $\kappa{+}\phi$ view, compared against the same view at
+$|\mathcal{T}|=8$ on the same folds. $\Delta$AUC is paired, with 95\%
+cluster-bootstrap interval and bootstrap $p$.}
+\label{tab:ablation}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrl}
+\toprule
+Variant & Folds & AUC & $\Delta$AUC vs reference [95\% CI] $p$ \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}}
+\end{table}
+"""
+
+
+def table_baselines(a):
+    out = []
+    for corpus in ("bigvul", "diversevul"):
+        cells, _, _ = merged(corpus)
+        pre = load(f"{corpus}_unixcoder.json")
+        if pre and "unixcoder|probe" in pre:
+            cells["unixcoder|probe"] = pre["unixcoder|probe"]
+        out.append((corpus, cells))
+    spec = [
+        ("lexical|ggnn", "GGNN on code text (token-only baseline)"),
+        ("lex_kind|ggnn", "Devign/ReVeal-style GGNN: text $+$ node type"),
+        ("anon_kind|ggnn", "GGNN, anonymised tokens $+$ node type"),
+        ("lexical|tf", "Transformer over node sequence, text"),
+        ("kind|tf", "Transformer over node sequence, $\\kappa$"),
+        ("unixcoder|probe", "Pretrained UniXcoder, frozen, linear probe (raw source)"),
+        ("kind|ggnn", "GGNN, grammar kind $\\kappa$ (ours)"),
+        ("op_kind|ggnn", "GGNN, $\\kappa{+}\\phi$ (ours)"),
+    ]
+    rows = []
+    for key, label in spec:
+        vals = []
+        for corpus, cells in out:
+            c = cells.get(key)
+            vals.append(f"{ms(c['auc'])} & {ms(c['auprc'])}" if c else "--- & ---")
+        if all(v == "--- & ---" for v in vals):
+            continue
+        rows.append(f"{label} & " + " & ".join(vals) + " \\\\")
+        if key == "unixcoder|probe":
+            for corpus, cells in out:
+                c = cells.get(key)
+                if c:
+                    macro(("bv" if corpus == "bigvul" else "dv") + "UnixAuc",
+                          f"{np.mean(c['auc']):.3f}")
     return r"""
 \begin{table*}[t]
 \centering
-\caption{RQ4: taxonomy granularity, compared directly over matched folds.
-Intervals are 95\% cluster bootstrap over held-out projects; \emph{n.s.} marks
-an interval containing zero. Generated mechanically from result files.}
-\label{tab:rq4_granularity}
+\caption{Comparison with existing approaches re-implemented under the same
+sample, folds and metrics (mean $\pm$ std over 10 project-level folds). These
+are re-implementations of the \emph{input representation} of each approach
+inside one training protocol, not reproductions of the published systems or
+their published numbers. The UniXcoder row uses a frozen encoder and a linear
+probe (no fine-tuning).}
+\label{tab:baselines}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrll}
+\begin{tabular}{lcccc}
 \toprule
-Comparison & Folds & Finer AUC & $\Delta$AUC $[$95\% CI$]$ $p$ & $\Delta$AUPRC $[$95\% CI$]$ $p$ \\
+ & \multicolumn{2}{c}{BigVul} & \multicolumn{2}{c}{DiverseVul} \\
+System & AUC & AUPRC & AUC & AUPRC \\
 \midrule
 """ + "\n".join(rows) + r"""
 \bottomrule
 \end{tabular}}
 \end{table*}
+"""
+
+
+def table_perproject(a):
+    r = (a.get("bigvul") or {}).get("_per_project")
+    if not r:
+        return ""
+    rows = []
+    for x in r[:8]:
+        g = lambda k: f"{x[k]:.2f}" if k in x else "---"
+        rows.append(f"{x['project'].split(':')[-1]} & {x['n']:,} & {x['n_vuln']} & "
+                    f"{g('lexical')} & {g('lex_kind')} & {g('kind')} & {g('op_kind')} \\\\")
+    return r"""
+\begin{table}[t]
+\centering
+\caption{Per-project AUC (BigVul, GGNN) for the held-out projects with at
+least 10 vulnerable functions, pooled over the folds in which they are tested.
+It shows that the pooled result is not carried by a single repository.}
+\label{tab:perproject}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lrrrrrr}
+\toprule
+Project & Functions & Vuln. & Lexical & Lex$+\kappa$ & $\kappa$ & $\kappa{+}\phi$ \\
+\midrule
+""" + "\n".join(rows) + r"""
+\bottomrule
+\end{tabular}}
+\end{table}
+"""
+
+
+def table_hparams():
+    cfg = None
+    for p in sorted(RESULTS.glob("bigvul_core_f*.json")):
+        cfg = json.load(open(p)).get("_config")
+        break
+    if not cfg:
+        return ""
+    macro("cfgN", f"{cfg['n']:,}")
+    macro("cfgEpochs", str(cfg["epochs"]))
+    macro("cfgDedupe", f"{cfg.get('n_functions_after_dedupe', 0):,}")
+    return r"""
+\begin{table}[t]
+\centering
+\caption{Hyper-parameters. All values are fixed in advance and shared by every
+compared system; none is tuned on any fold.}
+\label{tab:hparams}
+\begin{tabular}{ll}
+\toprule
+Item & Value \\
+\midrule
+Embedding width / hidden width & """ + f"{cfg['embed_dim']} / {cfg['hidden_dim']}" + r""" \\
+Message-passing layers & """ + f"{cfg['num_layers']}" + r""" (GGNN: 2 gated steps) \\
+Transformer & 2 layers, 4 heads, feed-forward $2\times$ width, dropout 0.1 \\
+Readout and head & mean $\Vert$ max pooling; MLP $2h\to h/2\to 1$, dropout 0.3 \\
+Optimiser & Adam, learning rate """ + f"{cfg['lr']}" + r""" \\
+Batch size & """ + f"{cfg['batch_size']}" + r""" \\
+Epochs & """ + f"{cfg['epochs']}" + r""" (fixed; no early stopping, no validation split) \\
+Loss & binary cross-entropy, positive weight $=\min(n_{\text{neg}}/n_{\text{pos}}, 20)$ \\
+Seeds & initialisation and shuffling seed $1000+k$ for fold $k$, shared by all systems \\
+Lexical dictionary & 10{,}000 most frequent training-fold tokens with count $\ge 2$ \\
+Node cap & 200 named AST nodes (pre-order) \\
+Sample & """ + f"{cfg['n']:,}" + r""" functions per corpus, uniform at random, seed """ + f"{cfg['sample_seed']}" + r""" \\
+Folds & """ + f"{cfg['n_splits']}$\\times${cfg['n_repeats']}" + r""" = 10 project-level folds \\
+Pretrained reference & UniXcoder-base, 256 tokens, frozen; logistic regression $C=0.1$, balanced \\
+\bottomrule
+\end{tabular}
+\end{table}
 """
 
 
@@ -320,12 +622,8 @@ def table_information():
     if not info:
         return ""
     cols, size, hphi, hk, fwd, bwd, frac, lost, det = ([] for _ in range(9))
-    seen = set()
-    for cache, r in info.items():
+    for cache, r in sorted(info.items()):
         name = cache.split("_")[0].capitalize()
-        if name in seen:
-            continue
-        seen.add(name)
         cols.append(name)
         size.append(f"{r['functions']:,} fn / {r['nodes']:,} nodes")
         hphi.append(f"{r['H_phi']:.3f}")
@@ -337,16 +635,25 @@ def table_information():
         frac.append(f"{100*r['frac_phi_info_in_kind']:.1f}\\%")
         lost.append(f"{100*r['frac_kind_info_lost']:.1f}\\%")
         det.append(f"\\textbf{{{100*r['determinism']:.1f}\\%}}")
+        k = name.lower()
+        macro(f"{k}HPhiGivenKind", f"{r['H_phi_given_kind']:.2f}")
+        macro(f"{k}HKindGivenPhi", f"{r['H_kind_given_phi']:.2f}")
+        macro(f"{k}Determinism", f"{100*r['determinism']:.1f}")
+        macro(f"{k}KindLost", f"{100*r['frac_kind_info_lost']:.0f}")
+        macro(f"{k}PhiInKind", f"{100*r['frac_phi_info_in_kind']:.0f}")
+    hs = [info[c]["H_phi_given_kind"] for c in info]
+    macro("hPhiGivenKindMax", f"{max(hs):.2f}")
+    macro("hPhiGivenKindMin", f"{min(hs):.2f}")
     c = "l" + "r" * len(cols)
+    n = str(len(cols) + 1)
     return r"""
 \begin{table}[t]
 \centering
 \caption{RQ2b: information shared between the operation taxonomy and the
 grammar kind, computed exactly over every AST node of the corpora indicated.
-Brackets are 95\% bootstrap intervals resampling functions. The two
-conditional entropies answer different questions: $H(\phi \mid \kappa)$ is
-what the taxonomy adds to the grammar kind, and $H(\kappa \mid \phi)$ is what
-the taxonomy throws away. Generated mechanically from result files.}
+Brackets are 95\% bootstrap intervals resampling functions.
+$H(\phi \mid \kappa)$ is what the taxonomy adds to the grammar kind, and
+$H(\kappa \mid \phi)$ is what the taxonomy throws away.}
 \label{tab:rq2b_information}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{""" + c + r"""}
@@ -358,12 +665,12 @@ Sample & """ + " & ".join(size) + r""" \\
 $H(\phi)$ & """ + " & ".join(hphi) + r""" \\
 $H(\kappa)$ & """ + " & ".join(hk) + r""" \\
 \midrule
-\multicolumn{""" + str(len(cols) + 1) + r"""}{l}{\emph{What the taxonomy adds to the grammar kind}} \\
+\multicolumn{""" + n + r"""}{l}{\emph{What the taxonomy adds to the grammar kind}} \\
 $H(\phi \mid \kappa)$ & """ + " & ".join(fwd) + r""" \\
 $I(\phi;\kappa)/H(\phi)$ & """ + " & ".join(frac) + r""" \\
 $\phi$ predictable from $\kappa$ & """ + " & ".join(det) + r""" \\
 \midrule
-\multicolumn{""" + str(len(cols) + 1) + r"""}{l}{\emph{What the taxonomy discards from the grammar kind}} \\
+\multicolumn{""" + n + r"""}{l}{\emph{What the taxonomy discards from the grammar kind}} \\
 $H(\kappa \mid \phi)$ & """ + " & ".join(bwd) + r""" \\
 $H(\kappa \mid \phi)/H(\kappa)$ & """ + " & ".join(lost) + r""" \\
 \bottomrule
@@ -372,29 +679,55 @@ $H(\kappa \mid \phi)/H(\kappa)$ & """ + " & ".join(lost) + r""" \\
 """
 
 
+def architecture_macros(a):
+    for corpus, pre in (("bigvul", "bv"), ("diversevul", "dv")):
+        sp = (a.get(corpus) or {}).get("_architecture_spread") or {}
+        for mode, tag in (("lexical", "Lex"), ("kind", "Kind"), ("lex_kind", "LexKind"),
+                          ("op_kind", "OpKind")):
+            if mode in sp:
+                macro(f"{pre}Spread{tag}", f"{sp[mode]['range']:.3f}")
+
+
 HEADER = ("% Generated by experiments/emit_tables.py -- DO NOT EDIT BY HAND.\n"
           "% Every value is read from experiments/results/*.json.\n")
 
 
 def main():
+    a = load("representation_analysis.json") or {}
+    architecture_macros(a)
     tables = {
         "tab_corpora": table_corpora,
         "tab_node_dist": table_node_dist,
-        "tab_rq1_analysis": table_rq1_analysis,
-        "tab_rq1_tradeoff": table_rq1_tradeoff,
-        "tab_rq2_representation": table_rq2,
+        "tab_rq1_analysis": table_rq1,
         "tab_rq2b_information": table_information,
-        "tab_rq3_generality": table_rq3,
-        "tab_rq4_granularity": table_granularity,
+        "tab_hparams": table_hparams,
+        "tab_rq2_representation": lambda: table_rq2(a),
+        "tab_direct": lambda: table_direct(a),
+        "tab_rq3_generality": lambda: table_generality(a),
+        "tab_ablation": lambda: table_ablation(a),
+        "tab_baselines": lambda: table_baselines(a),
+        "tab_perproject": lambda: table_perproject(a),
     }
     for stem, fn in tables.items():
-        body = fn()
+        try:
+            body = fn()
+        except Exception as e:
+            print(f"  {stem}: FAILED ({type(e).__name__}: {e})")
+            continue
         path = LATEX_DIR / f"{stem}.tex"
         if not body:
             print(f"  {stem}: SKIPPED (no data)")
             continue
         path.write_text(HEADER + body)
         print(f"  wrote {path.name}")
+    lines = [HEADER.strip()]
+    for k, v in sorted(NUMS.items()):
+        digits = dict(zip("0123456789", ["Zero", "One", "Two", "Three", "Four",
+                                         "Five", "Six", "Seven", "Eight", "Nine"]))
+        name = "num" + "".join(digits.get(ch, ch) for ch in k if ch.isalnum())
+        lines.append(f"\\newcommand{{\\{name}}}{{{v}}}")
+    (LATEX_DIR / "numbers.tex").write_text("\n".join(lines) + "\n")
+    print(f"  wrote numbers.tex ({len(NUMS)} macros)")
 
 
 if __name__ == "__main__":

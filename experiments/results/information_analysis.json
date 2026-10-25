@@ -1,0 +1,143 @@
+{
+  "devign_n10000_s0_t8_c200.pt": {
+    "cache": "devign_n10000_s0_t8_c200.pt",
+    "nodes": 1356164,
+    "functions": 10000,
+    "H_phi_given_kind_ci95": [
+      0.05958389382004205,
+      0.061289930496701825
+    ],
+    "H_kind_given_phi_ci95": [
+      2.975458761855808,
+      2.997910029005803
+    ],
+    "H_phi": 1.5037927953292016,
+    "H_kind": 4.4301684002185455,
+    "H_phi_given_kind": 0.06048999451522737,
+    "H_kind_given_phi": 2.986865599404571,
+    "MI_phi_kind": 1.4433028008139743,
+    "frac_phi_info_in_kind": 0.959775046999088,
+    "frac_kind_info_lost": 0.6742103977937329,
+    "determinism": 0.9766886600735605,
+    "top_residual_kinds": [
+      {
+        "kind_id": 290,
+        "weighted_entropy": 0.03962720747539465,
+        "labels": {
+          "COMPARISON": 25340,
+          "ARITH_OP": 28538
+        }
+      },
+      {
+        "kind_id": 299,
+        "weighted_entropy": 0.016454897564671785,
+        "labels": {
+          "CALL_SITE": 51106,
+          "MEMORY_ACCESS": 4437
+        }
+      },
+      {
+        "kind_id": 289,
+        "weighted_entropy": 0.004407889475160938,
+        "labels": {
+          "ARITH_OP": 1837,
+          "COMPARISON": 5551
+        }
+      }
+    ]
+  },
+  "diversevul_n10000_s0_t8_c200.pt": {
+    "cache": "diversevul_n10000_s0_t8_c200.pt",
+    "nodes": 1082049,
+    "functions": 10000,
+    "H_phi_given_kind_ci95": [
+      0.06005188511567247,
+      0.06202374204591322
+    ],
+    "H_kind_given_phi_ci95": [
+      3.080191161432183,
+      3.1008555203697017
+    ],
+    "H_phi": 1.4767520347624121,
+    "H_kind": 4.506514578750845,
+    "H_phi_given_kind": 0.06103866070043454,
+    "H_kind_given_phi": 3.090801204688867,
+    "MI_phi_kind": 1.4157133740619776,
+    "frac_phi_info_in_kind": 0.9586669533790385,
+    "frac_kind_info_lost": 0.6858518153392067,
+    "determinism": 0.9801848160295883,
+    "top_residual_kinds": [
+      {
+        "kind_id": 290,
+        "weighted_entropy": 0.034542595963621615,
+        "labels": {
+          "COMPARISON": 23961,
+          "ARITH_OP": 14939
+        }
+      },
+      {
+        "kind_id": 299,
+        "weighted_entropy": 0.020554577970205802,
+        "labels": {
+          "CALL_SITE": 51124,
+          "MEMORY_ACCESS": 4416
+        }
+      },
+      {
+        "kind_id": 289,
+        "weighted_entropy": 0.00594148676660712,
+        "labels": {
+          "ARITH_OP": 2086,
+          "COMPARISON": 5483
+        }
+      }
+    ]
+  },
+  "bigvul_n10000_s0_t8_c200.pt": {
+    "cache": "bigvul_n10000_s0_t8_c200.pt",
+    "nodes": 918269,
+    "functions": 10000,
+    "H_phi_given_kind_ci95": [
+      0.052259111348614724,
+      0.05412905374956406
+    ],
+    "H_kind_given_phi_ci95": [
+      3.0933187233503396,
+      3.1142971696503285
+    ],
+    "H_phi": 1.449301444632741,
+    "H_kind": 4.499443284389798,
+    "H_phi_given_kind": 0.05325732797037988,
+    "H_kind_given_phi": 3.103399167727437,
+    "MI_phi_kind": 1.3960441166623612,
+    "frac_phi_info_in_kind": 0.9632531050268321,
+    "frac_kind_info_lost": 0.6897295891014461,
+    "determinism": 0.9838141111155881,
+    "top_residual_kinds": [
+      {
+        "kind_id": 290,
+        "weighted_entropy": 0.030495007789205077,
+        "labels": {
+          "COMPARISON": 19520,
+          "ARITH_OP": 10479
+        }
+      },
+      {
+        "kind_id": 299,
+        "weighted_entropy": 0.016703195229202356,
+        "labels": {
+          "CALL_SITE": 50057,
+          "MEMORY_ACCESS": 2692
+        }
+      },
+      {
+        "kind_id": 289,
+        "weighted_entropy": 0.006059124951972446,
+        "labels": {
+          "COMPARISON": 5255,
+          "ARITH_OP": 1692
+        }
+      }
+    ]
+  }
+}

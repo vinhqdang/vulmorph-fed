@@ -5,29 +5,28 @@
 \centering
 \caption{RQ2b: information shared between the operation taxonomy and the
 grammar kind, computed exactly over every AST node of the corpora indicated.
-Brackets are 95\% bootstrap intervals resampling functions. The two
-conditional entropies answer different questions: $H(\phi \mid \kappa)$ is
-what the taxonomy adds to the grammar kind, and $H(\kappa \mid \phi)$ is what
-the taxonomy throws away. Generated mechanically from result files.}
+Brackets are 95\% bootstrap intervals resampling functions.
+$H(\phi \mid \kappa)$ is what the taxonomy adds to the grammar kind, and
+$H(\kappa \mid \phi)$ is what the taxonomy throws away.}
 \label{tab:rq2b_information}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrr}
+\begin{tabular}{lrrr}
 \toprule
- & Bigvul & Devign \\
+ & Bigvul & Devign & Diversevul \\
 \midrule
-Sample & 1,500 fn / 134,441 nodes & 1,000 fn / 134,071 nodes \\
+Sample & 10,000 fn / 918,269 nodes & 10,000 fn / 1,356,164 nodes & 10,000 fn / 1,082,049 nodes \\
 \midrule
-$H(\phi)$ & 1.438 & 1.520 \\
-$H(\kappa)$ & 4.500 & 4.430 \\
+$H(\phi)$ & 1.449 & 1.504 & 1.477 \\
+$H(\kappa)$ & 4.499 & 4.430 & 4.507 \\
 \midrule
-\multicolumn{3}{l}{\emph{What the taxonomy adds to the grammar kind}} \\
-$H(\phi \mid \kappa)$ & \textbf{0.059} $[0.056, 0.062]$ & \textbf{0.071} $[0.069, 0.073]$ \\
-$I(\phi;\kappa)/H(\phi)$ & 95.9\% & 95.3\% \\
-$\phi$ predictable from $\kappa$ & \textbf{98.2\%} & \textbf{97.3\%} \\
+\multicolumn{4}{l}{\emph{What the taxonomy adds to the grammar kind}} \\
+$H(\phi \mid \kappa)$ & \textbf{0.053} $[0.052, 0.054]$ & \textbf{0.060} $[0.060, 0.061]$ & \textbf{0.061} $[0.060, 0.062]$ \\
+$I(\phi;\kappa)/H(\phi)$ & 96.3\% & 96.0\% & 95.9\% \\
+$\phi$ predictable from $\kappa$ & \textbf{98.4\%} & \textbf{97.7\%} & \textbf{98.0\%} \\
 \midrule
-\multicolumn{3}{l}{\emph{What the taxonomy discards from the grammar kind}} \\
-$H(\kappa \mid \phi)$ & \textbf{3.120} $[3.094, 3.142]$ & \textbf{2.981} $[2.949, 3.015]$ \\
-$H(\kappa \mid \phi)/H(\kappa)$ & 69.3\% & 67.3\% \\
+\multicolumn{4}{l}{\emph{What the taxonomy discards from the grammar kind}} \\
+$H(\kappa \mid \phi)$ & \textbf{3.103} $[3.093, 3.114]$ & \textbf{2.987} $[2.975, 2.998]$ & \textbf{3.091} $[3.080, 3.101]$ \\
+$H(\kappa \mid \phi)/H(\kappa)$ & 69.0\% & 67.4\% & 68.6\% \\
 \bottomrule
 \end{tabular}}
 \end{table}

@@ -61,6 +61,8 @@ def _quantities(pairs_by_fn, index):
 
 def analyse(cache_path, taxonomy_size=8, n_boot=200, seed=0):
     data = torch.load(cache_path, weights_only=False)
+    if isinstance(data, tuple):          # sampled_v1 cache: (graphs, vocab, anon)
+        data = data[0]
     types, m = get_taxonomy(taxonomy_size)
     inv = {v: k for k, v in m.items()}
 
@@ -152,7 +154,7 @@ def main():
     args = p.parse_args()
 
     caches = args.caches or sorted(
-        glob.glob(".cache/datasets_v3/*_t8.pt"), key=os.path.getsize, reverse=True)
+        glob.glob(".cache/sampled_v1/*_n10000_*_t8_*.pt"), key=os.path.getsize, reverse=True)
     out = {}
     for c in caches:
         r = analyse(c)

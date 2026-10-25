@@ -1,0 +1,369 @@
+{
+  "bigvul": {
+    "n_drawn": 10000,
+    "n_parsed": 10000,
+    "n": 9435,
+    "vulnerable": 555,
+    "prev": 0.058823529411764705,
+    "projects": 250,
+    "top2": [
+      "Chrome",
+      "linux"
+    ],
+    "top2_share": 64.33492315845257,
+    "nodes": 95.61261261261261,
+    "edges": 246.63306836248012,
+    "trunc_rate": 0.18134605193428724,
+    "trunc_rate_vuln": 0.42342342342342343,
+    "trunc_rate_benign": 0.1662162162162162,
+    "median_full_nodes_vuln": 167.0,
+    "median_full_nodes_benign": 72.0,
+    "vuln_share_by_project": {
+      "Chrome": [
+        205,
+        3575
+      ],
+      "linux": [
+        110,
+        2495
+      ],
+      "Android": [
+        60,
+        434
+      ],
+      "qemu": [
+        5,
+        160
+      ],
+      "ImageMagick": [
+        21,
+        135
+      ],
+      "savannah": [
+        3,
+        123
+      ],
+      "php": [
+        5,
+        116
+      ],
+      "openssl": [
+        8,
+        115
+      ]
+    },
+    "trunc_fisher_p": 8.582156581686141e-43,
+    "trunc_odds_ratio": 3.683816056910569,
+    "folds": [
+      {
+        "n_test": 673,
+        "n_vuln": 78,
+        "prev": 0.11589895988112928,
+        "n_projects": 44,
+        "top_project": "Android",
+        "top_share": 0.6448736998514116
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 31,
+        "prev": 0.04606240713224369,
+        "n_projects": 51,
+        "top_project": "qemu",
+        "top_share": 0.237741456166419
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 54,
+        "prev": 0.08023774145616643,
+        "n_projects": 51,
+        "top_project": "ImageMagick",
+        "top_share": 0.20059435364041606
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 32,
+        "prev": 0.0475482912332838,
+        "n_projects": 51,
+        "top_project": "savannah",
+        "top_share": 0.1827637444279346
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 45,
+        "prev": 0.06686478454680535,
+        "n_projects": 51,
+        "top_project": "php",
+        "top_share": 0.1723625557206538
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 74,
+        "prev": 0.1099554234769688,
+        "n_projects": 44,
+        "top_project": "Android",
+        "top_share": 0.6448736998514116
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 36,
+        "prev": 0.05349182763744428,
+        "n_projects": 51,
+        "top_project": "qemu",
+        "top_share": 0.237741456166419
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 49,
+        "prev": 0.07280832095096583,
+        "n_projects": 51,
+        "top_project": "ImageMagick",
+        "top_share": 0.20059435364041606
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 38,
+        "prev": 0.05646359583952452,
+        "n_projects": 51,
+        "top_project": "savannah",
+        "top_share": 0.1827637444279346
+      },
+      {
+        "n_test": 673,
+        "n_vuln": 43,
+        "prev": 0.0638930163447251,
+        "n_projects": 51,
+        "top_project": "php",
+        "top_share": 0.1723625557206538
+      }
+    ],
+    "train_only": [
+      "Chrome",
+      "linux"
+    ],
+    "train_only_n": 6070,
+    "train_only_prev": 0.051894563426688634,
+    "test_prev_mean": 0.0713224368499257,
+    "test_prev_pooled": 0.0713224368499257,
+    "node_dist": {
+      "UNKNOWN": 75.22694143142982,
+      "CALL_SITE": 5.445374984065048,
+      "ASSIGN": 3.4729881776511604,
+      "PTR_DEREF": 6.559657689515078,
+      "CONTROL_BRANCH": 4.175012886526513,
+      "COMPARISON": 2.722299510589122,
+      "ARITH_OP": 1.5748721046884786,
+      "MEMORY_ACCESS": 0.2965286745999634,
+      "ARRAY_INDEX": 0.5263245409348136
+    }
+  },
+  "diversevul": {
+    "n_drawn": 10000,
+    "n_parsed": 10000,
+    "n": 9791,
+    "vulnerable": 567,
+    "prev": 0.05791032580941681,
+    "projects": 633,
+    "top2": [
+      "linux",
+      "linux-2.6"
+    ],
+    "top2_share": 24.96169951996732,
+    "nodes": 109.83045654172199,
+    "edges": 284.82167296496783,
+    "trunc_rate": 0.2564600142988459,
+    "trunc_rate_vuln": 0.5343915343915344,
+    "trunc_rate_benign": 0.2393755420641804,
+    "median_full_nodes_vuln": 223.0,
+    "median_full_nodes_benign": 91.0,
+    "vuln_share_by_project": {
+      "linux": [
+        114,
+        2139
+      ],
+      "linux-2.6": [
+        20,
+        305
+      ],
+      "php-src": [
+        33,
+        281
+      ],
+      "server": [
+        3,
+        221
+      ],
+      "qemu": [
+        18,
+        218
+      ],
+      "openssl": [
+        20,
+        185
+      ],
+      "gpac": [
+        7,
+        185
+      ],
+      "vim": [
+        9,
+        168
+      ]
+    },
+    "trunc_fisher_p": 7.133635590069426e-48,
+    "trunc_odds_ratio": 3.6469449934123848,
+    "folds": [
+      {
+        "n_test": 1531,
+        "n_vuln": 75,
+        "prev": 0.04898758981058132,
+        "n_projects": 127,
+        "top_project": "linux-2.6",
+        "top_share": 0.1992161985630307
+      },
+      {
+        "n_test": 1531,
+        "n_vuln": 115,
+        "prev": 0.07511430437622468,
+        "n_projects": 127,
+        "top_project": "php-src",
+        "top_share": 0.18354016982364468
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 72,
+        "prev": 0.047058823529411764,
+        "n_projects": 126,
+        "top_project": "server",
+        "top_share": 0.14444444444444443
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 95,
+        "prev": 0.06209150326797386,
+        "n_projects": 126,
+        "top_project": "qemu",
+        "top_share": 0.14248366013071895
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 96,
+        "prev": 0.06274509803921569,
+        "n_projects": 126,
+        "top_project": "gpac",
+        "top_share": 0.12091503267973856
+      },
+      {
+        "n_test": 1531,
+        "n_vuln": 70,
+        "prev": 0.045721750489875895,
+        "n_projects": 127,
+        "top_project": "linux-2.6",
+        "top_share": 0.1992161985630307
+      },
+      {
+        "n_test": 1531,
+        "n_vuln": 119,
+        "prev": 0.07772697583278902,
+        "n_projects": 127,
+        "top_project": "php-src",
+        "top_share": 0.18354016982364468
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 69,
+        "prev": 0.045098039215686274,
+        "n_projects": 126,
+        "top_project": "server",
+        "top_share": 0.14444444444444443
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 110,
+        "prev": 0.0718954248366013,
+        "n_projects": 126,
+        "top_project": "qemu",
+        "top_share": 0.14248366013071895
+      },
+      {
+        "n_test": 1530,
+        "n_vuln": 85,
+        "prev": 0.05555555555555555,
+        "n_projects": 126,
+        "top_project": "openssl",
+        "top_share": 0.12091503267973856
+      }
+    ],
+    "train_only": [
+      "linux"
+    ],
+    "train_only_n": 2139,
+    "train_only_prev": 0.05329593267882188,
+    "test_prev_mean": 0.05919950649539154,
+    "test_prev_pooled": 0.05920020909566127,
+    "node_dist": {
+      "UNKNOWN": 74.96610405914353,
+      "ASSIGN": 3.8037848142465243,
+      "PTR_DEREF": 6.649741944483192,
+      "CONTROL_BRANCH": 4.253312874877946,
+      "COMPARISON": 2.729808899428093,
+      "CALL_SITE": 4.730552843260334,
+      "ARITH_OP": 1.8606035244339052,
+      "ARRAY_INDEX": 0.5997117217650068,
+      "MEMORY_ACCESS": 0.40637931836146374
+    }
+  },
+  "devign": {
+    "n_drawn": 10000,
+    "n_parsed": 10000,
+    "n": 9666,
+    "vulnerable": 4455,
+    "prev": 0.46089385474860334,
+    "projects": 2,
+    "top2": [
+      "qemu",
+      "FFmpeg"
+    ],
+    "top2_share": 100.0,
+    "nodes": 137.38423339540657,
+    "edges": 360.5221394578937,
+    "trunc_rate": 0.41195944547899854,
+    "trunc_rate_vuln": 0.44287317620650957,
+    "trunc_rate_benign": 0.3855306083285358,
+    "median_full_nodes_vuln": 171.0,
+    "median_full_nodes_benign": 146.0,
+    "vuln_share_by_project": {
+      "qemu": [
+        2597,
+        6177
+      ],
+      "FFmpeg": [
+        1858,
+        3489
+      ]
+    },
+    "trunc_fisher_p": 1.1864015473419034e-08,
+    "trunc_odds_ratio": 1.2669710717564673,
+    "node_dist": {
+      "UNKNOWN": 74.54192759398654,
+      "ASSIGN": 4.575829319646133,
+      "PTR_DEREF": 7.06408947284398,
+      "CONTROL_BRANCH": 3.6678173071999374,
+      "COMPARISON": 2.2859944154776213,
+      "ARITH_OP": 2.5572383422342306,
+      "ARRAY_INDEX": 1.2034284268454678,
+      "CALL_SITE": 3.7743720424471894,
+      "MEMORY_ACCESS": 0.3293030793188931
+    }
+  },
+  "_node_dist_bigvul": {
+    "UNKNOWN": 75.22694143142982,
+    "CALL_SITE": 5.445374984065048,
+    "ASSIGN": 3.4729881776511604,
+    "PTR_DEREF": 6.559657689515078,
+    "CONTROL_BRANCH": 4.175012886526513,
+    "COMPARISON": 2.722299510589122,
+    "ARITH_OP": 1.5748721046884786,
+    "MEMORY_ACCESS": 0.2965286745999634,
+    "ARRAY_INDEX": 0.5263245409348136
+  }
+}
