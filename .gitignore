@@ -230,3 +230,4 @@ __marimo__/
 *.synctex.gz
 
 experiments/logs/
+experiments/results/*_f[0-9]*.json
