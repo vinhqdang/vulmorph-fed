@@ -37,10 +37,11 @@ plt.rcParams.update({
     "xtick.labelsize": 9, "ytick.labelsize": 9, "figure.autolayout": True,
 })
 
-MODE_LABEL = {"op": "operation type only",
-              "kind": "grammar kind only",
-              "op_kind": "operation + kind"}
-COLOUR = {"op": "#b0b0b0", "kind": "#2c7fb8", "op_kind": "#41ab5d"}
+MODE_LABEL = {"op": "operation type only", "kind": "grammar kind only",
+              "op_kind": "operation + kind", "lex_kind": "text + kind",
+              "anon_kind": "anonymised + kind", "anon": "anonymised text"}
+COLOUR = {"op": "#b0b0b0", "kind": "#2c7fb8", "op_kind": "#41ab5d",
+          "lex_kind": "#d95f0e", "anon_kind": "#756bb1", "anon": "#969696"}
 
 
 def load(name):
@@ -49,34 +50,26 @@ def load(name):
 
 
 def forest():
-    """Paired difference vs lexical, with bootstrap CIs, per cell."""
+    """Paired AUC difference vs the lexical baseline, with bootstrap CIs."""
     analysis = load("representation_analysis.json")
     if not analysis:
         print("  no representation_analysis.json; run analyze_representation.py")
         return
-
+    order = ["kind", "lex_kind", "anon_kind", "anon", "op", "op_kind"]
     rows = []
-    pretty = {"core_bigvul": "BigVul", "core_diversevul": "DiverseVul",
-              "backbone_bigvul": "BigVul"}
-    for key, cells in analysis.items():
-        stem, metric = key.rsplit(":", 1)
-        if metric != "auc":
-            continue
-        corpus = pretty.get(stem, stem)
-        for cell, s in cells.items():
-            backbone, mode = cell.split("|")
-            if mode not in MODE_LABEL:
-                continue
-            rows.append((f"{corpus} / {backbone.upper()}", mode,
-                         s["diff"], s["lo"], s["hi"], s["p_two_sided"]))
+    for corpus, name in (("bigvul", "BigVul"), ("diversevul", "DiverseVul")):
+        auc = (analysis.get(corpus) or {}).get("auc", {})
+        for bb in ("ggnn", "gat", "gin", "tf"):
+            for mode in order:
+                s = auc.get(f"{bb}|{mode}~lexical")
+                if s:
+                    rows.append((f"{name} / {bb.upper()}", mode, s["diff"],
+                                 s["lo"], s["hi"]))
     if not rows:
         print("  no AUC cells found")
         return
-
-    # Group by cell label, order modes consistently.
-    order = ["op", "kind", "op_kind"]
-    labels = sorted({r[0] for r in rows})
-    fig, ax = plt.subplots(figsize=(7.2, 0.55 * len(rows) + 1.4))
+    labels = list(dict.fromkeys(r[0] for r in rows))
+    fig, ax = plt.subplots(figsize=(7.4, 0.26 * len(rows) + 1.6))
     y = 0
     yticks, yticklabels = [], []
     for lab in labels:
@@ -84,28 +77,26 @@ def forest():
             m = [r for r in rows if r[0] == lab and r[1] == mode]
             if not m:
                 continue
-            _, _, d, lo, hi, p = m[0]
-            ax.plot([lo, hi], [y, y], color=COLOUR[mode], lw=2.2,
+            _, _, d, lo, hi = m[0]
+            ax.plot([lo, hi], [y, y], color=COLOUR[mode], lw=2.0,
                     solid_capstyle="round")
-            ax.plot([d], [y], "o", color=COLOUR[mode], ms=6,
-                    markeredgecolor="white", markeredgewidth=0.8)
-            sig = "" if lo > 0 or hi < 0 else "  (n.s.)"
-            ax.text(hi + 0.004, y, f"{d:+.3f}{sig}", va="center", fontsize=8,
-                    color="#333333")
+            ax.plot([d], [y], "o", color=COLOUR[mode], ms=5,
+                    markeredgecolor="white", markeredgewidth=0.7)
+            sig = "" if lo > 0 or hi < 0 else " n.s."
+            ax.text(max(hi, d) + 0.004, y, f"{d:+.3f}{sig}", va="center",
+                    fontsize=7, color="#333333")
             yticks.append(y)
-            yticklabels.append(f"{lab} — {MODE_LABEL[mode]}")
+            yticklabels.append(f"{lab}: {MODE_LABEL[mode]}")
             y += 1
-        y += 0.4
-
+        y += 0.5
     ax.axvline(0, color="#666666", lw=1, ls="--")
     ax.set_yticks(yticks)
-    ax.set_yticklabels(yticklabels)
+    ax.set_yticklabels(yticklabels, fontsize=7)
     ax.invert_yaxis()
-    ax.set_xlabel("Δ AUC vs lexical node features (95% cluster-bootstrap CI)")
-    ax.set_title("Representation effect across corpora and backbones")
+    ax.set_xlabel("Change in AUC vs text-only node features (95% cluster-bootstrap CI)")
     ax.grid(axis="x", ls=":", alpha=0.5)
-    for s in ("top", "right", "left"):
-        ax.spines[s].set_visible(False)
+    for sp in ("top", "right", "left"):
+        ax.spines[sp].set_visible(False)
     out = FIGURES / "fig_representation_forest.pdf"
     plt.savefig(out, bbox_inches="tight")
     plt.savefig(out.with_suffix(".png"), dpi=300, bbox_inches="tight")

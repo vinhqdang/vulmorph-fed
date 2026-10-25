@@ -1,72 +1,48 @@
 #!/bin/bash
 # Reproduces every number, table and figure in the manuscript.
 #
-#   bash experiments/run_all.sh [DEVICE]
-#
-# The detection runs dominate the cost (hours on CPU, well under an hour on a
-# single GPU). The analysis and table steps take minutes and can be re-run on
-# their own once experiments/results/*.json exist -- which is the usual case
-# when checking that the paper matches its data:
-#
+#   bash experiments/run_all.sh            # full run (many CPU-hours)
 #   bash experiments/run_all.sh --tables-only
 #
-# No table in the manuscript is written by hand. emit_tables.py reads the
-# result JSONs and writes manuscript/latex/tab_*.tex, so a table cannot drift
-# from the data it reports.
+# The detection grid dominates the cost (about 25 cells per hour on four CPU
+# cores; the grid has roughly 300 cells). The analysis and table steps take
+# minutes and can be re-run on their own once experiments/results/*.json exist.
+#
+# No table or prose number is typed by hand: emit_tables.py reads the result
+# JSONs and writes manuscript/latex/tab_*.tex and numbers.tex (LaTeX macros).
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-DEVICE="${1:-cpu}"
 TABLES_ONLY=0
-[ "${1:-}" = "--tables-only" ] && { TABLES_ONLY=1; DEVICE=cpu; }
+[ "${1:-}" = "--tables-only" ] && TABLES_ONLY=1
 
-LOG=experiments/logs
-mkdir -p "$LOG" experiments/results
-
-COMMON="--max_samples 8000 --n_splits 5 --epochs 10 --device $DEVICE"
+mkdir -p experiments/logs experiments/results
 
 if [ "$TABLES_ONLY" -eq 0 ]; then
-  echo "=== RQ1: the labelling function as a static analysis ==="
-  # Builds the callee sample, then scores the released annotations. The gold
-  # set is under version control, so this reproduces without re-annotating.
-  python experiments/build_phitype_goldset.py > "$LOG/goldset.log" 2>&1
-  python experiments/annotate_goldset.py \
-      --output experiments/results/phitype_eval.json > "$LOG/phitype.log" 2>&1
+  echo "=== Detection grid (random 10k samples, 10 project-level folds) ==="
+  bash experiments/launch_grid.sh
 
-  echo "=== RQ2: feature mode on BigVul, GGNN (adds repeats to reach 10 folds) ==="
-  python experiments/run_representation.py --dataset bigvul $COMMON \
-      --n_repeats 2 --modes lexical,op,kind,op_kind --backbones ggnn \
-      --output experiments/results/core_bigvul.json > "$LOG/core_bigvul.log" 2>&1
-
-  echo "=== RQ3: second corpus, and two further message-passing schemes ==="
-  python experiments/run_representation.py --dataset diversevul $COMMON \
-      --modes lexical,kind,op_kind --backbones ggnn \
-      --output experiments/results/core_diversevul.json > "$LOG/core_dv.log" 2>&1
-  python experiments/run_representation.py --dataset bigvul $COMMON \
-      --modes lexical,kind,op_kind --backbones gat,gin \
-      --output experiments/results/backbone_bigvul.json > "$LOG/backbone.log" 2>&1
-
-  echo "=== RQ4: taxonomy granularity, same folds at each granularity ==="
-  # The fold assignment must match across granularities for the paired
-  # comparison in analyze_granularity.py to be meaningful; it verifies this
-  # rather than trusting it.
-  for T in 16 32; do
-    python experiments/run_representation.py --dataset bigvul $COMMON \
-        --taxonomy_size $T --modes lexical,op_kind --backbones ggnn \
-        --output "experiments/results/taxonomy_t${T}.json" \
-        > "$LOG/taxonomy_t${T}.log" 2>&1
+  echo "=== Reference baselines ==="
+  for c in bigvul diversevul; do
+    python experiments/run_size_baseline.py --dataset $c
+    python experiments/run_pretrained.py --dataset $c --output results/${c}_unixcoder.json
   done
+
+  echo "=== RQ1: validate phi on the experimental corpora ==="
+  for c in bigvul diversevul; do
+    python experiments/build_phitype_goldset.py --dataset $c --sample_n 10000 \
+        --per_class 14 --tail 100 --output experiments/goldset_$c.tsv
+  done
+  # The three blind annotation passes (experiments/annotations/) are released
+  # with the repository; score_phitype.py reads them.
+  python experiments/score_phitype.py
 fi
 
 echo "=== Analysis ==="
-python experiments/analyze_representation.py \
-    experiments/results/core_bigvul.json \
-    experiments/results/core_diversevul.json \
-    experiments/results/backbone_bigvul.json \
-    --n_boot 2000 --n_seeds 10 | tee "$LOG/analyze_representation.log"
-python experiments/analyze_granularity.py | tee "$LOG/analyze_granularity.log"
-python experiments/analyze_information.py | tee "$LOG/analyze_information.log"
+python experiments/compute_corpus_stats.py
+python experiments/analyze_information.py
+python experiments/analyze_representation.py --n_boot 2000 --n_seeds 10
 
 echo "=== Tables and figures ==="
 python experiments/emit_tables.py
@@ -74,8 +50,6 @@ python experiments/check_manuscript.py
 python experiments/make_figures.py
 
 echo "=== Manuscript ==="
-# Figures live in manuscript/figures but are referenced as figures/*.pdf from
-# manuscript/latex, so the parent directory has to be on the input path.
 ( cd manuscript/latex \
   && export TEXINPUTS="..:.:" \
   && pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null \
@@ -83,5 +57,4 @@ echo "=== Manuscript ==="
   && pdflatex -interaction=nonstopmode main.tex >/dev/null \
   && pdflatex -interaction=nonstopmode -halt-on-error main.tex >/dev/null ) \
   && echo "wrote manuscript/latex/main.pdf"
-
 echo "=== DONE ==="
