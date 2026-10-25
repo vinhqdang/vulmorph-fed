@@ -58,6 +58,56 @@ def _ap(y, s):
     return average_precision_score(y, s) if len(np.unique(y)) > 1 else 0.0
 
 
+N_BINS = 5
+
+
+def stratified_auc(y, s, bins):
+    """AUC within bins of function size, weighted by the number of
+    positive-negative pairs: the ranking skill left once length is held
+    fixed. 0.5 means the scores carry no information beyond length."""
+    y, s, bins = np.asarray(y), np.asarray(s), np.asarray(bins)
+    num = den = 0.0
+    for b in np.unique(bins):
+        m = bins == b
+        yy = y[m]
+        if len(np.unique(yy)) < 2:
+            continue
+        w = float(yy.sum() * (len(yy) - yy.sum()))
+        num += w * roc_auc_score(yy, s[m])
+        den += w
+    return num / den if den else 0.5
+
+
+def _packed_metric(y, s):
+    """Bootstrap-compatible wrapper: labels are packed as label + 2*bin."""
+    y = np.asarray(y)
+    return stratified_auc(y % 2, s, y // 2)
+
+
+def add_size_stratified(cells, corpus):
+    """Attach per-fold size-stratified AUC (`auc_ss`) to every cell, using
+    function-size bins whose edges come from the pooled held-out functions."""
+    sz = RESULTS / f"{corpus}_size.json"
+    if not sz.exists():
+        return None
+    d = json.load(open(sz))["size|rule"]["scores"]
+    allsz = np.concatenate([np.asarray(v["s"]) for v in d.values()])
+    edges = np.quantile(allsz, np.linspace(0, 1, N_BINS + 1)[1:-1])
+    for key, cell in cells.items():
+        cell["auc_ss"] = []
+        cell["bins"] = {}
+        for f in cell["folds"]:
+            sc = cell["scores"].get(str(f))
+            if not sc or str(f) not in d:
+                cell["auc_ss"].append(float("nan"))
+                continue
+            bins = np.searchsorted(edges, np.asarray(d[str(f)]["s"]),
+                                   side="right")
+            cell["bins"][str(f)] = bins.tolist()
+            cell["auc_ss"].append(float(stratified_auc(sc["y"], sc["s"], bins)))
+    return edges
+
+
 def merge_corpus(corpus):
     cells, folds, cfg_by_file = {}, None, {}
     for path in sorted(glob.glob(str(RESULTS / f"{corpus}_*.json"))):
@@ -88,17 +138,22 @@ def merge_corpus(corpus):
                 cells[k]["scores"].update(cell.get("scores", {}))
             else:
                 cells[k] = cell
+    add_size_stratified(cells, corpus)
     return cells, folds, cfg_by_file
 
 
-def pooled_rows(a, b, common, drop_project=None):
+def pooled_rows(a, b, common, drop_project=None, pack=False):
     ys, sa, sb, gs = [], [], [], []
     for f in common:
         fa, fb = a["scores"].get(str(f)), b["scores"].get(str(f))
         if not fa or not fb:
             continue
         keep = [i for i, g in enumerate(fa["groups"]) if g != drop_project]
-        ys += [fa["y"][i] for i in keep]
+        if pack:
+            bins = a["bins"][str(f)]
+            ys += [fa["y"][i] + 2 * bins[i] for i in keep]
+        else:
+            ys += [fa["y"][i] for i in keep]
         sa += [fa["s"][i] for i in keep]
         sb += [fb["s"][i] for i in keep]
         gs += [f"{f}:{fa['groups'][i]}" for i in keep]
@@ -112,7 +167,7 @@ def contrast(cells, ka, kb, metric, n_boot, n_seeds, drop_project=None):
     common = sorted(set(a["folds"]) & set(b["folds"]))
     if len(common) < 2:
         return None
-    fn = _auc if metric == "auc" else _ap
+    fn = {"auc": _auc, "auprc": _ap, "auc_ss": _packed_metric}[metric]
     da = np.array([a[metric][a["folds"].index(f)] for f in common])
     db = np.array([b[metric][b["folds"].index(f)] for f in common])
     d = da - db
@@ -121,7 +176,8 @@ def contrast(cells, ka, kb, metric, n_boot, n_seeds, drop_project=None):
         w_p = float(w.pvalue)
     except ValueError:                      # all differences zero
         w_p = 1.0
-    ys, sa, sb, gs = pooled_rows(a, b, common, drop_project)
+    ys, sa, sb, gs = pooled_rows(a, b, common, drop_project,
+                                 pack=(metric == "auc_ss"))
     ci, excl = None, []
     for s in range(n_seeds):
         c = cluster_bootstrap_ci(ys, sa, sb, gs, fn, n_boot=n_boot, seed=s)
@@ -150,10 +206,12 @@ def analyse_corpus(corpus, n_boot, n_seeds):
     if not cells:
         return None
     backbones = sorted({k.split("|")[1].split("@")[0] for k in cells})
-    out = {"auc": {}, "auprc": {}, "_cells": sorted(cells),
+    out = {"auc": {}, "auprc": {}, "auc_ss": {}, "_cells": sorted(cells),
            "_n_folds": len(folds), "_configs": cfgs}
-    for metric in ("auc", "auprc"):
+    for metric in ("auc", "auprc", "auc_ss"):
         res = out[metric]
+        if metric == "auc_ss" and not any("auc_ss" in c for c in cells.values()):
+            continue
         for bb in backbones:
             pairs = [(f"{m}|{bb}", f"lexical|{bb}", f"{m}~lexical")
                      for m in VS_LEXICAL + ["kind_low", "op_wide"]]
@@ -167,12 +225,21 @@ def analyse_corpus(corpus, n_boot, n_seeds):
                 r = contrast(cells, ka, kb, metric, n_boot, n_seeds)
                 if r:
                     res[f"{bb}|{name}"] = r
-                    r_x = contrast(cells, ka, kb, metric, n_boot, 3,
-                                   drop_project="Android")
-                    if r_x and corpus == "bigvul":
+                    r_x = (contrast(cells, ka, kb, metric, n_boot, 3,
+                                    drop_project="Android")
+                           if metric != "auc_ss" else None)
+                    if r_x and corpus == "bigvul" and metric != "auc_ss":
                         res[f"{bb}|{name}"]["without_android"] = {
                             k: r_x[k] for k in ("diff", "lo", "hi",
                                                 "p_two_sided", "n_folds")}
+        for ref, rname in (("size|rule", "size"), ("unixcoder|probe", "unixcoder")):
+            for m in ("lexical", "lex_kind", "kind", "op_kind"):
+                for bb in backbones:
+                    if bb in ("rule", "probe"):
+                        continue
+                    r = contrast(cells, f"{m}|{bb}", ref, metric, n_boot, n_seeds)
+                    if r:
+                        res[f"{bb}|{m}~{rname}"] = r
         keys = list(res)
         adj = holm([res[k]["p_two_sided"] for k in keys])
         adj_w = holm([res[k]["wilcoxon_p"] for k in keys])
