@@ -19,10 +19,19 @@ models, either alone as in LineVul~\cite{fu2022linevul} or fused with a graph
 channel~\cite{hin2022linevd, sun2024vullmgnns}.
 
 What is largely invariant across this progression is the node feature: some
-embedding of the node's lexical content. Our work isolates that choice. We
-hold the graph, the propagation scheme and the training protocol fixed and
-vary only what a node carries, which --- to our knowledge --- prior work does
-not do as a controlled comparison.
+embedding of the node's lexical content. Several detectors \emph{do} also use
+node-type information. Devign initialises each node from its code text together
+with its node type~\cite{zhou2019devign}, and ReVeal builds on the same
+construction~\cite{chakraborty2022deep}; Joern-based pipelines expose node
+labels and edge types to the network. In those systems the type is an
+ingredient of a larger design and is never varied on its own, so one cannot
+tell from them how much of the benefit comes from the type and how much from
+the text. Our work isolates that choice. We hold the graph, the propagation
+scheme and the training protocol fixed and vary only what a node carries,
+including the Devign-style combination of text and node type as an explicit
+baseline (Section~\ref{sec:features}). We make no claim that using node types
+is new; the claim is about what a controlled comparison shows when they are
+used alone, with text, or with an engineered label set on top.
 
 \subsection{Normalisation and Abstraction of Code}
 Abstracting away identifiers is long-established practice, but as

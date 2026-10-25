@@ -25,7 +25,7 @@ only as good as its annotation.
           are language-model annotators of different capability, run as
           separate sessions. No human annotated these sheets.
     \item \textbf{Agreement and adjudication.} We report raw agreement and
-          Cohen's $\kappa$ between the two annotators; every disagreement is
+          Cohen's $\kappa$~\cite{cohen1960coefficient} between the two annotators; every disagreement is
           resolved by a third blind pass that sees the two candidate labels in
           random order. The consensus is the ground truth for scoring. We also
           score against each annotator alone to show sensitivity.
@@ -58,7 +58,7 @@ the original single-annotator labels, which we now regard as optimistic. The
 weakest class is \texttt{MEMORY\_COPY}, with precision \numcopyPrecision{}. Two
 caveats keep these figures honest. First, several classes have few positives
 (the smallest has \numminClassPositives), so their intervals are wide;
-Table~\ref{tab:rq1_analysis} shows the intervals rather than only the point
+Table~\ref{tab:rq1_analysis} shows Wilson intervals~\cite{wilson1927probable} rather than only the point
 values. Second, the sample is stratified, so the numbers are per-name
 estimates, not a population-weighted accuracy.
 

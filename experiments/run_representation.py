@@ -33,6 +33,7 @@ import torch
 import torch.nn as nn
 from sklearn.metrics import roc_auc_score, average_precision_score
 from torch_geometric.loader import DataLoader as PyGDataLoader
+from torch_geometric.data import Batch
 
 from data.loaders.sampled import load_sampled
 from data.loaders.real_datasets import dedupe_functions
@@ -58,6 +59,15 @@ def lex_remap_for(train_data, n_tokens, vocab_size=LEX_VOCAB, min_count=2):
     return remap, int(len(ids))
 
 
+def _bucketed_batches(data, batch_size):
+    order = sorted(range(len(data)),
+                   key=lambda i: data[i].num_nodes + 8 * float(torch.rand(1)))
+    chunks = [order[i:i + batch_size] for i in range(0, len(order), batch_size)]
+    perm = torch.randperm(len(chunks)).tolist()
+    for j in perm:
+        yield Batch.from_data_list([data[i] for i in chunks[j]])
+
+
 def train_eval(model, train_data, test_data, epochs, batch_size, lr):
     """Fixed protocol shared by every cell of the grid."""
     opt = torch.optim.Adam(model.parameters(), lr=lr)
@@ -66,11 +76,18 @@ def train_eval(model, train_data, test_data, epochs, batch_size, lr):
     pos_w = torch.tensor([n_neg / max(1, n_pos)]).clamp(max=20.0)
     bce = nn.BCEWithLogitsLoss(pos_weight=pos_w)
 
-    tl = PyGDataLoader(train_data, batch_size=batch_size, shuffle=True)
+    bucketed = getattr(model, "backbone_name", "") == "tf"
     vl = PyGDataLoader(test_data, batch_size=batch_size, shuffle=False)
+    if not bucketed:
+        tl = PyGDataLoader(train_data, batch_size=batch_size, shuffle=True)
 
     for _ in range(epochs):
         model.train()
+        if bucketed:
+            # Dense-padded attention costs the padded length, so the
+            # Transformer is trained on length-bucketed batches (same data,
+            # same batch size, same number of steps; batches are shuffled).
+            tl = _bucketed_batches(train_data, batch_size)
         for batch in tl:
             opt.zero_grad()
             logits, _, _ = model(batch)

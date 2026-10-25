@@ -113,7 +113,7 @@ on the folds both systems completed.
 \begin{enumerate}
     \item The mean per-fold difference in AUC (or AUPRC) and the number of
           folds won.
-    \item A \textbf{Wilcoxon signed-rank test} over the ten per-fold
+    \item A \textbf{Wilcoxon signed-rank test}~\cite{wilcoxon1945individual} over the ten per-fold
           differences (exact, two-sided). With ten folds the smallest
           attainable two-sided $p$ is $0.002$.
     \item A \textbf{cluster bootstrap} on the pooled held-out predictions,
@@ -126,7 +126,7 @@ on the folds both systems completed.
           marked $\dagger$ and not treated as a finding.
 \end{enumerate}
 Within each family of contrasts for one corpus and metric we also compute
-Holm-adjusted $p$-values, which are stored in the result files; when a
+Holm-adjusted $p$-values~\cite{holm1979simple}, which are stored in the result files; when a
 conclusion in the text depends on a single contrast we say so. A chi-square
 test of independence is used only where the data are counts: for whether
 truncation depends on the label (we use Fisher's exact test, the small-sample

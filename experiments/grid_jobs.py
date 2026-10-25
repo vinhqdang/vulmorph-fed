@@ -34,6 +34,8 @@ def main():
     for es in ("ast", "ast_sib"):
         for p in PAIRS:
             jobs.append(job("bigvul", f"edge-{es}", "kind", "ggnn", p, f"--edge_set {es}"))
+    for p in PAIRS:
+        jobs.append(job("bigvul", "tf", "lexical,kind", "tf", p, "--hidden_dim 64"))
     print("\n".join(jobs))
 
 
