@@ -121,10 +121,52 @@ def _project(fine: str, taxonomy_size: int) -> str:
     return PROJECT_16_TO_8[t16]
 
 
+# ── Lexical token definitions ────────────────────────────────────────────────
+#
+# Three ways a node can be turned into a token. They differ only in how much
+# project-specific text survives, and the experiment grid crosses them with
+# the grammar kind so that "structure labels vs no structure labels" is never
+# confounded with "lexical vs invariant".
+#
+#   lexical : a LEAF carries its source text (<= 30 chars, else <LONG>);
+#             every INTERNAL node carries the single token <INTERNAL>. The
+#             lexical mode therefore holds no node-type information at all.
+#   anon    : identifiers are alpha-renamed by first occurrence within the
+#             function (VAR_i / FUN_i / FIELD_i / TYPE_i), numeric and string
+#             literals collapse to NUM / STR, everything else keeps its text.
+#             Equality of occurrences survives, spelling does not.
+#
+# Unseen tokens: `lexical` ids index a corpus-wide token dictionary; the
+# experiment runner maps every token not seen in the TRAINING folds to <UNK>
+# (id 0) per fold, so test-time out-of-vocabulary behaviour is measured.
+
+_LITERAL_LEAVES = {"string_literal", "char_literal", "concatenated_string",
+                   "number_literal", "system_lib_string"}
+_RENAMED = {"identifier": "VAR", "field_identifier": "FIELD",
+            "type_identifier": "TYPE", "statement_identifier": "LABEL"}
+ANON_CAP = 15
+# Leaves whose text is free-form and therefore project-specific.
+_FREE_TEXT = {"comment", "preproc_arg", "string_content", "character",
+              "escape_sequence", "preproc_directive", "ms_call_modifier",
+              "attribute", "identifier_like"}
+
+
+def _is_leaf_like(n) -> bool:
+    return n.child_count == 0 or n.type in _LITERAL_LEAVES
+
+
 def code_to_ast_graph(code: str, vocab: Dict[str, int],
                       max_nodes: int = 200,
-                      taxonomy_size: int = 8) -> Optional[Data]:
-    """Parse a C/C++ function into a PyG graph; None if unusable."""
+                      taxonomy_size: int = 8,
+                      anon_vocab: Optional[Dict[str, int]] = None,
+                      grow_vocab: bool = False) -> Optional[Data]:
+    """Parse a C/C++ function into a PyG graph; None if unusable.
+
+    `vocab` maps lexical tokens to ids. With `grow_vocab` the dictionary is
+    extended in place (ids are corpus-wide; the per-fold train-only cut is
+    applied by the experiment runner). `anon_vocab` does the same for the
+    alpha-renamed tokens, which form a small, project-invariant alphabet.
+    """
     if not TS_AVAILABLE:
         return None
     src = code.encode("utf8", "replace")
@@ -135,42 +177,82 @@ def code_to_ast_graph(code: str, vocab: Dict[str, int],
     root = tree.root_node
     if root is None or root.named_child_count == 0:
         return None
+    if anon_vocab is None:
+        anon_vocab = {"<UNK>": 0}
 
     _, morph_map = get_taxonomy(taxonomy_size)
 
-    # Pre-order traversal over named nodes, capped.
+    # Pre-order traversal over named nodes; the first `max_nodes` are kept
+    # but the traversal continues so truncation can be measured.
     nodes, parent_of = [], []
+    n_full = 0
     stack = [(root, -1)]
-    while stack and len(nodes) < max_nodes:
+    while stack:
         node, parent_idx = stack.pop()
+        n_full += 1
         idx = len(nodes)
-        nodes.append(node)
-        parent_of.append(parent_idx)
-        named = [c for c in node.children if c.is_named]
-        for c in reversed(named):
-            stack.append((c, idx))
+        if idx < max_nodes:
+            nodes.append(node)
+            parent_of.append(parent_idx)
+        else:
+            idx = -2          # descendants of a dropped node are dropped
+        for c in reversed([c for c in node.children if c.is_named]):
+            stack.append((c, idx if idx >= 0 else -2))
+    # children of dropped nodes carry parent -2 and fall outside the cap
     if len(nodes) < 3:
         return None
 
-    kind_ids, morph_ids, lex_ids = [], [], []
+    def tok_id(d, tok):
+        i = d.get(tok)
+        if i is None:
+            if not grow_vocab:
+                return 0
+            i = d[tok] = len(d)
+        return i
+
+    kind_ids, morph_ids, lex_ids, anon_ids = [], [], [], []
     ident_positions: Dict[str, List[int]] = {}
+    rename: Dict[str, Dict[str, int]] = {}
     for i, n in enumerate(nodes):
         kind_ids.append(min(n.kind_id, NUM_AST_KINDS - 1))
         morph_ids.append(morph_map[_project(_classify_ast_node(n, src),
                                             taxonomy_size)])
         text = src[n.start_byte:n.end_byte].decode("utf8", "replace")
-        token = text if len(text) <= 30 and n.child_count == 0 else n.type
-        lex_ids.append(vocab.get(token, 0))
+        if _is_leaf_like(n):
+            lex_tok = text if len(text) <= 30 else "<LONG>"
+            if n.type in _RENAMED:
+                tag = _RENAMED[n.type]
+                par = nodes[parent_of[i]] if parent_of[i] >= 0 else None
+                if (tag == "VAR" and par is not None
+                        and par.type == "call_expression"
+                        and par.child_by_field_name("function") == n):
+                    tag = "FUN"
+                table = rename.setdefault(tag, {})
+                k = table.setdefault(text, len(table))
+                anon_tok = f"{tag}_{min(k, ANON_CAP)}"
+            elif n.type == "number_literal":
+                anon_tok = "NUM"
+            elif n.type in _LITERAL_LEAVES:
+                anon_tok = "STR"
+            elif n.type in _FREE_TEXT:
+                anon_tok = n.type.upper()
+            else:
+                anon_tok = lex_tok
+        else:
+            lex_tok = anon_tok = "<INTERNAL>"
+        lex_ids.append(tok_id(vocab, lex_tok))
+        anon_ids.append(tok_id(anon_vocab, anon_tok))
         if n.type == "identifier":
             ident_positions.setdefault(text, []).append(i)
 
-    srcs, dsts = [], []
-    # AST edges (child -> parent and parent -> child)
+    srcs, dsts, etype = [], [], []
+    # AST edges (parent -> child = 0, child -> parent = 1)
     for i, p in enumerate(parent_of):
         if p >= 0:
             srcs += [p, i]
             dsts += [i, p]
-    # Sibling order edges
+            etype += [0, 1]
+    # Sibling order edges (2)
     by_parent: Dict[int, List[int]] = {}
     for i, p in enumerate(parent_of):
         by_parent.setdefault(p, []).append(i)
@@ -178,19 +260,25 @@ def code_to_ast_graph(code: str, vocab: Dict[str, int],
         for a, b in zip(sibs, sibs[1:]):
             srcs.append(a)
             dsts.append(b)
-    # Def-use proxy edges
+            etype.append(2)
+    # Def-use proxy edges (3)
     for positions in ident_positions.values():
         for a, b in zip(positions, positions[1:]):
             srcs.append(a)
             dsts.append(b)
+            etype.append(3)
 
     unknown_id = morph_map["UNKNOWN"]
     data = Data(
         x_lex=torch.tensor(lex_ids, dtype=torch.long),
+        x_anon=torch.tensor(anon_ids, dtype=torch.long),
         x_morph=torch.tensor(morph_ids, dtype=torch.long),
         x_kind=torch.tensor(kind_ids, dtype=torch.long),
         edge_index=torch.tensor([srcs, dsts], dtype=torch.long),
+        edge_type=torch.tensor(etype, dtype=torch.long),
         num_nodes=len(nodes),
     )
     data.morph_known = int((data.x_morph != unknown_id).sum())
+    data.n_full = int(n_full)
+    data.truncated = int(n_full > max_nodes)
     return data

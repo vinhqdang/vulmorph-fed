@@ -28,8 +28,14 @@ from experiments.common import load_graphs   # noqa: F401  (ensures deps load)
 _IDENT = re.compile(r"^[A-Za-z_]\w*$")
 
 
-def collect_callees(dataset: str, max_samples: int):
-    """Frequency table of callee names over a corpus's call_expressions."""
+def collect_callees(dataset: str, max_samples: int, sample_n: int = 0,
+                    sample_seed: int = 0):
+    """Frequency table (and one example call each) over a corpus.
+
+    For bigvul/diversevul with `sample_n` > 0 the functions are exactly those
+    of the random sample used by the experiments, so the validation is run on
+    the experimental corpora rather than on a different one.
+    """
     from datasets import load_dataset
     src_key, name = {
         "devign": ("func", "DetectVul/devign"),
@@ -37,11 +43,17 @@ def collect_callees(dataset: str, max_samples: int):
         "diversevul": ("func", "bstee615/diversevul"),
     }[dataset]
 
-    ds = load_dataset(name, split="train", streaming=True)
-    counts = collections.Counter()
-    for i, row in enumerate(ds):
-        if i >= max_samples:
-            break
+    counts, examples = collections.Counter(), {}
+    if sample_n and dataset in ("bigvul", "diversevul"):
+        from data.loaders.sampled import load_sampled
+        graphs, _, _ = load_sampled(dataset, sample_n, sample_seed, 8)
+        ds = load_dataset(name, split="train")
+        rows = (ds[g.src_index] for g in graphs)
+    else:
+        rows = (r for i, r in zip(range(max_samples),
+                                  load_dataset(name, split="train",
+                                               streaming=True)))
+    for row in rows:
         code = row.get(src_key) or row.get("func") or ""
         src = code.encode("utf8", "replace")
         try:
@@ -58,8 +70,28 @@ def collect_callees(dataset: str, max_samples: int):
                     nm = nm.split("->")[-1].split(".")[-1].strip()
                     if _IDENT.match(nm):
                         counts[nm] += 1
+                        if nm not in examples:
+                            ex = " ".join(src[n.start_byte:n.end_byte]
+                                          .decode("utf8", "replace").split())
+                            if len(ex) <= 160:
+                                examples[nm] = ex
             stack.extend([c for c in n.children if c.is_named])
-    return counts
+    return counts, examples
+
+
+def write_blind(dataset, items, examples):
+    """Blind annotation sheet: no predicted class, shuffled, with context."""
+    rng = random.Random(1)
+    items = list(items)
+    rng.shuffle(items)
+    out = Path(__file__).parent / "annotations" / f"blind_{dataset}.tsv"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with open(out, "w", newline="") as f:
+        w = csv.writer(f, delimiter="\t")
+        w.writerow(["id", "name", "occurrences", "example_call"])
+        for i, (nm, occ, _) in enumerate(items):
+            w.writerow([i, nm, occ, examples.get(nm, "")])
+    print(f"wrote blind sheet ({len(items)} names) -> {out}")
 
 
 def main():
@@ -72,15 +104,27 @@ def main():
                    help="Random unmatched names (recall arm)")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--output", type=str, default=None)
+    p.add_argument("--sample_n", type=int, default=0,
+                   help="use the random experimental sample of this size")
+    p.add_argument("--names_from", type=str, default=None,
+                   help="re-export an existing gold-set TSV as a blind file")
     args = p.parse_args()
 
     if not TS_AVAILABLE:
         raise SystemExit("tree-sitter unavailable")
 
-    counts = collect_callees(args.dataset, args.max_samples)
+    counts, examples = collect_callees(args.dataset, args.max_samples,
+                                       args.sample_n, args.seed)
     total_sites = sum(counts.values())
     print(f"{args.dataset}: {len(counts)} distinct callees over "
           f"{total_sites} call sites")
+
+    if args.names_from:
+        rows = list(csv.DictReader(open(args.names_from), delimiter="\t"))
+        write_blind(args.dataset, [(r["name"], int(r["occurrences"]),
+                                    r["predicted"]) for r in rows],
+                    examples)
+        return
 
     by_pred = collections.defaultdict(list)
     for nm, c in counts.items():
@@ -115,6 +159,8 @@ def main():
                                           "true", "note"], delimiter="\t")
         w.writeheader()
         w.writerows(rows)
+    write_blind(args.dataset, [(r["name"], r["occurrences"], r["predicted"])
+                               for r in rows], examples)
 
     print(f"wrote {len(rows)} names to annotate -> {out}")
     print("predicted-class distribution in the sample:")

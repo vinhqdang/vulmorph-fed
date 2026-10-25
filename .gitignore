@@ -229,3 +229,4 @@ __marimo__/
 *.fdb_latexmk
 *.synctex.gz
 
+experiments/logs/

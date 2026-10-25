@@ -9,6 +9,73 @@ which it operates. Section~\ref{sec:experiment} then evaluates it twice: as a
 static analysis, against annotated ground truth, and as a representation, by
 its effect on cross-project detection.
 
+\subsection{Overview and a running example}
+\label{sec:overview}
+
+Figure~\ref{fig:pipeline} shows the whole pipeline. A C function is parsed into
+a syntax-tree graph. Each node of that graph is then described to the neural
+network by one of several \emph{views}, and the views are the object of study.
+Everything downstream of the view (the network, the pooling, the training
+procedure) is the same in every experiment.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={draw, rounded corners=2pt, minimum height=8mm, align=center,
+              inner sep=3pt, fill=gray!8},
+  view/.style={draw, rounded corners=2pt, minimum height=6mm, align=center,
+               inner sep=2pt, fill=blue!7, font=\footnotesize},
+  fixed/.style={draw, dashed, rounded corners=3pt, inner sep=5pt},
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+  \node[box] (src) {C function\\(source text)};
+  \node[box, right=7mm of src] (parse) {tree-sitter\\parse};
+  \node[box, right=7mm of parse] (graph) {Program graph\\AST + SIB + DU edges\\$\le 200$ nodes};
+  \node[view, below=9mm of parse, xshift=-18mm] (lex) {lexical\\token text};
+  \node[view, right=2mm of lex] (anon) {anonymised\\token};
+  \node[view, right=2mm of anon] (kind) {grammar\\kind $\kappa$};
+  \node[view, right=2mm of kind] (op) {operation\\type $\phi_8$};
+  \node[box, below=8mm of anon, xshift=14mm] (emb) {node embedding\\(sum of selected views)};
+  \node[box, right=7mm of emb] (gnn) {backbone\\GGNN / GAT / GIN\\or Transformer};
+  \node[box, right=7mm of gnn] (head) {mean--max\\readout + MLP};
+  \node[box, below=7mm of head] (out) {vulnerability\\score};
+  \node[box, below=7mm of emb] (cv) {project-level\\GroupKFold};
+  \draw[arr] (src) -- (parse);
+  \draw[arr] (parse) -- (graph);
+  \draw[arr] (graph.south) -- ++(0,-3mm) -| (op.north);
+  \draw[arr] (lex.south) |- ($(emb.west)+(0,1mm)$);
+  \draw[arr] (anon.south) -- (anon.south |- emb.north);
+  \draw[arr] (kind.south) -- (kind.south |- emb.north);
+  \draw[arr] (op.south) |- ($(emb.east)+(0,2.5mm)$);
+  \draw[arr] (emb) -- (gnn);
+  \draw[arr] (gnn) -- (head);
+  \draw[arr] (head) -- (out);
+  \draw[arr] (cv.east) -| node[pos=0.25, below, font=\footnotesize]{train / held-out projects} (out.south);
+  \begin{pgfonlayer}{background}
+    \node[fixed, fit=(emb)(gnn)(head), label={[font=\footnotesize]below:held fixed in every comparison}] {};
+  \end{pgfonlayer}
+\end{tikzpicture}
+\caption{Pipeline. The only component that varies between compared systems is
+the choice of node view(s) (blue). The dashed region (embedding width, backbone
+depth, readout, optimiser, training budget) is identical across views.
+Evaluation always holds out whole projects.}
+\label{fig:pipeline}
+\end{figure}
+
+\paragraph{Running example.} Consider the function body
+\texttt{n = len(buf); p = av\_malloc(n * 4); if (!p) return -1;}.
+A node of its tree can be described in four ways. Its \emph{lexical token} is
+the text written in the source (\texttt{av\_malloc}, \texttt{n}, \texttt{buf}):
+this is a property of the project that wrote it. Its \emph{anonymised token}
+keeps only which names recur (\texttt{FUN\_0}, \texttt{VAR\_0},
+\texttt{VAR\_1}). Its \emph{grammar kind} $\kappa$ is the name of the grammar
+rule that produced it (\texttt{call\_expression}, \texttt{identifier},
+\texttt{binary\_expression}), which depends only on the C language. Its
+\emph{operation type} $\phi$ is a hand-built label for what the node does to
+memory or control flow (\texttt{av\_malloc(...)} is a \texttt{MEMORY\_ACCESS}
+node, \texttt{!p} a \texttt{COMPARISON}). Terms used throughout the paper
+follow these four definitions.
+
 \subsection{Program Graphs}
 \label{sec:graph_construction}
 
@@ -169,27 +236,120 @@ $\mathcal{T}_8$ & abstracts ($\mathcal{T}_{32}$) & carries \\
 \end{tabular}}
 \end{table}
 
-\subsection{Node Features}
+\subsection{Node Views}
 \label{sec:features}
 
-A node is represented as the sum of two embeddings, both over
-\emph{project-invariant} alphabets:
+A \emph{view} is the symbol (or symbols) from which a node's learned embedding
+is looked up. Table~\ref{tab:modes} defines every view used in the paper. The
+definitions matter for fairness, because a lexical baseline that carries no
+information about node types would be compared against views that do. We
+therefore also include the combinations that real detectors use: Devign and
+ReVeal initialise a node with its code text together with its node
+type~\cite{zhou2019devign, chakraborty2022deep}, which corresponds to our
+\texttt{lex+$\kappa$} view.
+
+\begin{table}[t]
+\centering
+\caption{Node views. Leaves are tokens such as identifiers, literals and
+keywords; internal nodes are the syntactic constructs above them. ``Invariant''
+means the symbol alphabet is the same for every project. Embeddings of
+combined views are summed.}
+\label{tab:modes}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{llllc}
+\toprule
+View & Leaf node carries & Internal node carries & Alphabet & Invariant \\
+\midrule
+\texttt{lexical} & source text ($\le 30$ chars, else \texttt{<LONG>}) & single token \texttt{<INTERNAL>} & training-fold tokens, top 10{,}000 & no \\
+\texttt{anon} & identifiers renamed by first occurrence (\texttt{VAR\_i}, \texttt{FUN\_i}, \texttt{FIELD\_i}, \texttt{TYPE\_i}); numbers $\to$ \texttt{NUM}; strings $\to$ \texttt{STR}; keywords and operators keep their text & \texttt{<INTERNAL>} & $\approx$ 1{,}000 symbols & mostly \\
+$\kappa$ & grammar kind & grammar kind & $|K|{+}1 = 364$ & yes \\
+$\phi_8$ & operation type ($\bot$ if none) & operation type ($\bot$ if none) & 9 & yes \\
+$\kappa{+}\phi$ & $\kappa$ and $\phi_8$ & $\kappa$ and $\phi_8$ & 364 and 9 & yes \\
+\texttt{lex+$\kappa$} & lexical and $\kappa$ & \texttt{<INTERNAL>} and $\kappa$ & as above & no \\
+\texttt{anon+$\kappa$} & anonymised and $\kappa$ & \texttt{<INTERNAL>} and $\kappa$ & as above & mostly \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\paragraph{The lexical view, precisely.} Each leaf carries its exact source
+text. Every internal node carries the same token \texttt{<INTERNAL>}, so the
+plain lexical view contains \emph{no} node-type information; it is the
+``text only'' condition. Tokens enter a per-fold dictionary built \emph{only}
+from the training projects (the 10{,}000 most frequent tokens occurring at
+least twice); every token not in that dictionary, including every token that
+exists only in held-out projects, is mapped to a single \texttt{<UNK>}
+embedding at test time. Out-of-vocabulary behaviour on unseen projects is
+therefore part of what the lexical view is measured on.
+
+\paragraph{Why anonymisation is a separate baseline.} Anonymising identifiers
+is the standard way to remove project vocabulary while keeping text
+(Section~\ref{sec:background}). The \texttt{anon} and \texttt{anon+$\kappa$}
+views isolate what grammar kinds add beyond that: if renaming identifiers
+already closes the gap, the grammar kind is not needed.
+
+\paragraph{The operation view.} Our default combined view is
 \begin{equation}
     \mathbf{x}_v = E_{\mathrm{op}}\big[\phi_8(v)\big]
                  + E_{\mathrm{kind}}\big[\kappa(v)\big],
 \label{eq:features}
 \end{equation}
-where $\kappa(v) \in K$ is the grammar kind and $E_{\mathrm{op}},
-E_{\mathrm{kind}}$ are learned tables with $|\mathcal{T}_8|+1 = 9$ and
-$|K|+1 = 364$ rows. Both alphabets are fixed by the C grammar and the
-taxonomy, hence identical across projects and corpora. That invariance is the
-property we claim explains transfer, and it is what
-Section~\ref{sec:experiment} tests against a lexical baseline under an
-otherwise identical protocol.
+where $E_{\mathrm{op}},E_{\mathrm{kind}}$ are learned tables with $9$ and $364$
+rows. Both alphabets are fixed by the C grammar and the taxonomy, hence
+identical across projects and corpora.
 
 One caveat, stated precisely. Node \emph{features} contain no identifier, but
 $\phi$ \emph{consults} identifier text to classify a callee, so a bounded
-amount of name-derived information --- at most
-$\log_2(|\mathcal{T}_{32}|+1) \approx 5$ bits per call node --- influences the
+amount of name-derived information (at most
+$\log_2(|\mathcal{T}_{32}|+1) \approx 5$ bits per call node) influences the
 representation. What does not survive is the identifier itself, its spelling,
 or any project-specific vocabulary.
+
+\subsection{Algorithms}
+\label{sec:algorithms}
+
+Algorithm~\ref{alg:graph} gives the construction of a node's views;
+Algorithm~\ref{alg:protocol} gives the evaluation protocol that every reported
+number follows.
+
+\begin{algorithm}[t]
+\caption{Program graph and node views for one function}
+\label{alg:graph}
+\begin{algorithmic}[1]
+\REQUIRE C source $f$, node cap $N=200$
+\STATE $T \leftarrow \textsc{TreeSitterParse}(f)$
+\STATE $V \leftarrow$ first $N$ named nodes of $T$ in pre-order; record $n_{\text{full}}=|\text{named nodes}|$
+\FOR{each $v \in V$}
+  \STATE $\kappa(v) \leftarrow$ grammar kind of $v$
+  \STATE $\phi(v) \leftarrow$ \textbf{case} kind of $v$:
+  \STATE \quad call: $\psi(\text{callee name})$ \COMMENT{exact allow-list, then whole-component match}
+  \STATE \quad kind-determined: table lookup \COMMENT{rule 2 of Section~\ref{sec:phi}}
+  \STATE \quad binary / pointer / unary: by operator token
+  \STATE \quad otherwise $\bot$
+  \IF{$v$ is a leaf}
+     \STATE $\text{lex}(v) \leftarrow$ source text of $v$;\ $\text{anon}(v) \leftarrow \textsc{Rename}(v)$ \COMMENT{first occurrence in $f$}
+  \ELSE
+     \STATE $\text{lex}(v) \leftarrow \text{anon}(v) \leftarrow \texttt{<INTERNAL>}$
+  \ENDIF
+\ENDFOR
+\STATE $\mathcal{E} \leftarrow$ AST edges (both directions) $\cup$ sibling edges $\cup$ def-use edges between successive occurrences of an identifier
+\RETURN graph $(V,\mathcal{E})$ with views $\kappa,\phi,\text{lex},\text{anon}$ per node
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[t]
+\caption{Cross-project evaluation of one (view, backbone) system}
+\label{alg:protocol}
+\begin{algorithmic}[1]
+\REQUIRE corpus sample $D$ (uniform random, seeded), view $m$, backbone $b$
+\STATE remove near-duplicates from $D$ by their $(\kappa,\phi)$ node sequences
+\STATE hold the projects whose size exceeds $0.3\times$ the mean fold train-only
+\STATE deal the other projects into $5$ folds, twice with different shuffles: $10$ folds
+\FOR{fold $k=1,\dots,10$}
+   \STATE train set $\leftarrow$ all functions of projects not in fold $k$
+   \STATE fit the lexical dictionary on the train set only
+   \STATE initialise model with seed $1000+k$; train for $10$ epochs with class-weighted loss
+   \STATE score the held-out projects; store AUC, AUPRC and the raw scores
+\ENDFOR
+\STATE compare two systems by paired fold differences (Wilcoxon) and a cluster bootstrap over held-out projects
+\end{algorithmic}
+\end{algorithm}
