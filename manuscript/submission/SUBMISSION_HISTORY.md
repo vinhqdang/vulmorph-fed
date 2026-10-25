@@ -2,11 +2,25 @@
 
 Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection
 
-| # | Venue | Manuscript no. | Submitted | Decision | Decision date | Outcome |
-|---|-------|----------------|-----------|----------|---------------|---------|
-| 1 | Journal of Computer Languages (Elsevier) | COLA-D-26-00245 | 13 August 2026 (cover letter date; initial submission) | Reject (Editor-in-Chief: Marjan Mernik) | October 2026 (reviews dated 2 and 24 October 2026) | Rejected after review by two reviewers |
+| # | Venue | Manuscript no. | Title as submitted | Submitted | Decision | Decision date |
+|---|-------|----------------|--------------------|-----------|----------|---------------|
+| 1 | Science of Computer Programming (Elsevier) | SCICO-D-26-00310 | Cross-Project Software Vulnerability Detection via Federated Vulnerability Morphology Learning | 11 May 2026 | Reject (Completed - Reject) | 8 August 2026 |
+| 2 | Journal of Computer Languages (Elsevier) | COLA-D-26-00245 | Grammar-Derived Operation Abstraction for Cross-Project Vulnerability Detection | 13 August 2026 (cover letter date) | Reject (Editor-in-Chief: Marjan Mernik) | October 2026 (reviews dated 2 and 24 October 2026) |
 
-## Submission 1: COLA-D-26-00245 (Journal of Computer Languages)
+The two submissions are the same line of work at different stages: submission 1
+carried the federated-learning framing, which was later withdrawn (see
+`PLAN_V2.md`); submission 2 is the representation study. Both were rejected.
+
+## Submission 1: SCICO-D-26-00310 (Science of Computer Programming)
+
+- **Submitted:** 11 May 2026. **Final disposition:** Reject, 8 August 2026
+  (editorial office record: "Completed - Reject").
+- **Reviewer comments:** not stored in this repository. If the decision letter
+  and reports are added under `manuscript/submission/scico_reviews/`, they
+  should be folded into the point-by-point response before any further
+  submission, in particular to the same journal.
+
+## Submission 2: COLA-D-26-00245 (Journal of Computer Languages)
 
 - **Version submitted:** initial submission (double-blind package with a separate title page).
 - **Reviews received:** Reviewer 1 (2 October 2026), Reviewer 2 (24 October 2026).
@@ -64,4 +78,4 @@ elsewhere; the point-by-point record is in
 
 | # | Venue | Status |
 |---|-------|--------|
-| 2 | to be chosen by the author | revised manuscript prepared (this repository) |
+| 3 | to be chosen by the author | revised manuscript prepared (this repository). Elsevier transfer offers listed for COLA-D-26-00245: Machine Learning with Applications, Array, Natural Language Processing Journal, Science of Computer Programming, Knowledge-Based Systems. Note that Science of Computer Programming already rejected submission 1. |
