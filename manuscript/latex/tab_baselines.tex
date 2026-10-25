@@ -17,6 +17,8 @@ probe (no fine-tuning).}
 System & AUC & AUPRC & AUC & AUPRC \\
 \midrule
 GGNN on code text (token-only baseline) & 0.545 $\pm$ 0.056 & 0.120 $\pm$ 0.013 & 0.542 $\pm$ 0.012 & 0.062 $\pm$ 0.006 \\
+Devign/ReVeal-style GGNN: text $+$ node type & 0.622 $\pm$ 0.054 & 0.163 $\pm$ 0.011 & 0.634 $\pm$ 0.004 & 0.081 $\pm$ 0.011 \\
+GGNN, anonymised tokens $+$ node type & 0.744 $\pm$ 0.000 & 0.308 $\pm$ 0.000 & --- & --- \\
 GGNN, grammar kind $\kappa$ (ours) & 0.670 $\pm$ 0.032 & 0.165 $\pm$ 0.006 & 0.665 $\pm$ 0.007 & 0.084 $\pm$ 0.007 \\
 GGNN, $\kappa{+}\phi$ (ours) & 0.631 $\pm$ 0.072 & 0.160 $\pm$ 0.023 & 0.663 $\pm$ 0.012 & 0.093 $\pm$ 0.021 \\
 \bottomrule

@@ -25,14 +25,13 @@ def main():
         jobs.append(job("bigvul", "core", "lexical,kind,op_kind,lex_kind,anon_kind", "ggnn", p))
         jobs.append(job("diversevul", "core", "lexical,kind,op_kind,lex_kind,anon_kind", "ggnn", p))
     for p in PAIRS:
-        jobs.append(job("bigvul", "bb", "lexical,lex_kind,kind,op_kind", "gat,gin", p))
+        jobs.append(job("bigvul", "bb", "lexical,kind,op_kind", "gat,gin", p))
         jobs.append(job("diversevul", "bb", "lexical,kind,op_kind", "gat,gin", p))
     for p in PAIRS:
         jobs.append(job("bigvul", "extra", "op,anon,kind_low", "ggnn", p))
     for p in PAIRS:
         jobs.append(job("bigvul", "tax16", "op_kind", "ggnn", p, "--taxonomy_size 16"))
-        jobs.append(job("bigvul", "tax32", "op_kind", "ggnn", p, "--taxonomy_size 32"))
-    for es in ("ast", "ast_sib", "ast_du"):
+    for es in ("ast", "ast_sib"):
         for p in PAIRS:
             jobs.append(job("bigvul", f"edge-{es}", "kind", "ggnn", p, f"--edge_set {es}"))
     print("\n".join(jobs))

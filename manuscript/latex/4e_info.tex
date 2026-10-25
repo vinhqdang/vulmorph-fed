@@ -1,0 +1,55 @@
+\subsection{Why the operation taxonomy adds little: an information-theoretic account}
+\label{sec:rq_why}
+
+Section~\ref{sec:rq_representation} reports that adding $\phi$ to $\kappa$ buys
+little, and that $\phi$ alone is weaker than $\kappa$. Two different questions
+are involved, and both can be answered exactly, without training anything,
+because $\phi$ and $\kappa$ are both functions of the same node. Over every
+node of a corpus we compute their joint distribution and two conditional
+entropies.
+\begin{itemize}
+    \item $H(\phi \mid \kappa)$ is the information in the taxonomy that the grammar
+          kind does not already supply. If it is near zero, adding $\phi$ to
+          $\kappa$ cannot help.
+    \item $H(\kappa \mid \phi)$ is the information in the grammar kind that the
+          taxonomy destroys. If it is large, $\phi$ alone is a lossy copy of a
+          representation that works.
+\end{itemize}
+
+\input{tab_rq2b_information}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_redundancy.pdf}
+\caption{The information the taxonomy carries beyond the grammar kind,
+$H(\phi \mid \kappa)$ (left), and the share of nodes whose operation label is
+recoverable from the kind alone (right).}
+\label{fig:redundancy}
+\end{figure}
+
+\textbf{The taxonomy adds almost nothing to the kind.} $H(\phi \mid \kappa)$
+lies between \numhPhiGivenKindMin{} and \numhPhiGivenKindMax{} bits on the
+three corpora (Table~\ref{tab:rq2b_information}); \numbigvulDeterminism\% of
+BigVul nodes have an operation label that is fixed by the node kind. This
+follows from the definition rather than from an accident of the data: rules~2
+and~3 of Section~\ref{sec:phi} are decided by the node kind or its operator
+token, so for most kinds $\phi$ is a constant function of $\kappa$. Only
+call expressions (is this callee a memory operation?) and binary expressions
+(which operator?) carry residual uncertainty.
+
+\textbf{The taxonomy discards much of the kind.} $H(\kappa \mid \phi)$ is
+\numbigvulHKindGivenPhi{} bits on BigVul, \numbigvulKindLost\% of the kind's
+entropy: collapsing 364 kinds into nine operation types throws away about two
+thirds of what the kind alphabet distinguishes. So $\phi$ is not a neutral
+re-encoding of $\kappa$; it is a lossy compression, and an abstraction in that
+position cannot be expected to outperform its source.
+
+These are properties of two deterministic labelling functions over a joint
+table of $|\mathcal{T}_8| \times |K|$ cells, so they converge quickly: the
+bootstrap intervals over functions in Table~\ref{tab:rq2b_information} are
+narrower than $0.02$ bits. The diagnostic costs minutes, needs no training, and
+would have predicted the experimental pattern of the next sections from the
+definition of $\phi$ alone. We offer it as a reusable check for anyone who
+proposes an engineered abstraction over a parse tree: compute
+$H(\text{abstraction} \mid \text{grammar kind})$ and $H(\text{grammar kind}
+\mid \text{abstraction})$ before crediting the abstraction with an effect.

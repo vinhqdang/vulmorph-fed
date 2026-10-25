@@ -1,0 +1,92 @@
+\subsection{RQ1: $\phi$ as a static analysis}
+\label{sec:rq_analysis}
+
+\paragraph{Design.} An abstraction that is evaluated only by what it does for a
+downstream classifier can hide errors in its own labels. We therefore score
+$\phi$'s callee classification against annotated ground truth. This version of
+the validation differs from the one in the first submission of this work in
+three respects, each responding to a concern that a validation of this kind is
+only as good as its annotation.
+
+\begin{itemize}
+    \item \textbf{Same corpora as the experiments.} Callee names and one
+          example call each are drawn from the \emph{experimental samples} of
+          BigVul and DiverseVul, not only from Devign. The sample is stratified
+          over $\phi$'s predicted classes (up to 14 names per class, half from
+          the most frequent names and half at random) plus 100 names drawn
+          from callees that $\phi$ left unlabelled, so that recall is
+          estimable. The Devign gold set of the original submission is
+          annotated again.
+    \item \textbf{Independent, blind annotation.} Each name is labelled by two
+          annotators who see only the name, its frequency and one example call;
+          they never see $\phi$'s prediction, each other's labels, or the
+          analysis code. The criteria are written down in advance
+          (\texttt{experiments/annotations/PROTOCOL.md}). The two annotators
+          are language-model annotators of different capability, run as
+          separate sessions. No human annotated these sheets.
+    \item \textbf{Agreement and adjudication.} We report raw agreement and
+          Cohen's $\kappa$ between the two annotators; every disagreement is
+          resolved by a third blind pass that sees the two candidate labels in
+          random order. The consensus is the ground truth for scoring. We also
+          score against each annotator alone to show sensitivity.
+\end{itemize}
+
+\paragraph{Who annotated the original gold set.} The 212 Devign labels of the
+first submission were assigned by a single annotator from written criteria. The sheet
+that annotator worked from listed $\phi$'s predicted class next to each name,
+so the annotation was not blind to the analysis under test, and the labels are
+stored in a script in which every name not listed defaults to ``none''. That
+is a weaker protocol than the blind one above.
+Their agreement with the new consensus is Cohen's $\kappa=\numdevignOrigKappa$,
+so the original labels were largely sound but are not used for the headline
+scores here.
+
+\input{tab_rq1_analysis}
+
+\paragraph{Agreement.} The two blind annotators agree on
+\numpooledAgree{} of the \numpooledNNames{} names (pooled Cohen's
+$\kappa=\numpooledKappa$; per corpus: Devign $\numdevignKappa$, BigVul
+$\numbigvulKappa$, DiverseVul $\numdiversevulKappa$), which is conventionally
+read as almost perfect agreement; \numdevignAdjudicated, \numbigvulAdjudicated{}
+and \numdiversevulAdjudicated{} disagreements respectively went to the third
+pass.
+
+\paragraph{Accuracy of $\phi$.} Against the consensus, macro-averaged precision
+is \numpooledMacroP{} and recall \numpooledMacroR{} over the ten callee classes
+(Table~\ref{tab:rq1_analysis}); these are lower than the $0.976$ reported for
+the original single-annotator labels, which we now regard as optimistic. The
+weakest class is \texttt{MEMORY\_COPY}, with precision \numcopyPrecision{}. Two
+caveats keep these figures honest. First, several classes have few positives
+(the smallest has \numminClassPositives), so their intervals are wide;
+Table~\ref{tab:rq1_analysis} shows the intervals rather than only the point
+values. Second, the sample is stratified, so the numbers are per-name
+estimates, not a population-weighted accuracy.
+
+\paragraph{What $\phi_8$ actually needs.} At $|\mathcal{T}|=8$ every memory and
+string class collapses into a single \texttt{MEMORY\_ACCESS} type, so confusing
+an allocation with a copy costs nothing. The question that matters is whether a
+callee is a memory or string operation at all. On that question precision is
+\numpooledMemopP{} and recall \numpooledMemopR{} pooled over the three corpora
+(\numbigvulMemopP{}/\numbigvulMemopR{} on BigVul,
+\numdiversevulMemopP{}/\numdiversevulMemopR{} on DiverseVul).
+
+\paragraph{Residual disagreements.} The informative ones are structural, not
+noise. QEMU's \texttt{tcg\_temp\_free*} releases an intermediate-representation
+temporary rather than heap memory, so a release rule fires on it. Wrappers that
+allocate \emph{and} copy or format (\texttt{g\_strdup},
+\texttt{g\_strdup\_printf}, \texttt{string\_sprintf}) cannot be given a single
+class by a single-label taxonomy. Project-specific I/O and teardown helpers
+(\texttt{bdrv\_pread}, \texttt{ReadBlobMSBLong}, \texttt{RelinquishMagickMemory})
+are missed because they match no allow-list entry and no whole-identifier-
+component rule. These are limitations of a name-based analysis with no type
+information; they bound what $\phi$ can claim and are one reason we do not
+expect it to beat the parser's own alphabet.
+
+\paragraph{What the validation changed in the design.} Matching whole identifier
+components instead of substrings removes writes and predicates mislabelled as
+releases and allocations (\texttt{\_\_put\_user}, \texttt{skb\_put},
+\texttt{gen\_new\_label}, \texttt{float64\_is\_zero}); separating stream I/O
+from buffer formatting keeps 655 \texttt{printf}/\texttt{fprintf} call sites in
+one corpus out of the memory class; and restricting the copy rule to explicit
+copy primitives raises its precision at the cost of recall. These three changes
+predate the present evaluation and are unchanged.

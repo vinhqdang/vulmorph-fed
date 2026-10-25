@@ -1,0 +1,139 @@
+\section{Experimental Design}
+\label{sec:experiment}
+
+\subsection{Research questions}
+\begin{itemize}
+    \item \textbf{RQ1 (the labelling function as an analysis).} How accurately
+          does $\phi$ identify memory and string operations, measured against
+          independent blind annotation on the corpora used in the
+          experiments?
+    \item \textbf{RQ2 (which node view transfers).} With the graph, backbone
+          and training budget fixed, how does cross-project detection change
+          when the node view changes? In particular: does the grammar kind
+          $\kappa$ beat text; does it beat text \emph{plus} node type; does it
+          beat anonymised text; and does the engineered taxonomy $\phi$ add
+          anything to $\kappa$?
+    \item \textbf{RQ3 (generality).} Does the effect hold across two corpora
+          and across four architectures, including a Transformer?
+    \item \textbf{RQ4 (ablations).} Which parts of the graph and of the
+          taxonomy matter?
+    \item \textbf{RQ5 (reference points).} How do the results compare with
+          re-implementations of existing input representations, with a
+          pretrained code model, and with a trivial function-size rule?
+\end{itemize}
+
+\subsection{Corpora, sampling and class balance}
+\label{sec:corpora}
+
+We use BigVul~\cite{fan2020bigvul} and DiverseVul~\cite{chen2023diversevul},
+loaded from pinned public mirrors, plus Devign~\cite{zhou2019devign} for the
+analysis validation only. From each of BigVul and DiverseVul we draw
+\numcfgN{} functions \emph{uniformly at random} without replacement (a fixed
+seed, so the sample is reproducible), after which near-duplicates are removed
+(Section~\ref{sec:dedup}). This replaces an earlier design that took the first
+rows in corpus order; it also raises the number of vulnerable functions from
+about 430 to \numbigvulVuln{} (BigVul) and \numdiversevulVuln{} (DiverseVul).
+Table~\ref{tab:corpora} gives the resulting properties.
+
+\input{tab_corpora}
+
+\paragraph{The data are strongly imbalanced, and we do not rebalance them.}
+Only \numbigvulPrev{} of BigVul and \numdiversevulPrev{} of DiverseVul
+functions are labelled vulnerable. We handle this in three ways. (i)~Training
+uses a class-weighted loss, with positive weight equal to the training
+benign-to-vulnerable ratio capped at 20. (ii)~Test sets are never resampled, so
+every metric reflects the true prevalence. (iii)~We report AUC and AUPRC, which
+do not depend on a decision threshold, together with the trivial
+``everything is vulnerable'' classifier as a floor; its $F_1$ at the observed
+test prevalence is only $2p/(1{+}p)$.
+
+\paragraph{Why overall prevalence and test prevalence differ.} In BigVul the
+overall prevalence is \numbigvulPrev{} but the pooled prevalence of the
+held-out folds is \numbigvulTestPrev{}. The reason is the train-only rule of
+Section~\ref{sec:protocol}: the largest repositories (Chrome and the Linux
+kernel; \numbigvulTrainOnlyN{} functions, prevalence \numbigvulTrainOnlyPrev{})
+are never tested, and the remaining projects have a higher vulnerable share. An
+earlier version of this paper quoted these two figures (0.054 and 8.8\%) without
+connecting them.
+
+\paragraph{Project concentration.} Even after the largest repositories are held
+train-only, one project can dominate a test fold: in BigVul the repository
+\texttt{\numbigvulTopTestProject} makes up as much as
+\numbigvulTopTestShareMax\% of a fold's test functions (the largest share in any
+DiverseVul fold is \numdiversevulTopTestShareMax\%). We therefore report every
+main BigVul comparison a second time with that project removed from the test
+predictions (Tables~\ref{tab:rq2_representation} and~\ref{tab:perproject} and
+the text of Section~\ref{sec:rq_representation}).
+
+\paragraph{The 200-node cap.} A graph keeps the first 200 named nodes in
+pre-order. Table~\ref{tab:corpora} shows that this truncates
+\numbigvulTruncPct\% of BigVul functions and \numdiversevulTruncPct\% of
+DiverseVul functions, and that it is far from class-neutral: in BigVul
+\numbigvulTruncVulnPct\% of vulnerable functions are truncated against
+\numbigvulTruncBenignPct\% of benign ones (Fisher exact test
+$p$~\numbigvulTruncP). Vulnerable functions are simply longer. This matters in
+two ways, both examined below: a model may learn function length rather than
+anything about vulnerabilities (Section~\ref{sec:rq_reference}), and what lies
+beyond the cap is invisible to every compared system alike.
+
+\subsection{Deduplication}
+\label{sec:dedup}
+Near-duplicate functions are removed \emph{before} any split. Vendored code
+appears under several project names, so without this step a held-out function
+can have a twin in training. Signatures are computed over the abstracted node
+sequences ($\kappa$ and $\phi$), which catches renamed copies that text hashing
+misses; this removes 2--6\% of the sampled functions (the remaining counts are
+in Table~\ref{tab:corpora}).
+
+\subsection{Cross-project protocol}
+\label{sec:protocol}
+Evaluation uses project-level GroupKFold with ten folds in every experiment:
+projects are dealt into five folds twice, with two different shuffles, and no
+project is ever split between training and test. Projects too large to be placed
+without dominating a fold (those larger than 30\% of the mean fold size, here
+Chrome and the Linux kernel) are held \emph{train-only}. \textbf{Every
+condition in every table is run on the same ten folds}; the analysis scripts
+refuse to merge result files whose fold assignments differ. Because the second
+repeat reuses some test projects, the ten folds are not fully independent;
+Section~\ref{sec:stats} says how the tests account for this.
+
+\paragraph{Per-fold training.} The lexical dictionary is built from the training
+projects only (Section~\ref{sec:features}); the classifier is initialised and
+shuffled with seed $1000+k$ on fold $k$, the same seed for every compared
+system. Hyper-parameters are in Table~\ref{tab:hparams}. They were fixed before
+the experiments and are not tuned on any fold; there is no validation split and
+no early stopping, so every system trains for exactly \numcfgEpochs{} epochs.
+
+\input{tab_hparams}
+
+\subsection{Statistical treatment}
+\label{sec:stats}
+We report three complementary quantities for every paired comparison, always
+on the folds both systems completed.
+\begin{enumerate}
+    \item The mean per-fold difference in AUC (or AUPRC) and the number of
+          folds won.
+    \item A \textbf{Wilcoxon signed-rank test} over the ten per-fold
+          differences (exact, two-sided). With ten folds the smallest
+          attainable two-sided $p$ is $0.002$.
+    \item A \textbf{cluster bootstrap} on the pooled held-out predictions,
+          resampling whole held-out \emph{projects} with replacement
+          (2{,}000 resamples; 95\% percentile interval and a two-sided $p$).
+          Functions inside a repository share style, APIs and often code, so
+          resampling functions would understate the uncertainty. Because a
+          percentile interval is itself random, each interval is recomputed
+          under ten seeds and a verdict that holds under fewer than nine is
+          marked $\dagger$ and not treated as a finding.
+\end{enumerate}
+Within each family of contrasts for one corpus and metric we also compute
+Holm-adjusted $p$-values, which are stored in the result files; when a
+conclusion in the text depends on a single contrast we say so. A chi-square
+test of independence is used only where the data are counts: for whether
+truncation depends on the label (we use Fisher's exact test, the small-sample
+equivalent).
+
+\subsection{Compute and reproducibility}
+All experiments run on CPU. One run of the BigVul GGNN grid takes roughly
+seven minutes per cell per core. Every table and every number in the text is
+generated from the stored per-fold predictions by scripts in the repository
+(\texttt{experiments/run\_all.sh}); no result is typed by hand.
