@@ -13,7 +13,7 @@ new network architectures. This paper looks at a simpler factor that most
 papers hold fixed: \emph{what each node of the graph tells the network about the
 code.}
 
-\paragraph{Four ways to describe a node.} Take the node for a call such as
+\paragraph{Four ways to describe a node} Take the node for a call such as
 \texttt{av\_malloc(n)}. Most detectors describe it by its \textbf{lexical
 token}, the text as written, here \texttt{av\_malloc}. That text belongs to one
 project (FFmpeg allocates with \texttt{av\_malloc}, the Linux kernel with
@@ -27,7 +27,7 @@ obtain. An \textbf{operation type} is a hand-built label for what the node does
 (\texttt{av\_malloc(n)} is a memory operation); we built an eight-label version
 using lists of library functions and naming rules.
 
-\paragraph{What we found, and how the result changed.} In an earlier version of
+\paragraph{What we found, and how the result changed} In an earlier version of
 this work we argued that grammar kinds were the ingredient that mattered.
 Independent review, and the extra experiments it motivated, changed that
 conclusion. With graph, network and training held fixed and evaluation always
@@ -42,7 +42,7 @@ corpus.
 The contribution is therefore a careful, partly negative empirical result and
 the methodology behind it, not a new detector.
 
-\paragraph{Contributions.}
+\paragraph{Contributions}
 \begin{itemize}
     \item A \textbf{controlled comparison of node descriptions} across two
           corpora and four architectures on ten matched project-level folds,
@@ -64,7 +64,7 @@ the methodology behind it, not a new detector.
           and~\ref{sec:rq_reference}).
 \end{itemize}
 
-\paragraph{Organisation.} Section~\ref{sec:background} reviews related work.
+\paragraph{Organisation} Section~\ref{sec:background} reviews related work.
 Section~\ref{sec:method} defines the program graph, the four node descriptions
 and the operation labelling, with a pipeline figure and algorithms.
 Section~\ref{sec:experiment} sets out the corpora, sampling, class balance,

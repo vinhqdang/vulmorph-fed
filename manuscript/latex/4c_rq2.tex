@@ -14,14 +14,14 @@ folds, and Table~\ref{tab:direct} the direct paired contrasts between views.
 
 \input{tab_rq2_representation}
 
-\paragraph{Text read from scratch does not transfer.} With the lexical view
+\paragraph{Text read from scratch does not transfer} With the lexical view
 the GGNN reaches AUC \mBvGgnnLexAuc{} on BigVul and \mDvGgnnLexAuc{} on
 DiverseVul, close to the $0.5$ of a random ranking (across all lexical cells, \numlexAucMin{} to \numlexAucMax{}). The cause is visible in the
 mechanism: after the per-fold cut, tokens that occur only in held-out projects
 map to \texttt{<UNK>}, and what remains of the vocabulary correlates with
 project identity rather than with the weakness.
 
-\paragraph{Vocabulary-free views transfer.} Replacing text with the grammar kind
+\paragraph{Vocabulary-free views transfer} Replacing text with the grammar kind
 raises AUC by \cBvGgnnKindVLexD{} (95\% CI \cBvGgnnKindVLexLo{} to
 \cBvGgnnKindVLexHi{}; bootstrap $p$ \cBvGgnnKindVLexP{}; Wilcoxon $p$
 \cBvGgnnKindVLexW{}; \cBvGgnnKindVLexWins{} folds won) on BigVul, and by
@@ -38,7 +38,7 @@ is $0.002$ before adjustment, reaches \cBvGgnnKindVLexWH{} after it, and
 \cBvGgnnKindVLexWblk{} on the five repeat-averaged differences, so that test
 alone cannot carry the claim; the cluster bootstrap does.
 
-\paragraph{The grammar kind is not better than anonymised text.} This is the
+\paragraph{The grammar kind is not better than anonymised text} This is the
 conclusion that changed most since the first version of this work. Reviewing it
 we added the baselines that a text-only comparison omits: anonymised tokens, and
 each of text and anonymised tokens combined with the kind
@@ -54,7 +54,7 @@ detectors have long done as preprocessing, therefore recovers essentially the
 whole benefit, to within the precision of this study. What the grammar kind offers is the same effect without any
 preprocessing choice, not a better effect.
 
-\paragraph{Adding node type to text helps, but less than removing the text.}
+\paragraph{Adding node type to text helps, but less than removing the text}
 The Devign-style combination of text with the node type improves on text alone
 by \cBvGgnnLexKindVLexD{} (\cBvGgnnLexKindVLexLo{} to
 \cBvGgnnLexKindVLexHi{}) on BigVul, so part of the benefit of structure is
@@ -66,7 +66,7 @@ $\kappa$ against a text view that carried no node-type information at all, was
 therefore partly ``structure labels versus none''; Table~\ref{tab:direct} now
 separates the two.
 
-\paragraph{The engineered operation taxonomy adds nothing to the kind.}
+\paragraph{The engineered operation taxonomy adds nothing to the kind}
 The direct paired contrast of $\kappa{+}\phi$ against $\kappa$ is
 \cBvGgnnOpKindVKindD{} (\cBvGgnnOpKindVKindLo{} to \cBvGgnnOpKindVKindHi{};
 Wilcoxon $p$ \cBvGgnnOpKindVKindW{}) on BigVul and \cDvGgnnOpKindVKindD{}
@@ -84,7 +84,7 @@ differences are \cBvGinOpKindVKindD{} (BigVul) and \cDvGinOpKindVKindD{}
 estimated imprecisely and we do not claim it. Section~\ref{sec:rq_why}
 explains why a null here is expected.
 
-\paragraph{Capacity control.} The kind table has 364 rows and the taxonomy 9, so
+\paragraph{Capacity control} The kind table has 364 rows and the taxonomy 9, so
 one might suspect that $\kappa$ wins by capacity. We therefore also trained
 $\kappa$ squeezed through a nine-dimensional bottleneck, the width of the
 taxonomy table (\texttt{kind\_low}). Its AUC is \mBvGgnnKindLowAuc{}, and the
@@ -94,7 +94,7 @@ if anything, better. A capacity advantage therefore does not explain the
 result. (An earlier version of this paper reported a similar check without any
 code or data behind it; it has been replaced by this experiment.)
 
-\paragraph{Controlling for function size: much of the gain disappears.}
+\paragraph{Controlling for function size: much of the gain disappears}
 Vulnerable functions are longer (Section~\ref{sec:corpora}), so a detector can
 gain AUC from length alone. A rule that scores each function by its node count
 reaches AUC \numbvSizeAuc{} on BigVul and \numdvSizeAuc{} on DiverseVul (second
@@ -126,7 +126,7 @@ The vocabulary-free views plausibly help because node-kind counts, unlike text
 from a mostly out-of-vocabulary dictionary, let the pooled representation
 reflect function size; we have not tested that mechanism directly.
 
-\paragraph{No single project drives the result.}
+\paragraph{No single project drives the result}
 Because one repository can dominate a fold, we repeat the BigVul contrast with
 that project's test predictions removed: $\kappa$ against text is
 \cBvGgnnKindVLexNoAnd{} without \texttt{\numbigvulTopTestProject}, compared with

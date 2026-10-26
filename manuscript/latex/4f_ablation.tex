@@ -7,7 +7,7 @@ the same 10 folds as before) and report the paired change in AUC
 which already ablate the contribution of text, anonymisation, kind and
 operation type, two structural components are examined.
 
-\paragraph{Edge types.} Removing the def-use edges changes AUC by
+\paragraph{Edge types} Removing the def-use edges changes AUC by
 \numedgeNoDuDiff{} (\numedgeNoDuLo{} to \numedgeNoDuHi{}); keeping only the
 syntax-tree edges changes it by \numedgeAstOnlyDiff{} (\numedgeAstOnlyLo{} to
 \numedgeAstOnlyHi{}). These measure the contribution of the data-flow
@@ -17,7 +17,7 @@ little from the approximate def-use and ordering edges beyond the tree itself. (
 variant that removes only the sibling-order edges was dropped from the grid
 for cost.)
 
-\paragraph{Operation-alphabet granularity.} Refining $\phi$ from eight to
+\paragraph{Operation-alphabet granularity} Refining $\phi$ from eight to
 sixteen operation types changes AUC by \numgranTOneSixDiff{}
 (\numgranTOneSixLo{} to \numgranTOneSixHi{}) over \numgranTOneSixFolds{} matched
 folds. The first submission reported a thirty-two-type run that rested on a

@@ -60,7 +60,7 @@ Evaluation always holds out whole projects.}
 \label{fig:pipeline}
 \end{figure}
 
-\paragraph{Running example.} Consider the function body
+\paragraph{Running example} Consider the function body
 \texttt{n = len(buf); p = av\_malloc(n * 4); if (!p) return -1;}.
 A node of its tree can be described in four ways. Its \emph{lexical token} is
 the text written in the source (\texttt{av\_malloc}, \texttt{n}, \texttt{buf}):
@@ -269,7 +269,7 @@ $\kappa{+}\phi$ & $\kappa$ and $\phi_8$ & $\kappa$ and $\phi_8$ & 364 and 9 & ye
 \end{tabular}}
 \end{table}
 
-\paragraph{The lexical view, precisely.} Each leaf carries its exact source
+\paragraph{The lexical view, precisely} Each leaf carries its exact source
 text. Every internal node carries the same token \texttt{<INTERNAL>}, so the
 plain lexical view contains \emph{no} node-type information; it is the
 ``text only'' condition. Tokens enter a per-fold dictionary built \emph{only}
@@ -279,13 +279,13 @@ exists only in held-out projects, is mapped to a single \texttt{<UNK>}
 embedding at test time. Out-of-vocabulary behaviour on unseen projects is
 therefore part of what the lexical view is measured on.
 
-\paragraph{Why anonymisation is a separate baseline.} Anonymising identifiers
+\paragraph{Why anonymisation is a separate baseline} Anonymising identifiers
 is the standard way to remove project vocabulary while keeping text
 (Section~\ref{sec:background}). The \texttt{anon} and \texttt{anon+$\kappa$}
 views isolate what grammar kinds add beyond that: if renaming identifiers
 already closes the gap, the grammar kind is not needed.
 
-\paragraph{The operation view.} Our default combined view is
+\paragraph{The operation view} Our default combined view is
 \begin{equation}
     \mathbf{x}_v = E_{\mathrm{op}}\big[\phi_8(v)\big]
                  + E_{\mathrm{kind}}\big[\kappa(v)\big],

@@ -44,7 +44,7 @@ rare.
 
 \input{tab_node_dist}
 
-\paragraph{The data are strongly imbalanced, and we do not rebalance them.}
+\paragraph{The data are strongly imbalanced, and we do not rebalance them}
 Only \numbigvulPrev{} of BigVul and \numdiversevulPrev{} of DiverseVul
 functions are labelled vulnerable. We handle this in three ways. (i)~Training
 uses a class-weighted loss, with positive weight equal to the training
@@ -54,7 +54,7 @@ do not depend on a decision threshold, together with the trivial
 ``everything is vulnerable'' classifier as a floor; its $F_1$ at the observed
 test prevalence is only $2p/(1{+}p)$.
 
-\paragraph{Why overall prevalence and test prevalence differ.} In BigVul the
+\paragraph{Why overall prevalence and test prevalence differ} In BigVul the
 overall prevalence is \numbigvulPrev{} but the pooled prevalence of the
 held-out folds is \numbigvulTestPrev{}. The reason is the train-only rule of
 Section~\ref{sec:protocol}: the largest repositories (Chrome and the Linux
@@ -63,7 +63,7 @@ are never tested, and the remaining projects have a higher vulnerable share. An
 earlier version of this paper quoted these two figures (0.054 and 8.8\%) without
 connecting them.
 
-\paragraph{Project concentration.} Even after the largest repositories are held
+\paragraph{Project concentration} Even after the largest repositories are held
 train-only, one project can dominate a test fold: in BigVul the repository
 \texttt{\numbigvulTopTestProject} makes up as much as
 \numbigvulTopTestShareMax\% of a fold's test functions (the largest share in any
@@ -72,7 +72,7 @@ main BigVul comparison a second time with that project removed from the test
 predictions (Tables~\ref{tab:rq2_representation} and~\ref{tab:perproject} and
 the text of Section~\ref{sec:rq_representation}).
 
-\paragraph{The 200-node cap.} A graph keeps the first 200 named nodes in
+\paragraph{The 200-node cap} A graph keeps the first 200 named nodes in
 pre-order. Table~\ref{tab:corpora} shows that this truncates
 \numbigvulTruncPct\% of BigVul functions and \numdiversevulTruncPct\% of
 DiverseVul functions, and that it is far from class-neutral: in BigVul
@@ -89,7 +89,9 @@ Near-duplicate functions are removed \emph{before} any split. Vendored code
 appears under several project names, so without this step a held-out function
 can have a twin in training. Signatures are computed over the abstracted node
 sequences ($\kappa$ and $\phi$), which catches renamed copies that text hashing
-misses; this removes 2--6\% of the sampled functions (the remaining counts are
+misses (the signature also includes the node count, which is capped at 200,
+so long functions that agree on their first 200 nodes are treated as copies;
+the first occurrence is kept whichever label it carries); this removes 2--6\% of the sampled functions (the remaining counts are
 in Table~\ref{tab:corpora}).
 
 \subsection{Cross-project protocol}
@@ -109,7 +111,7 @@ $k$ and $k+5$ overlap by only 13--23\% in Jaccard index). The ten folds are
 therefore better described as five folds with partial replication.
 Section~\ref{sec:stats} says how the tests account for this.
 
-\paragraph{Per-fold training.} The lexical dictionary is built from the training
+\paragraph{Per-fold training} The lexical dictionary is built from the training
 projects only (Section~\ref{sec:features}); the classifier is initialised and
 shuffled with seed $1000+k$ on fold $k$, the same seed for every compared
 system. Hyper-parameters are in Table~\ref{tab:hparams}. They were fixed before

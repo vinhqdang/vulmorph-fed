@@ -9,13 +9,14 @@ which use different data splits and often within-project evaluation.
 
 \input{tab_baselines}
 
-\paragraph{Devign/ReVeal-style input.} Text together with the node type
+\paragraph{Devign/ReVeal-style input} Text together with the node type
 (\texttt{lex+$\kappa$} with a GGNN) reaches AUC \mBvGgnnLexKindAuc{} on BigVul
 and \mDvGgnnLexKindAuc{} on DiverseVul, which is below the grammar-kind and anonymised views in
 Table~\ref{tab:rq2_representation}.
 
-\paragraph{A pretrained code model.} UniXcoder~\cite{guo2022unixcoder} with a frozen
-encoder and a linear probe on the raw source (identifiers included) reaches AUC
+\paragraph{A pretrained code model} UniXcoder~\cite{guo2022unixcoder} with a frozen
+encoder (its weights are not updated; it turns each function into one vector) and
+a linear probe (a logistic regression trained on that vector) on the raw source (identifiers included) reaches AUC
 \numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul it is
 statistically indistinguishable from the vocabulary-free graph views (the paired
 difference of $\kappa$ against it is \cBvGgnnKindVUnixD{} with the GGNN,
@@ -32,7 +33,7 @@ pretrained model. The probe is frozen and untuned; a fine-tuned LineVul-style
 model~\cite{fu2022linevul} would probably be stronger, and we have not run one
 because this machine has no GPU.
 
-\paragraph{A size rule has the highest mean AUC.} Scoring a function by its node
+\paragraph{A size rule has the highest mean AUC} Scoring a function by its node
 count alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),
 the highest mean AUC in this study. The paired differences are significant under
 the project-cluster bootstrap for most networks (e.g.\ $\kappa$ with the GGNN
