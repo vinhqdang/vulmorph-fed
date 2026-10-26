@@ -1,7 +1,9 @@
 \section{Introduction}
 
 A learned vulnerability detector reads a function and outputs a score for how
-likely it is to contain a vulnerability. Many such detectors turn the function
+likely it is to contain a vulnerability; its quality is measured by AUC, the
+probability that a random vulnerable function gets a higher score than a random
+benign one (0.5 is chance). Many such detectors turn the function
 into a graph (its syntax tree plus a few extra links) and train a neural
 network over that graph. They report good accuracy when the test functions come
 from the same software projects as the training functions, and much worse
@@ -53,8 +55,8 @@ the methodology behind it, not a new detector.
           engineered abstraction of a parse tree is credited with an effect
           (Section~\ref{sec:rq_why}).
     \item \textbf{A validation of the operation labelling as a static analysis}
-          on the experimental corpora, against two blind annotators with
-          measured agreement (Section~\ref{sec:rq_analysis}).
+          on the experimental corpora, against two blind language-model
+          annotators with measured agreement (Section~\ref{sec:rq_analysis}).
     \item \textbf{Controls that temper the claims}: AUC within bins of function
           size, a function-size rule, and a pretrained model that scores at or
           above the graph models (Sections~\ref{sec:rq_representation}

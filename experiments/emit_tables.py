@@ -229,6 +229,7 @@ def table_rq1():
         macro(f"{c}MacroP", f"{v['macro_precision']:.2f}")
         macro(f"{c}MacroR", f"{v['macro_recall']:.2f}")
         macro(f"{c}Adjudicated", str(v["adjudicated"]))
+        macro(f"{c}Unresolved", str(v["unresolved_three_way"]))
         macro(f"{c}MemopP", f"{mb['precision']:.2f}")
         macro(f"{c}MemopR", f"{mb['recall']:.2f}")
     po = d["pooled"]

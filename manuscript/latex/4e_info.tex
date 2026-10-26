@@ -5,8 +5,10 @@ Section~\ref{sec:rq_representation} reports that adding $\phi$ to $\kappa$ buys
 little, and that $\phi$ alone is weaker than $\kappa$. Two different questions
 are involved, and both can be answered exactly, without training anything,
 because $\phi$ and $\kappa$ are both functions of the same node. Over every
-node of a corpus we compute their joint distribution and two conditional
-entropies.
+node of the sampled functions of a corpus (before de-duplication, the first 200
+nodes of each function) we compute their joint distribution and two conditional
+entropies. An entropy, in bits, measures how uncertain a symbol is; $H(A\mid B)$
+is the uncertainty left in $A$ once $B$ is known.
 \begin{itemize}
     \item $H(\phi \mid \kappa)$ is the information in the taxonomy that the grammar
           kind does not already supply. If it is near zero, adding $\phi$ to
@@ -29,8 +31,8 @@ recoverable from the kind alone (right).}
 
 \textbf{The taxonomy adds almost nothing to the kind.} $H(\phi \mid \kappa)$
 lies between \numhPhiGivenKindMin{} and \numhPhiGivenKindMax{} bits on the
-three corpora (Table~\ref{tab:rq2b_information} and Figure~\ref{fig:redundancy}); \numbigvulDeterminism\% of
-BigVul nodes have an operation label that is fixed by the node kind. This
+three corpora (Table~\ref{tab:rq2b_information} and Figure~\ref{fig:redundancy}); between \numdeterminismMin\% and \numdeterminismMax\% of nodes have an operation
+label that is fixed by the node kind (\numbigvulDeterminism\% on BigVul). This
 follows from the definition rather than from an accident of the data: rules~2
 and~3 of Section~\ref{sec:phi} are decided by the node kind or its operator
 token, so for most kinds $\phi$ is a constant function of $\kappa$. Only
@@ -47,7 +49,7 @@ position cannot be expected to outperform its source.
 These are properties of two deterministic labelling functions over a joint
 table of $|\mathcal{T}_8| \times |K|$ cells, so they converge quickly: the
 bootstrap intervals over functions in Table~\ref{tab:rq2b_information} are
-narrower than $0.02$ bits. The diagnostic costs minutes, needs no training, and
+at most \numkindGivenPhiCiWidthMax{} bits wide. The diagnostic costs minutes, needs no training, and
 would have predicted the experimental pattern of the next sections from the
 definition of $\phi$ alone. We offer it as a reusable check for anyone who
 proposes an engineered abstraction over a parse tree: compute

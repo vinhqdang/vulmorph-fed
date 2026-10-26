@@ -9,9 +9,11 @@ three respects, each responding to a concern that a validation of this kind is
 only as good as its annotation.
 
 \begin{itemize}
-    \item \textbf{Same corpora as the experiments.} Callee names and one
+    \item \textbf{The experimental corpora.} Callee names and one
           example call each are drawn from the \emph{experimental samples} of
-          BigVul and DiverseVul, not only from Devign. The sample is stratified
+          BigVul and DiverseVul, not only from Devign; Devign (not used in the
+          detection experiments) is kept so that the new labels can be compared
+          with the first submission's. The sample is stratified
           over $\phi$'s predicted classes (up to 14 names per class, half from
           the most frequent names and half at random) plus 100 names drawn
           from callees that $\phi$ left unlabelled, so that recall is
@@ -37,19 +39,22 @@ that annotator worked from listed $\phi$'s predicted class next to each name,
 so the annotation was not blind to the analysis under test, and the labels are
 stored in a script in which every name not listed defaults to ``none''. That
 is a weaker protocol than the blind one above.
-Their agreement with the new consensus is Cohen's $\kappa=\numdevignOrigKappa$,
+Their agreement with the new consensus is $\kappa_C=\numdevignOrigKappa$,
 so the original labels were largely sound but are not used for the headline
 scores here.
 
 \input{tab_rq1_analysis}
 
-\paragraph{Agreement.} Table~\ref{tab:rq1_agreement} reports agreement per corpus. The two blind annotators agree on
-\numpooledAgree{} of the \numpooledNNames{} names (pooled Cohen's
-$\kappa=\numpooledKappa$; per corpus: Devign $\numdevignKappa$, BigVul
-$\numbigvulKappa$, DiverseVul $\numdiversevulKappa$), which is conventionally
-read as almost perfect agreement; \numdevignAdjudicated, \numbigvulAdjudicated{}
-and \numdiversevulAdjudicated{} disagreements respectively went to the third
-pass.
+\paragraph{Agreement.} Table~\ref{tab:rq1_agreement} reports agreement per corpus.
+Before adjudication the two blind annotators agree on \numpooledAgree{} of the
+\numpooledNNames{} names (pooled Cohen's kappa $\kappa_C=\numpooledKappa$; per
+corpus, raw agreement and $\kappa_C$: Devign \numdevignAgree{} and
+\numdevignKappa, BigVul \numbigvulAgree{} and \numbigvulKappa, DiverseVul
+\numdiversevulAgree{} and \numdiversevulKappa), conventionally read as almost
+perfect agreement. \numdevignAdjudicated, \numbigvulAdjudicated{} and
+\numdiversevulAdjudicated{} disagreements respectively went to the third pass; in
+\numdevignUnresolved{} Devign case(s) the third annotator agreed with neither of
+the first two and its label was used.
 
 \paragraph{Accuracy of $\phi$.} Against the consensus, macro-averaged precision
 is \numpooledMacroP{} and recall \numpooledMacroR{} over the ten callee classes
