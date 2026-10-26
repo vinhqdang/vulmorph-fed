@@ -93,8 +93,8 @@ cannot be used. From the resulting tree we build $G = (\mathcal{V},
 \end{itemize}
 
 with $\mathcal{E} = \mathcal{E}_{AST} \cup \mathcal{E}_{SIB} \cup
-\mathcal{E}_{DU}$, giving on average $\sim$130 nodes and $\sim$350 edges per
-function. We state plainly that this is a syntax graph with a data-dependence
+\mathcal{E}_{DU}$, giving on average \numbigvulNodes{} nodes and \numbigvulEdges{} edges per
+function in BigVul (\numdiversevulNodes{} and \numdiversevulEdges{} in DiverseVul). We state plainly that this is a syntax graph with a data-dependence
 approximation, not a Code Property Graph~\cite{yamaguchi2014modeling}:
 interprocedural control flow and points-to-precise dependence are absent.
 Section~\ref{sec:limitations} discusses what that bounds.
@@ -258,8 +258,8 @@ combined views are summed.}
 \toprule
 View & Leaf node carries & Internal node carries & Alphabet & Invariant \\
 \midrule
-\texttt{lexical} & source text ($\le 30$ chars, else \texttt{<LONG>}) & single token \texttt{<INTERNAL>} & training-fold tokens, top 10{,}000 & no \\
-\texttt{anon} & identifiers renamed by first occurrence (\texttt{VAR\_i}, \texttt{FUN\_i}, \texttt{FIELD\_i}, \texttt{TYPE\_i}); numbers $\to$ \texttt{NUM}; strings $\to$ \texttt{STR}; keywords and operators keep their text & \texttt{<INTERNAL>} & $\approx$ 1{,}000 symbols & mostly \\
+\texttt{lexical} & source text ($\le 30$ chars, else \texttt{<LONG>}) & single token \texttt{<INTERNAL>} & training-fold tokens, at most 9{,}999 + \texttt{<UNK>} & no \\
+\texttt{anon} & identifiers renamed by order of first appearance in the function, separately for variables, callees, fields, types and labels (\texttt{VAR\_i}, \texttt{FUN\_i}, \texttt{FIELD\_i}, \texttt{TYPE\_i}, \texttt{LABEL\_i}; index capped at 15); numbers $\to$ \texttt{NUM}; strings and characters $\to$ \texttt{STR}; free-text leaves such as comments by their node kind; other named leaves (e.g.\ primitive type names) keep their text & \texttt{<INTERNAL>} & $\approx$ 1{,}000 symbols & mostly \\
 $\kappa$ & grammar kind & grammar kind & $|K|{+}1 = 364$ & yes \\
 $\phi_8$ & operation type ($\bot$ if none) & operation type ($\bot$ if none) & 9 & yes \\
 $\kappa{+}\phi$ & $\kappa$ and $\phi_8$ & $\kappa$ and $\phi_8$ & 364 and 9 & yes \\
@@ -273,8 +273,8 @@ $\kappa{+}\phi$ & $\kappa$ and $\phi_8$ & $\kappa$ and $\phi_8$ & 364 and 9 & ye
 text. Every internal node carries the same token \texttt{<INTERNAL>}, so the
 plain lexical view contains \emph{no} node-type information; it is the
 ``text only'' condition. Tokens enter a per-fold dictionary built \emph{only}
-from the training projects (the 10{,}000 most frequent tokens occurring at
-least twice); every token not in that dictionary, including every token that
+from the training projects (the at most 9{,}999 most frequent tokens occurring at
+least twice, plus \texttt{<UNK>}); every token not in that dictionary, including every token that
 exists only in held-out projects, is mapped to a single \texttt{<UNK>}
 embedding at test time. Out-of-vocabulary behaviour on unseen projects is
 therefore part of what the lexical view is measured on.
@@ -301,6 +301,27 @@ amount of name-derived information (at most
 $\log_2(|\mathcal{T}_{32}|+1) \approx 5$ bits per call node) influences the
 representation. What does not survive is the identifier itself, its spelling,
 or any project-specific vocabulary.
+
+\subsection{Networks and training, in brief}
+\label{sec:networks}
+
+A \emph{backbone} is the network that passes information between nodes. We use
+three message-passing networks over the program graph: a gated graph neural
+network (\textbf{GGNN}), in which each node updates its state from its
+neighbours with a gated recurrent unit; a graph attention network
+(\textbf{GAT}), which weights neighbours by learned attention; and a graph
+isomorphism network (\textbf{GIN}), which sums neighbour states and passes them
+through a small perceptron. A fourth, non-graph backbone is a \textbf{Transformer}
+encoder that applies self-attention over the nodes listed in \emph{pre-order}
+(the order in which a depth-first walk first visits them) and ignores the
+edges. After the backbone, a \emph{readout} pools the node vectors into one
+vector per function (the concatenation of their element-wise mean and
+maximum), and a small perceptron outputs the vulnerability score. Training
+minimises a binary cross-entropy in which vulnerable functions are weighted up
+by the benign-to-vulnerable ratio of the training set (capped at 20)
+\emph{(class-weighted loss)}. ``Def-use'' edges connect successive occurrences
+of the same identifier, a cheap stand-in for data flow; ``named nodes'' are the
+syntax-tree nodes the grammar names (punctuation tokens are excluded).
 
 \subsection{Algorithms}
 \label{sec:algorithms}

@@ -97,11 +97,16 @@ in Table~\ref{tab:corpora}).
 Evaluation uses project-level GroupKFold with ten folds in every experiment:
 projects are dealt into five folds twice, with two different shuffles, and no
 project is ever split between training and test. Projects too large to be placed
-without dominating a fold (those larger than 30\% of the mean fold size, here
-Chrome and the Linux kernel) are held \emph{train-only}. \textbf{Every
-condition in every table is run on the same ten folds}; the analysis scripts
-refuse to merge result files whose fold assignments differ. Because the second
-repeat reuses some test projects, the ten folds are not fully independent;
+without dominating a fold (those larger than 30\% of the mean fold size: Chrome and the Linux kernel in
+BigVul, the Linux kernel only in DiverseVul) are held \emph{train-only}. Every
+condition in every table is run on the same ten folds; the analysis scripts
+refuse to merge result files whose fold assignments differ. The two repeats are
+\emph{not} independent: the splitter deals the projects out largest first, so
+the largest held-out projects fall into the same fold index in both repeats
+(for example the repository that dominates BigVul test folds appears in folds 0
+and 5), while the small projects are reshuffled (the test project sets of fold
+$k$ and $k+5$ overlap by only 13--23\% in Jaccard index). The ten folds are
+therefore better described as five folds with partial replication.
 Section~\ref{sec:stats} says how the tests account for this.
 
 \paragraph{Per-fold training.} The lexical dictionary is built from the training
@@ -115,29 +120,40 @@ no early stopping, so every system trains for exactly \numcfgEpochs{} epochs.
 
 \subsection{Statistical treatment}
 \label{sec:stats}
-We report three complementary quantities for every paired comparison, always
-on the folds both systems completed.
+Every paired comparison is made between two systems on the folds both
+completed. The reported difference is the \emph{mean over folds} of the
+per-fold difference in the metric, which is the quantity the per-fold columns of
+the tables average. We attach three kinds of uncertainty statement.
 \begin{enumerate}
-    \item The mean per-fold difference in AUC (or AUPRC) and the number of
-          folds won.
-    \item A \textbf{Wilcoxon signed-rank test}~\cite{wilcoxon1945individual} over the ten per-fold
-          differences (exact, two-sided). With ten folds the smallest
-          attainable two-sided $p$ is $0.002$.
-    \item A \textbf{cluster bootstrap} on the pooled held-out predictions,
-          resampling whole held-out \emph{projects} with replacement
-          (2{,}000 resamples; 95\% percentile interval and a two-sided $p$).
-          Functions inside a repository share style, APIs and often code, so
-          resampling functions would understate the uncertainty. Because a
-          percentile interval is itself random, each interval is recomputed
-          under ten seeds and a verdict that holds under fewer than nine is
-          marked $\dagger$ and not treated as a finding.
+    \item A \textbf{cluster bootstrap over held-out projects}. In each of the
+          resamples, projects are drawn with replacement (a project is one
+          cluster however many folds it is tested in); every function of a drawn
+          project is repeated as often as the project was drawn; the metric
+          difference is recomputed inside each fold and averaged. The 95\%
+          percentile interval and a two-sided $p$ follow. Functions inside a
+          repository share style, APIs and often code, so resampling functions
+          instead would understate the uncertainty. We use 1{,}000 resamples
+          under each of five seeds for AUC (the verdict is called stable if the
+          interval excludes zero under at least 90\% of the seeds), and 500
+          resamples under one seed for AUPRC and the size-binned AUC.
+    \item A \textbf{Wilcoxon signed-rank test}~\cite{wilcoxon1945individual}, a
+          paired test that uses only the ranks of the ten per-fold differences
+          (exact, two-sided; its smallest attainable $p$ is $0.002$). Because
+          fold $k$ and fold $k+5$ are partial replicates of each other
+          (Section~\ref{sec:protocol}), we also run it on the five
+          repeat-averaged differences, where the smallest attainable $p$ is
+          $0.0625$, so that test can never reach the 5\% level on its own.
+    \item \textbf{Holm-adjusted $p$-values}~\cite{holm1979simple}, which
+          correct a family of tests for the chance that one of them looks
+          significant by luck. The family is all contrasts for one corpus and
+          metric; adjusted values are stored in the result files and quoted where
+          a conclusion depends on one contrast.
 \end{enumerate}
-Within each family of contrasts for one corpus and metric we also compute
-Holm-adjusted $p$-values~\cite{holm1979simple}, which are stored in the result files; when a
-conclusion in the text depends on a single contrast we say so. A chi-square
-test of independence is used only where the data are counts: for whether
-truncation depends on the label (we use Fisher's exact test, the small-sample
-equivalent).
+We therefore treat the cluster bootstrap as the primary inference, the Wilcoxon
+test as supporting evidence, and call a difference supported only if the
+bootstrap interval excludes zero. Whether truncation depends on the label is a
+question about counts, for which we use Fisher's exact test (a small-sample
+alternative to the chi-square test of independence).
 
 \subsection{Compute and reproducibility}
 All experiments run on CPU. One run of the BigVul GGNN grid takes roughly

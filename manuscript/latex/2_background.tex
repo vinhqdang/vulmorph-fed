@@ -35,9 +35,9 @@ used alone, with text, or with an engineered label set on top.
 
 \subsection{Normalisation and Abstraction of Code}
 Abstracting away identifiers is long-established practice, but as
-preprocessing rather than as an object of study. Clone detection normalises
-identifiers and literals so that Type-2 clones become textually
-identical~\cite{yamaguchi2014modeling}; sequence-based detectors routinely map
+preprocessing rather than as an object of study. Clone detectors commonly normalise
+identifiers and literals so that renamed copies become textually identical;
+sequence-based detectors routinely map
 user-defined names to placeholder tokens (\texttt{VAR1}, \texttt{FUN1}) before
 training~\cite{li2018vuldeepecker, li2022sysevr}; the Devign corpus itself
 ships a normalised variant of every function.
@@ -73,12 +73,14 @@ the same degradation at repository scale.
 
 Responses have been mostly architectural or adaptational --- domain adaptation
 across projects~\cite{liu2022cdvuld, zhang2023cpvd, li2023vulgda}, transfer
-with metric fusion~\cite{cai2024csvdtf}. Our result is complementary and, we
-argue, prior: with architecture held constant, changing the node
-representation alone yields a larger and more consistent improvement than the
-architecture comparisons in Section~\ref{sec:rq_generality}. This suggests the
-gap is at least partly a representation problem that architectural work has
-been indirectly compensating for.
+with metric fusion~\cite{cai2024csvdtf}. Our study is complementary: it
+asks how much a node's description alone changes cross-project performance
+when everything else is fixed (Section~\ref{sec:rq_representation}), and how that
+change compares with the spread between architectures in a small family of
+networks (Section~\ref{sec:rq_generality}). It does not show that the gap is a
+representation problem; Section~\ref{sec:rq_representation} shows that much of
+what a vocabulary-free description gains over text is explained by function
+size.
 
 \subsection{Evaluation Methodology in this Area}
 The methodological pitfalls we control for are documented in exactly the

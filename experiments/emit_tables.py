@@ -40,7 +40,17 @@ def load(name):
 
 def merged(corpus):
     from experiments.analyze_representation import merge_corpus
-    return merge_corpus(corpus)
+    cells, folds, cfgs, _ = merge_corpus(corpus)
+    return cells, folds, cfgs
+
+
+def load_analysis():
+    out = {}
+    for c in ("bigvul", "diversevul"):
+        d = load(f"analysis_{c}.json")
+        if d:
+            out[c] = d
+    return out
 
 
 def ms(vals, prec=3):
@@ -114,6 +124,8 @@ def table_corpora():
         macro(f"{key}TruncBenignPct", f"{100*c['trunc_rate_benign']:.1f}")
         macro(f"{key}TruncP", pfmt(c["trunc_fisher_p"]))
         macro(f"{key}TopTwoShare", f"{c['top2_share']:.0f}")
+        macro(f"{key}Nodes", f"{c['nodes']:.0f}")
+        macro(f"{key}Edges", f"{c['edges']:.0f}")
         if "test_prev_pooled" in c:
             macro(f"{key}TestPrev", f"{c['test_prev_pooled']:.3f}")
             macro(f"{key}TrainOnlyN", f"{c['train_only_n']:,}")
@@ -241,8 +253,8 @@ def table_rq1():
 \caption{RQ1: $\phi$ as a static analysis, scored against the consensus of two
 blind annotators and a third pass on disagreements, pooled over the three
 corpora. Brackets are 95\% Wilson intervals; tp/fp/fn are counts of distinct
-callee names. The final column group reports the question $\phi_8$ actually
-answers (memory or string operation vs. not).}
+callee names. The last row scores the question $\phi_8$ actually answers
+(memory or string operation vs. not).}
 \label{tab:rq1_analysis}
 \begin{tabular}{lrrr}
 \toprule
@@ -259,14 +271,14 @@ Memory operation (any of the 9) & """ + f"{pm['precision']:.2f} & {pm['recall']:
 \begin{table}[t]
 \centering
 \caption{RQ1: annotation agreement and per-corpus scores. Agreement and
-Cohen's $\kappa$ are between the two blind annotators before adjudication;
+Cohen's $\kappa_{C}$ are between the two blind annotators before adjudication;
 precision and recall are macro-averaged over classes against the consensus; the
 last column is precision / recall for ``memory or string operation''.}
 \label{tab:rq1_agreement}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Corpus & Names & Agreement & $\kappa$ & Macro P & Macro R & Memory-op P / R \\
+Corpus & Names & Agreement & $\kappa_{C}$ & Macro P & Macro R & Memory-op P / R \\
 \midrule
 """ + "\n".join(cr) + r"""
 \bottomrule
@@ -288,15 +300,14 @@ def table_rq2(a):
     if not cells:
         return ""
     rows = []
-    trivial = load("bigvul_core_f01.json") or {}
-    prevs = [t["precision"] for t in (trivial.get("_trivial") or {}).values()]
+    prevs = (a.get(corpus) or {}).get("_trivial_prevalence") or []
     rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & 0.500 & "
-                f"{np.mean(prevs):.3f} & --- \\\\" if prevs else "")
+                f"{np.mean(prevs):.3f} \\\\" if prevs else "")
     sz = load("bigvul_size.json")
     if sz:
         c = sz["size|rule"]
         rows.append(f"Function size only (rule) & {len(c['auc'])} & {ms(c['auc'])} "
-                    f"& --- & 0.500 & {ms(c['auprc'])} & --- \\\\")
+                    f"& --- & 0.500 & {ms(c['auprc'])} \\\\")
         macro("bvSizeAuc", f"{np.mean(c['auc']):.3f}")
         macro("bvSizeAuprc", f"{np.mean(c['auprc']):.3f}")
     szd = load("diversevul_size.json")
@@ -311,10 +322,10 @@ def table_rq2(a):
         sp = get(a, corpus, "auprc", f"ggnn|{mode}~lexical")
         if mode == "lexical":
             rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
-                        f"& --- & {ssm(cell)} & {ms(cell['auprc'])} & --- \\\\")
+                        f"& --- & {ssm(cell)} & {ms(cell['auprc'])} \\\\")
         else:
             rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
-                        f"& {ci(st)} & {ssm(cell)} & {ms(cell['auprc'])} & {ci(sp)} \\\\")
+                        f"& {ci(st)} & {ssm(cell)} & {ms(cell['auprc'])} \\\\")
             sst = get(a, corpus, "auc_ss", f"ggnn|{mode}~lexical")
             if sst:
                 mm = {"kind": "Kind", "op": "Op", "op_kind": "OpKind", "lex_kind": "LexKind",
@@ -350,15 +361,16 @@ def table_rq2(a):
 \centering
 \caption{RQ2: node views on BigVul, GGNN, 10 matched project-level folds
 (mean $\pm$ population std over folds). Differences are paired against the
-lexical baseline. Each $\Delta$ cell reads: point estimate, 95\% cluster-bootstrap
-interval over held-out projects, bootstrap $p$ / Wilcoxon signed-rank $p$
-over folds; \emph{n.s.} marks an interval containing zero and $\dagger$ a
-verdict that holds under fewer than 9 of 10 bootstrap seeds.}
+lexical baseline: each $\Delta$ cell reads mean per-fold difference, 95\%
+cluster-bootstrap interval over held-out projects, bootstrap $p$ / Wilcoxon
+signed-rank $p$ over folds; \emph{n.s.} marks an interval containing zero.
+\emph{AUC in size bins} is the AUC computed within five bins of function size
+(0.5 = no information beyond length). AUPRC is reported without paired tests.}
 \label{tab:rq2_representation}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrlrrl}
+\begin{tabular}{lrrlrr}
 \toprule
-Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUC in size bins & AUPRC & $\Delta$AUPRC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ \\
+Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUC in size bins & AUPRC \\
 \midrule
 """ + "\n".join(r for r in rows if r) + r"""
 \bottomrule
@@ -615,7 +627,7 @@ def table_hparams():
 \caption{Hyper-parameters. All values are fixed in advance and shared by every
 compared system; none is tuned on any fold.}
 \label{tab:hparams}
-\begin{tabular}{ll}
+\begin{tabular}{lp{0.62\linewidth}}
 \toprule
 Item & Value \\
 \midrule
@@ -628,7 +640,7 @@ Batch size & """ + f"{cfg['batch_size']}" + r""" \\
 Epochs & """ + f"{cfg['epochs']}" + r""" (fixed; no early stopping, no validation split) \\
 Loss & binary cross-entropy, positive weight $=\min(n_{\text{neg}}/n_{\text{pos}}, 20)$ \\
 Seeds & initialisation and shuffling seed $1000+k$ for fold $k$, shared by all systems \\
-Lexical dictionary & 10{,}000 most frequent training-fold tokens with count $\ge 2$ \\
+Lexical dictionary & up to 9{,}999 most frequent training-fold tokens with count $\ge 2$, plus \texttt{<UNK>} \\
 Node cap & 200 named AST nodes (pre-order) \\
 Sample & """ + f"{cfg['n']:,}" + r""" functions per corpus, uniform at random, seed """ + f"{cfg['sample_seed']}" + r""" \\
 Folds & """ + f"{cfg['n_splits']}$\\times${cfg['n_repeats']}" + r""" = 10 project-level folds \\
@@ -645,7 +657,7 @@ def table_information():
         return ""
     cols, size, hphi, hk, fwd, bwd, frac, lost, det = ([] for _ in range(9))
     for cache, r in sorted(info.items()):
-        name = cache.split("_")[0].capitalize()
+        name = CORPUS.get(cache.split("_")[0], cache.split("_")[0])
         cols.append(name)
         size.append(f"{r['functions']:,} fn / {r['nodes']:,} nodes")
         hphi.append(f"{r['H_phi']:.3f}")
@@ -657,12 +669,17 @@ def table_information():
         frac.append(f"{100*r['frac_phi_info_in_kind']:.1f}\\%")
         lost.append(f"{100*r['frac_kind_info_lost']:.1f}\\%")
         det.append(f"\\textbf{{{100*r['determinism']:.1f}\\%}}")
-        k = name.lower()
+        k = cache.split("_")[0]
         macro(f"{k}HPhiGivenKind", f"{r['H_phi_given_kind']:.2f}")
         macro(f"{k}HKindGivenPhi", f"{r['H_kind_given_phi']:.2f}")
         macro(f"{k}Determinism", f"{100*r['determinism']:.1f}")
         macro(f"{k}KindLost", f"{100*r['frac_kind_info_lost']:.0f}")
         macro(f"{k}PhiInKind", f"{100*r['frac_phi_info_in_kind']:.0f}")
+    dets = [100 * info[c]["determinism"] for c in info]
+    macro("determinismMin", f"{min(dets):.1f}")
+    macro("determinismMax", f"{max(dets):.1f}")
+    widths = [info[c]["H_kind_given_phi_ci95"][1] - info[c]["H_kind_given_phi_ci95"][0] for c in info]
+    macro("kindGivenPhiCiWidthMax", f"{max(widths):.2f}")
     hs = [info[c]["H_phi_given_kind"] for c in info]
     macro("hPhiGivenKindMax", f"{max(hs):.2f}")
     macro("hPhiGivenKindMin", f"{min(hs):.2f}")
@@ -766,7 +783,7 @@ HEADER = ("% Generated by experiments/emit_tables.py -- DO NOT EDIT BY HAND.\n"
 
 
 def main():
-    a = load("representation_analysis.json") or {}
+    a = load_analysis()
     architecture_macros(a)
     generic_macros(a)
     tables = {

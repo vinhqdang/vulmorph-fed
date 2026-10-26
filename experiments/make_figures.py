@@ -51,7 +51,8 @@ def load(name):
 
 def forest():
     """Paired AUC difference vs the lexical baseline, with bootstrap CIs."""
-    analysis = load("representation_analysis.json")
+    analysis = {c: load(f"analysis_{c}.json") for c in ("bigvul", "diversevul")}
+    analysis = {k: v for k, v in analysis.items() if v}
     if not analysis:
         print("  no representation_analysis.json; run analyze_representation.py")
         return
@@ -113,7 +114,7 @@ def redundancy():
 
     names, hcond, det = [], [], []
     for cache, r in info.items():
-        label = cache.split("_")[0].replace("hf", "").strip("_").capitalize()
+        label = {"bigvul": "BigVul", "diversevul": "DiverseVul", "devign": "Devign"}.get(cache.split("_")[0], cache.split("_")[0])
         if label in names:
             continue
         names.append(label)
