@@ -1,0 +1,107 @@
+\subsection{RQ2: which node view transfers across projects}
+\label{sec:rq_representation}
+
+\emph{In short:} on projects never seen in training, a network that reads
+identifier text from scratch performs close to chance; removing the project
+vocabulary (by renaming identifiers or by using grammar kinds) lifts AUC by
+roughly 0.1 to 0.17; and the choice among the vocabulary-free views matters
+much less than the choice to leave the vocabulary out.
+
+Everything except the node view is held fixed: graph, backbone (GGNN), depth,
+width, readout, optimiser, class weighting and gradient budget.
+Table~\ref{tab:rq2_representation} reports the BigVul results over 10 matched
+folds, and Table~\ref{tab:direct} the direct paired contrasts between views.
+
+\input{tab_rq2_representation}
+
+\paragraph{Text read from scratch does not transfer.} With the lexical view
+the GGNN reaches AUC \mBvGgnnLexAuc{} on BigVul and \mDvGgnnLexAuc{} on
+DiverseVul, close to the $0.5$ of a random ranking. The cause is visible in the
+mechanism: after the per-fold cut, tokens that occur only in held-out projects
+map to \texttt{<UNK>}, and what remains of the vocabulary correlates with
+project identity rather than with the weakness.
+
+\paragraph{Vocabulary-free views transfer.} Replacing text with the grammar kind
+raises AUC by \cBvGgnnKindVLexD{} (95\% CI \cBvGgnnKindVLexLo{} to
+\cBvGgnnKindVLexHi{}; bootstrap $p$ \cBvGgnnKindVLexP{}; Wilcoxon $p$
+\cBvGgnnKindVLexW{}; \cBvGgnnKindVLexWins{} folds won) on BigVul, and by
+\cDvGgnnKindVLexD{} (\cDvGgnnKindVLexLo{} to \cDvGgnnKindVLexHi{}) on
+DiverseVul. Renaming identifiers while keeping all other token text
+(\emph{anonymised}) gives \cBvGgnnAnonVLexD{}
+(\cBvGgnnAnonVLexLo{} to \cBvGgnnAnonVLexHi{}) on BigVul. The effect is large
+relative to the fold-to-fold spread of the lexical view
+(standard deviation \mBvGgnnLexAucStd{} AUC; Table~\ref{tab:rq2_representation}).
+
+\paragraph{The grammar kind is not better than anonymised text.} This is the
+conclusion that changed most since the first version of this work. Reviewing it
+we added the baselines that a text-only comparison omits: anonymised tokens, and
+each of text and anonymised tokens combined with the kind
+(Section~\ref{sec:features}). The direct contrast of $\kappa$ against
+anonymised$+\kappa$ is \cBvGgnnKindVAnonKindD{}
+(\cBvGgnnKindVAnonKindLo{} to \cBvGgnnKindVAnonKindHi{}) on BigVul and
+\cDvGgnnKindVAnonKindD{} (\cDvGgnnKindVAnonKindLo{} to
+\cDvGgnnKindVAnonKindHi{}) on DiverseVul
+(Table~\ref{tab:direct}). Identifier renaming, which is what sequence-based
+detectors have long done as preprocessing, therefore recovers essentially the
+whole benefit. What the grammar kind offers is the same effect without any
+preprocessing choice, not a better effect.
+
+\paragraph{Adding node type to text helps, but less than removing the text.}
+The Devign-style combination of text with the node type improves on text alone
+by \cBvGgnnLexKindVLexD{} (\cBvGgnnLexKindVLexLo{} to
+\cBvGgnnLexKindVLexHi{}) on BigVul, so part of the benefit of structure is
+independent of removing names. But $\kappa$ alone beats that combination by
+\cBvGgnnKindVLexKindD{} (\cBvGgnnKindVLexKindLo{} to
+\cBvGgnnKindVLexKindHi{}): while project-specific text is present, the network
+keeps fitting it. The comparison in the first submission, which pitted
+$\kappa$ against a text view that carried no node-type information at all, was
+therefore partly ``structure labels versus none''; Table~\ref{tab:direct} now
+separates the two.
+
+\paragraph{The engineered operation taxonomy adds nothing to the kind.}
+The direct paired contrast of $\kappa{+}\phi$ against $\kappa$ is
+\cBvGgnnOpKindVKindD{} (\cBvGgnnOpKindVKindLo{} to \cBvGgnnOpKindVKindHi{};
+Wilcoxon $p$ \cBvGgnnOpKindVKindW{}) on BigVul and \cDvGgnnOpKindVKindD{}
+(\cDvGgnnOpKindVKindLo{} to \cDvGgnnOpKindVKindHi{}) on DiverseVul. The
+earlier submission inferred ``no benefit'' from the two views' separate gaps
+to the lexical baseline, which is not a test; here it is tested directly, and
+the interval contains zero in both corpora. $\phi$ alone ($\phi_8$) is
+\cBvGgnnOpVLexD{} above text and \cBvGgnnKindVOpD{} below $\kappa$
+(\cBvGgnnKindVOpLo{} to \cBvGgnnKindVOpHi{}); the second difference is
+estimated imprecisely and we do not claim it. Section~\ref{sec:rq_why}
+explains why a null here is expected.
+
+\paragraph{Capacity control.} The kind table has 364 rows and the taxonomy 9, so
+one might suspect that $\kappa$ wins by capacity. We therefore also trained
+$\kappa$ squeezed through a nine-dimensional bottleneck, the width of the
+taxonomy table (\texttt{kind\_low}). Its AUC is \mBvGgnnKindLowAuc{}, and the
+difference from the unconstrained kind embedding is \cBvGgnnKindLowVKindD{}
+(\cBvGgnnKindLowVKindLo{} to \cBvGgnnKindLowVKindHi{}), consistent with no
+capacity effect. (An earlier version of this paper reported a similar check
+without any code or data behind it; it has been replaced by this experiment.)
+
+\paragraph{Controlling for function size.} Vulnerable functions are longer
+(Section~\ref{sec:corpora}), so a detector can gain AUC from length alone. A
+rule that scores each function by its node count reaches AUC \numbvSizeAuc{} on
+BigVul and \numdvSizeAuc{} on DiverseVul (second row of
+Table~\ref{tab:rq2_representation}), higher than every GNN here. To ask what
+the networks learn beyond length we also compute the AUC \emph{within} five
+bins of function size (pooled held-out predictions, bin edges from the
+held-out size quantiles); a score that carries no information beyond length
+has within-bin AUC $0.5$. On BigVul the grammar kind's within-bin AUC is
+\mBvGgnnKindSs{} against \mBvGgnnLexSs{} for text, a paired difference of
+\cBvGgnnKindVLexSsD{} (\cBvGgnnKindVLexSsLo{} to \cBvGgnnKindVLexSsHi{}). The
+gain over text is therefore only partly independent of length, and the
+within-bin skill of every view is modest.
+
+\paragraph{No single project drives the result.}
+Because one repository can dominate a fold, we repeat the BigVul contrast with
+that project's test predictions removed: $\kappa$ against text is
+\cBvGgnnKindVLexNoAnd{} without \texttt{\numbigvulTopTestProject}, compared with
+\cBvGgnnKindVLexD{} with it. Table~\ref{tab:perproject} gives the per-project
+AUCs for the held-out projects with at least ten vulnerable functions:
+the pattern of $\kappa$ over text is present in most of them, although each
+single-project figure rests on few positives and is noisy.
+
+\input{tab_perproject}
+\input{tab_direct}

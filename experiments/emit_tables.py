@@ -277,6 +277,11 @@ Corpus & Names & Agreement & $\kappa$ & Macro P & Macro R & Memory-op P / R \\
 
 # ── RQ2 / RQ3 ────────────────────────────────────────────────────────────────
 
+def ssm(cell):
+    v = [x for x in cell.get("auc_ss", []) if x == x]
+    return f"{np.mean(v):.3f}" if v else "---"
+
+
 def table_rq2(a):
     corpus = "bigvul"
     cells, _, _ = merged(corpus)
@@ -285,8 +290,18 @@ def table_rq2(a):
     rows = []
     trivial = load("bigvul_core_f01.json") or {}
     prevs = [t["precision"] for t in (trivial.get("_trivial") or {}).values()]
-    rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & "
+    rows.append(f"Trivial (all-positive) & --- & 0.500 & --- & 0.500 & "
                 f"{np.mean(prevs):.3f} & --- \\\\" if prevs else "")
+    sz = load("bigvul_size.json")
+    if sz:
+        c = sz["size|rule"]
+        rows.append(f"Function size only (rule) & {len(c['auc'])} & {ms(c['auc'])} "
+                    f"& --- & 0.500 & {ms(c['auprc'])} & --- \\\\")
+        macro("bvSizeAuc", f"{np.mean(c['auc']):.3f}")
+        macro("bvSizeAuprc", f"{np.mean(c['auprc']):.3f}")
+    szd = load("diversevul_size.json")
+    if szd:
+        macro("dvSizeAuc", f"{np.mean(szd['size|rule']['auc']):.3f}")
     for mode in ("lexical", "anon", "op", "kind", "op_kind", "lex_kind",
                  "anon_kind"):
         cell = cells.get(f"{mode}|ggnn")
@@ -296,10 +311,17 @@ def table_rq2(a):
         sp = get(a, corpus, "auprc", f"ggnn|{mode}~lexical")
         if mode == "lexical":
             rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
-                        f"& --- & {ms(cell['auprc'])} & --- \\\\")
+                        f"& --- & {ssm(cell)} & {ms(cell['auprc'])} & --- \\\\")
         else:
             rows.append(f"{MODE_LABEL[mode]} & {len(cell['auc'])} & {ms(cell['auc'])} "
-                        f"& {ci(st)} & {ms(cell['auprc'])} & {ci(sp)} \\\\")
+                        f"& {ci(st)} & {ssm(cell)} & {ms(cell['auprc'])} & {ci(sp)} \\\\")
+            sst = get(a, corpus, "auc_ss", f"ggnn|{mode}~lexical")
+            if sst:
+                mm = {"kind": "Kind", "op": "Op", "op_kind": "OpKind", "lex_kind": "LexKind",
+                      "anon": "Anon", "anon_kind": "AnonKind"}[mode]
+                macro(f"bvGgnn{mm}SsDiff", sf(sst["diff"]))
+                macro(f"bvGgnn{mm}SsLo", sf(sst["lo"]))
+                macro(f"bvGgnn{mm}SsHi", sf(sst["hi"]))
         if st:
             m = {"kind": "Kind", "op": "Op", "op_kind": "OpKind", "lex_kind": "LexKind",
                  "anon": "Anon", "anon_kind": "AnonKind"}[mode]
@@ -334,9 +356,9 @@ over folds; \emph{n.s.} marks an interval containing zero and $\dagger$ a
 verdict that holds under fewer than 9 of 10 bootstrap seeds.}
 \label{tab:rq2_representation}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{lrrlrl}
+\begin{tabular}{lrrlrrl}
 \toprule
-Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUPRC & $\Delta$AUPRC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ \\
+Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUC in size bins & AUPRC & $\Delta$AUPRC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ \\
 \midrule
 """ + "\n".join(r for r in rows if r) + r"""
 \bottomrule
@@ -679,6 +701,57 @@ $H(\kappa \mid \phi)/H(\kappa)$ & """ + " & ".join(lost) + r""" \\
 """
 
 
+CAMEL = {"lexical": "Lex", "anon": "Anon", "op": "Op", "kind": "Kind",
+         "op_kind": "OpKind", "lex_kind": "LexKind", "anon_kind": "AnonKind",
+         "kind_low": "KindLow"}
+
+
+def generic_macros(a):
+    """m<Corpus><Backbone><Mode><Stat>: mean AUC and paired contrasts for every
+    cell, so prose can quote any of them without a hand-typed number."""
+    for corpus, C in (("bigvul", "Bv"), ("diversevul", "Dv")):
+        cells, _, _ = merged(corpus)
+        for key, cell in cells.items():
+            mode, bb = key.split("|")
+            mode = mode.split("@")[0]
+            if mode not in CAMEL:
+                continue
+            tag = f"m{C}{bb.title()}{CAMEL[mode]}"
+            macro(f"{tag}Auc", f"{np.mean(cell['auc']):.3f}")
+            macro(f"{tag}Auprc", f"{np.mean(cell['auprc']):.3f}")
+            v = [x for x in cell.get("auc_ss", []) if x == x]
+            if v:
+                macro(f"{tag}Ss", f"{np.mean(v):.3f}")
+        for mkey, st in (a.get(corpus, {}).get("auc", {}) or {}).items():
+            if "~" not in mkey or "@" in mkey:
+                continue
+            bb, rest = mkey.split("|")
+            lhs, rhs = rest.split("~")
+            names = {**CAMEL, "size": "Size", "unixcoder": "Unix"}
+            if lhs not in CAMEL or rhs not in names:
+                continue
+            tag = f"c{C}{bb.title()}{CAMEL[lhs]}V{names[rhs]}"
+            macro(f"{tag}D", sf(st["diff"]))
+            macro(f"{tag}Lo", sf(st["lo"]))
+            macro(f"{tag}Hi", sf(st["hi"]))
+            macro(f"{tag}P", pfmt(st["p_two_sided"]))
+            macro(f"{tag}W", pfmt(st["wilcoxon_p"]))
+            macro(f"{tag}Wins", f"{st['wins']}/{st['n_folds']}")
+            if "without_android" in st:
+                w = st["without_android"]
+                macro(f"{tag}NoAnd", f"{sf(w['diff'])} [{sf(w['lo'])}, {sf(w['hi'])}]")
+        for mkey, st in (a.get(corpus, {}).get("auc_ss", {}) or {}).items():
+            if "~" not in mkey or "@" in mkey:
+                continue
+            bb, rest = mkey.split("|")
+            lhs, rhs = rest.split("~")
+            if lhs in CAMEL and rhs in CAMEL:
+                tag = f"c{C}{bb.title()}{CAMEL[lhs]}V{CAMEL[rhs]}"
+                macro(f"{tag}SsD", sf(st["diff"]))
+                macro(f"{tag}SsLo", sf(st["lo"]))
+                macro(f"{tag}SsHi", sf(st["hi"]))
+
+
 def architecture_macros(a):
     for corpus, pre in (("bigvul", "bv"), ("diversevul", "dv")):
         sp = (a.get(corpus) or {}).get("_architecture_spread") or {}
@@ -695,6 +768,7 @@ HEADER = ("% Generated by experiments/emit_tables.py -- DO NOT EDIT BY HAND.\n"
 def main():
     a = load("representation_analysis.json") or {}
     architecture_macros(a)
+    generic_macros(a)
     tables = {
         "tab_corpora": table_corpora,
         "tab_node_dist": table_node_dist,
@@ -724,7 +798,9 @@ def main():
     for k, v in sorted(NUMS.items()):
         digits = dict(zip("0123456789", ["Zero", "One", "Two", "Three", "Four",
                                          "Five", "Six", "Seven", "Eight", "Nine"]))
-        name = "num" + "".join(digits.get(ch, ch) for ch in k if ch.isalnum())
+        base = "".join(digits.get(ch, ch) for ch in k if ch.isalnum())
+        # generic per-cell macros (m/c + Bv|Dv ...) are used without prefix
+        name = base if (base[:3] in ("mBv", "mDv", "cBv", "cDv")) else "num" + base
         lines.append(f"\\newcommand{{\\{name}}}{{{v}}}")
     (LATEX_DIR / "numbers.tex").write_text("\n".join(lines) + "\n")
     print(f"  wrote numbers.tex ({len(NUMS)} macros)")
