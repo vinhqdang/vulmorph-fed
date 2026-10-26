@@ -108,6 +108,9 @@ def main():
     ap.add_argument("--batch", type=int, default=16)
     ap.add_argument("--lr", type=float, default=2e-5)
     ap.add_argument("--folds", default="")
+    ap.add_argument("--field", default="codes",
+                    help="codes (raw source) or codes_norm (format-normalised)")
+    ap.add_argument("--cell", default="linevul|ft")
     ap.add_argument("--smoke", action="store_true")
     args = ap.parse_args()
     if args.smoke:
@@ -118,16 +121,17 @@ def main():
     dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", dev, torch.cuda.get_device_name(0) if dev.type == "cuda" else "")
     tok = AutoTokenizer.from_pretrained(args.model)
-    ids = encode(tok, d["codes"], args.max_len)
+    ids = encode(tok, d[args.field], args.max_len)
     y, proj = d["y"], d["project"]
 
     res = json.load(open(args.out)) if os.path.exists(args.out) else {}
     res["_config"] = {"dataset": d["dataset"], "model": args.model,
                       "max_len": args.max_len, "epochs": args.epochs,
                       "batch": args.batch, "lr": args.lr, "taxonomy_size": 8,
-                      "edge_set": "all", "smoke": args.smoke}
+                      "edge_set": "all", "smoke": args.smoke,
+                      "field": args.field}
     res["_folds"] = [f["info"] for f in d["folds"]]
-    cell = res.setdefault("linevul|ft", {"auc": [], "auprc": [], "folds": [],
+    cell = res.setdefault(args.cell, {"auc": [], "auprc": [], "folds": [],
                                          "scores": {}})
     only = {int(x) for x in args.folds.split(",") if x}
     for fi, fold in enumerate(d["folds"]):

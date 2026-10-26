@@ -297,6 +297,8 @@ def analyse_corpus(corpus, n_boot_scale=1.0):
     if not cells:
         return None
     backbones = sorted({k.split("|")[1].split("@")[0] for k in cells})
+    # reference systems that are not (mode, backbone) cells of the grid
+    refs = ("rule", "probe", "gbm", "ft")
     out = {"auc": {}, "auprc": {}, "auc_ss": {}, "_cells": sorted(cells),
            "_n_folds": len(folds), "_configs": cfgs,
            "_trivial_prevalence": trivial_prevalences(corpus)}
@@ -305,7 +307,7 @@ def analyse_corpus(corpus, n_boot_scale=1.0):
         nb, ns = BUDGET[metric]
         nb = max(100, int(nb * n_boot_scale))
         for bb in backbones:
-            if bb in ("rule", "probe"):
+            if bb in ("rule", "probe", "gbm", "ft"):
                 continue
             pairs = [(f"{m}|{bb}", f"lexical|{bb}", f"{m}~lexical")
                      for m in VS_LEXICAL + ["kind_low", "op_wide"]]
@@ -325,10 +327,14 @@ def analyse_corpus(corpus, n_boot_scale=1.0):
                         r["without_android"] = {
                             k: rx[k] for k in ("diff", "lo", "hi",
                                                "p_two_sided", "n_folds")}
-        for ref, rname in (("size|rule", "size"), ("unixcoder|probe", "unixcoder")):
+        for ref, rname in (("size|rule", "size"), ("unixcoder|probe", "unixcoder"),
+                           ("trail|rule", "trail"), ("format|gbm", "format"),
+                           ("linevul|ft", "linevul"),
+                           ("linevulnorm|ft", "linevulnorm"),
+                           ("unixnorm|probe", "unixnorm")):
             for m in ("lexical", "lex_kind", "kind", "op_kind"):
                 for bb in backbones:
-                    if bb in ("rule", "probe"):
+                    if bb in ("rule", "probe", "gbm", "ft"):
                         continue
                     r = contrast(cells, bins, f"{m}|{bb}", ref, metric, nb, ns)
                     if r:

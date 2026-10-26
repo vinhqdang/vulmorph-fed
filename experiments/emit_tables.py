@@ -543,6 +543,12 @@ def table_baselines(a):
         ("lexical|tf", "Transformer over node sequence, text"),
         ("kind|tf", "Transformer over node sequence, $\\kappa$"),
         ("unixcoder|probe", "Pretrained UniXcoder, frozen, linear probe (raw source)"),
+        ("unixnorm|probe", "Pretrained UniXcoder, frozen, linear probe (format-normalised)"),
+        ("linevul|ft", "LineVul-style: fine-tuned CodeBERT (raw source)"),
+        ("linevulnorm|ft", "LineVul-style: fine-tuned CodeBERT (format-normalised)"),
+        ("size|rule", "No code read: function size (node count)"),
+        ("trail|rule", "No code read: trailing-whitespace rule"),
+        ("format|gbm", "No code read: gradient boosting on formatting statistics"),
         ("kind|ggnn", "GGNN, grammar kind $\\kappa$ (ours)"),
         ("op_kind|ggnn", "GGNN, $\\kappa{+}\\phi$ (ours)"),
     ]
@@ -568,8 +574,10 @@ def table_baselines(a):
 sample, folds and metrics (mean $\pm$ std over 10 project-level folds). These
 are re-implementations of the \emph{input representation} of each approach
 inside one training protocol, not reproductions of the published systems or
-their published numbers. The UniXcoder row uses a frozen encoder and a linear
-probe (no fine-tuning).}
+their published numbers. UniXcoder rows use a frozen encoder and a linear
+probe. \emph{Format-normalised} source is the parser's token stream with
+whitespace and comments removed (Section~\ref{sec:artefact}). The last three
+rows score functions without reading what the code says.}
 \label{tab:baselines}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lcccc}
@@ -745,7 +753,9 @@ def generic_macros(a):
                 continue
             bb, rest = mkey.split("|")
             lhs, rhs = rest.split("~")
-            names = {**CAMEL, "size": "Size", "unixcoder": "Unix"}
+            names = {**CAMEL, "size": "Size", "unixcoder": "Unix", "trail": "Trail",
+                     "format": "Format", "linevul": "Linevul",
+                     "linevulnorm": "LinevulNorm", "unixnorm": "UnixNorm"}
             if lhs not in CAMEL or rhs not in names:
                 continue
             tag = f"c{C}{bb.title()}{CAMEL[lhs]}V{names[rhs]}"
@@ -771,6 +781,34 @@ def generic_macros(a):
                 macro(f"{tag}SsD", sf(st["diff"]))
                 macro(f"{tag}SsLo", sf(st["lo"]))
                 macro(f"{tag}SsHi", sf(st["hi"]))
+
+
+REFS = {"size|rule": "Size", "trail|rule": "Trail", "format|gbm": "Format",
+        "linevul|ft": "Linevul", "linevulnorm|ft": "LinevulNorm",
+        "unixcoder|probe": "Unix", "unixnorm|probe": "UnixNorm"}
+
+
+def reference_macros():
+    import gzip
+    for corpus, C in (("bigvul", "Bv"), ("diversevul", "Dv")):
+        cells, _, _ = merged(corpus)
+        for key, tag in REFS.items():
+            c = cells.get(key)
+            if c:
+                macro(f"r{C}{tag}Auc", f"{np.mean(c['auc']):.3f}")
+                macro(f"r{C}{tag}Auprc", f"{np.mean(c['auprc']):.3f}")
+                macro(f"r{C}{tag}Folds", str(len(c["auc"])))
+        p = Path(__file__).parent.parent / "colab_data" / f"{corpus}.json.gz"
+        if p.exists():
+            d = json.load(gzip.open(p, "rt"))
+            y = np.asarray(d["y"])
+            has = np.array([any(l != l.rstrip() for l in s_.split("\n"))
+                            for s_ in d["codes"]])
+            macro(f"art{C}TrailVuln", f"{100*has[y == 1].mean():.0f}")
+            macro(f"art{C}TrailBenign", f"{100*has[y == 0].mean():.0f}")
+            hasn = np.array([any(l != l.rstrip() for l in s_.split("\n"))
+                             for s_ in d["codes_norm"]])
+            macro(f"art{C}TrailNormAny", f"{100*hasn.mean():.0f}")
 
 
 def range_macros(a):
@@ -825,6 +863,7 @@ def main():
     architecture_macros(a)
     generic_macros(a)
     range_macros(a)
+    reference_macros()
     tables = {
         "tab_corpora": table_corpora,
         "tab_node_dist": table_node_dist,

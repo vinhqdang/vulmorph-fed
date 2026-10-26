@@ -15,6 +15,7 @@ import json
 
 from data.loaders.sampled import load_sampled, CORPORA
 from data.loaders.real_datasets import dedupe_functions
+from data.normalise import normalise_code
 from utils.protocol import project_group_kfold
 
 
@@ -35,6 +36,7 @@ def main():
     out = Path("colab_data") / f"{args.dataset}.json.gz"
     with gzip.open(out, "wt") as f:
         json.dump({"dataset": args.dataset, "codes": codes,
+                   "codes_norm": [normalise_code(c) for c in codes],
                    "y": [float(d.y[0]) for d in data],
                    "project": [d.project for d in data],
                    "folds": folds}, f)
