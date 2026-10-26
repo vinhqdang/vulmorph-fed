@@ -18,6 +18,11 @@
 \usepackage{tikz}%
 \usetikzlibrary{positioning,arrows.meta,fit,calc,backgrounds}%
 \usepackage{url}%
+\usepackage{adjustbox}%
+%% sn-jnl's table rules use a brace-counting trick that breaks inside boxes;
+%% plain rules are used instead so wide tables can be scaled to the text width.
+\let\toprule\hline\let\midrule\hline\let\bottomrule\hline\let\botrule\hline
+\renewcommand{\arraystretch}{1.15}
 
 \theoremstyle{thmstyleone}%
 \newtheorem{proposition}{Proposition}%

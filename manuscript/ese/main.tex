@@ -18,6 +18,11 @@
 \usepackage{tikz}%
 \usetikzlibrary{positioning,arrows.meta,fit,calc,backgrounds}%
 \usepackage{url}%
+\usepackage{adjustbox}%
+%% sn-jnl's table rules use a brace-counting trick that breaks inside boxes;
+%% plain rules are used instead so wide tables can be scaled to the text width.
+\let\toprule\hline\let\midrule\hline\let\bottomrule\hline\let\botrule\hline
+\renewcommand{\arraystretch}{1.15}
 
 \theoremstyle{thmstyleone}%
 \newtheorem{proposition}{Proposition}%
@@ -600,14 +605,14 @@ coarseness of a single labelling --- so the granularity experiment in
 Section~\ref{sec:experiment} is interpretable, which a comparison of three
 independently designed schemes would not be.
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{The $|\mathcal{T}_8| = 8$ operation alphabet and the
 $\mathcal{T}_{32}$ classes each abstracts. $\bot$ (\texttt{UNKNOWN}) labels
 nodes with no operation semantics: declarations, identifiers, literals,
 punctuation.}
 \label{tab:taxonomy}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lll}
 \toprule
 $\mathcal{T}_8$ & abstracts ($\mathcal{T}_{32}$) & carries \\
@@ -621,8 +626,8 @@ $\mathcal{T}_8$ & abstracts ($\mathcal{T}_{32}$) & carries \\
 \texttt{CALL\_SITE}     & \texttt{CALL\_SITE}, \texttt{IO\_CALL} & unresolved or non-memory calls \\
 \texttt{ASSIGN}         & \texttt{ASSIGN} & value flow \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \subsection{Node Views}
 \label{sec:features}
@@ -636,14 +641,14 @@ ReVeal initialise a node with its code text together with its node
 type~\citep{zhou2019devign, chakraborty2022deep}, which corresponds to our
 \texttt{lex+$\kappa$} view.
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Node views. Leaves are tokens such as identifiers, literals and
 keywords; internal nodes are the syntactic constructs above them. ``Invariant''
 means the symbol alphabet is the same for every project. Embeddings of
 combined views are summed.}
 \label{tab:modes}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{llllc}
 \toprule
 View & Leaf node carries & Internal node carries & Alphabet & Invariant \\
@@ -656,8 +661,8 @@ $\kappa{+}\phi$ & $\kappa$ and $\phi_8$ & $\kappa$ and $\phi_8$ & 364 and 9 & ye
 \texttt{lex+$\kappa$} & lexical and $\kappa$ & \texttt{<INTERNAL>} and $\kappa$ & as above & no \\
 \texttt{anon+$\kappa$} & anonymised and $\kappa$ & \texttt{<INTERNAL>} and $\kappa$ & as above & mostly \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \paragraph{The lexical view, precisely} Each leaf carries its exact source
 text. Every internal node carries the same token \texttt{<INTERNAL>}, so the
@@ -802,7 +807,7 @@ about 430 to \numbigvulVuln{} (BigVul) and \numdiversevulVuln{} (DiverseVul).
 Table~\ref{tab:corpora} gives the resulting properties.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Corpus properties measured on our uniform random samples
 (10{,}000 functions drawn per corpus, then de-duplicated). \emph{Prevalence} is
@@ -813,7 +818,7 @@ train-only and never appear in a test fold (Section~\ref{sec:protocol}).
 \emph{Truncated} is the percentage of functions with more than 200 named AST
 nodes, overall / vulnerable / benign.}
 \label{tab:corpora}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrrrrrrr}
 \toprule
 Corpus & Functions & Vulnerable & Prevalence & Test prev. & Projects & Top-2 share & Nodes (mean) & Truncated (\%) \\
@@ -822,8 +827,8 @@ BigVul & 9,435 & 555 & 0.059 & 0.071 & 250 & 64.3\% & 96 & 18.1 / 42.3 / 16.6 \\
 DiverseVul & 9,791 & 567 & 0.058 & 0.059 & 633 & 25.0\% & 110 & 25.6 / 53.4 / 23.9 \\
 Devign & 9,666 & 4,455 & 0.461 & --- & 2 & 100.0\% & 137 & 41.2 / 44.3 / 38.6 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 Table~\ref{tab:node_dist} gives the distribution of operation types over
 the nodes of the BigVul sample: about three quarters of nodes carry no
@@ -831,7 +836,7 @@ operation label ($\bot$) but keep their grammar kind, and memory operations are
 rare.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Node-type distribution under $\phi_8$ (BigVul sample). $\bot$
 (\texttt{UNKNOWN}) nodes carry no operation label but keep their grammar kind.}
@@ -847,7 +852,7 @@ $\bot$ (\texttt{UNKNOWN}) & 75.23\% & \texttt{COMPARISON} & 2.72\% \\
 \texttt{ASSIGN} & 3.47\% &  &  \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{tableorg}
 
 \paragraph{The data are strongly imbalanced, and we do not rebalance them}
 Only \numbigvulPrev{} of BigVul and \numdiversevulPrev{} of DiverseVul
@@ -923,7 +928,7 @@ the experiments and are not tuned on any fold; there is no validation split and
 no early stopping, so every system trains for exactly \numcfgEpochs{} epochs.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Hyper-parameters. All values are fixed in advance and shared by every
 compared system; none is tuned on any fold.}
@@ -948,7 +953,7 @@ Folds & 5$\times$2 = 10 project-level folds \\
 Pretrained reference & UniXcoder-base, 256 tokens, frozen; logistic regression $C=0.1$, balanced \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{tableorg}
 
 \subsection{Statistical treatment}
 \label{sec:stats}
@@ -1043,7 +1048,7 @@ Tables~\ref{tab:rq1_analysis} and~\ref{tab:rq1_agreement} give the per-class
 scores and the annotation agreement.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{RQ1: $\phi$ as a static analysis, scored against the consensus of two
 blind annotators and a third pass on disagreements, pooled over the three
@@ -1070,16 +1075,16 @@ Macro & 0.90 & 0.88 & \\
 Memory operation (any of the 9) & 0.94 & 0.94 & 293/19/19 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{tableorg}
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{RQ1: annotation agreement and per-corpus scores. Agreement and
 Cohen's $\kappa_{C}$ are between the two blind annotators before adjudication;
 precision and recall are macro-averaged over classes against the consensus; the
 last column is precision / recall for ``memory or string operation''.}
 \label{tab:rq1_agreement}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrrrrr}
 \toprule
 Corpus & Names & Agreement & $\kappa_{C}$ & Macro P & Macro R & Memory-op P / R \\
@@ -1088,8 +1093,8 @@ Devign & 212 & 0.92 & 0.89 & 0.90 & 0.87 & 0.90 / 0.93 \\
 BigVul & 227 & 0.94 & 0.93 & 0.90 & 0.87 & 0.95 / 0.95 \\
 DiverseVul & 236 & 0.92 & 0.90 & 0.89 & 0.89 & 0.96 / 0.94 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \paragraph{Agreement} Table~\ref{tab:rq1_agreement} reports agreement per corpus.
 Before adjudication the two blind annotators agree on \numpooledAgree{} of the
@@ -1158,7 +1163,7 @@ Table~\ref{tab:rq2_representation} reports the BigVul results over 10 matched
 folds, and Table~\ref{tab:direct} the direct paired contrasts between views.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{RQ2: node views on BigVul, GGNN, 10 matched project-level folds
 (mean $\pm$ population std over folds). Differences are paired against the
@@ -1168,7 +1173,7 @@ signed-rank $p$ over folds; \emph{n.s.} marks an interval containing zero.
 \emph{AUC in size bins} is the AUC computed within five bins of function size
 (0.5 = no information beyond length). AUPRC is reported without paired tests.}
 \label{tab:rq2_representation}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrlrr}
 \toprule
 Node view & Folds & AUC & $\Delta$AUC [95\% CI] $p_{\text{boot}}$ / $p_{\text{W}}$ & AUC in size bins & AUPRC \\
@@ -1183,11 +1188,11 @@ Operation $+$ kind ($\kappa{+}\phi$) & 10 & 0.687 $\pm$ 0.060 & $+0.181$ $[+0.13
 Lexical $+$ kind & 10 & 0.592 $\pm$ 0.072 & $+0.086$ $[+0.038, +0.111]$ $<0.001$ / 0.002 & 0.519 & 0.105 $\pm$ 0.039 \\
 Anonymised $+$ kind & 10 & 0.701 $\pm$ 0.059 & $+0.195$ $[+0.144, +0.244]$ $<0.001$ / 0.002 & 0.558 & 0.180 $\pm$ 0.059 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Direct paired contrasts between node views (GGNN, 10 matched folds):
 $\Delta$AUC of the first view minus the second, with 95\% cluster-bootstrap
@@ -1195,7 +1200,7 @@ interval, bootstrap $p$ / Wilcoxon $p$. These are the comparisons a reader
 needs to judge whether one view is better than another; a difference between
 two views' gaps to the lexical baseline is not a test of the difference.}
 \label{tab:direct}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lll}
 \toprule
 Contrast & BigVul & DiverseVul \\
@@ -1209,8 +1214,8 @@ anonymised vs lexical & $+0.202$ $[+0.149, +0.249]$ $<0.001$ / 0.002 & --- \\
 $\kappa$ vs $\phi_8$ & $+0.042$ $[-0.004, +0.067]$ 0.072\,n.s. / 0.049 & --- \\
 9-dim bottleneck $\kappa$ vs $\kappa$ & $+0.017$ $[+0.004, +0.040]$ 0.018 / 0.322 & --- \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \paragraph{Text read from scratch does not transfer} With the lexical view
 the GGNN reaches AUC \mBvGgnnLexAuc{} on BigVul and \mDvGgnnLexAuc{} on
@@ -1334,13 +1339,13 @@ the pattern of $\kappa$ over text is present in most of them, although each
 single-project figure rests on few positives and is noisy.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Per-project AUC (BigVul, GGNN) for the held-out projects with at
 least 10 vulnerable functions, pooled over the folds in which they are tested.
 It shows that the pooled result is not carried by a single repository.}
 \label{tab:perproject}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrrrrr}
 \toprule
 Project & Functions & Vuln. & Lexical & Lex$+\kappa$ & $\kappa$ & $\kappa{+}\phi$ \\
@@ -1354,8 +1359,8 @@ FFmpeg & 200 & 14 & 0.49 & 0.61 & 0.80 & 0.76 \\
 tcpdump & 72 & 14 & 0.68 & 0.72 & 0.64 & 0.65 \\
 ghostscript & 214 & 12 & 0.43 & 0.63 & 0.84 & 0.87 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 
 \subsection{Why the operation taxonomy adds little: an information-theoretic account}
@@ -1379,7 +1384,7 @@ is the uncertainty left in $A$ once $B$ is known.
 \end{itemize}
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{RQ2b: information shared between the operation taxonomy and the
 grammar kind, computed exactly over every AST node of the corpora indicated.
@@ -1387,7 +1392,7 @@ Brackets are 95\% bootstrap intervals resampling functions.
 $H(\phi \mid \kappa)$ is what the taxonomy adds to the grammar kind, and
 $H(\kappa \mid \phi)$ is what the taxonomy throws away.}
 \label{tab:rq2b_information}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrr}
 \toprule
  & BigVul & Devign & DiverseVul \\
@@ -1406,8 +1411,8 @@ $\phi$ predictable from $\kappa$ & \textbf{98.4\%} & \textbf{97.7\%} & \textbf{9
 $H(\kappa \mid \phi)$ & \textbf{3.103} $[3.093, 3.114]$ & \textbf{2.987} $[2.975, 2.998]$ & \textbf{3.091} $[3.080, 3.101]$ \\
 $H(\kappa \mid \phi)/H(\kappa)$ & 69.0\% & 67.4\% & 68.6\% \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \begin{figure}[t]
 \centering
@@ -1462,14 +1467,14 @@ no graph edges at all (BigVul only, for cost). Figure~\ref{fig:forest} plots
 the gains against the text-only view.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{RQ3: mean AUC over 10 matched folds for four node views under every
 backbone and corpus, and the paired gain of $\kappa$ and of lexical$+\kappa$
 over the lexical view (point estimate, 95\% cluster-bootstrap interval,
 bootstrap $p$; \emph{n.s.}: interval contains zero).}
 \label{tab:rq3_generality}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{llrrrrll}
 \toprule
 Corpus & Backbone & Lexical & Lex$+\kappa$ & $\kappa$ & $\kappa{+}\phi$ & $\kappa$ vs lexical & Lex$+\kappa$ vs lexical \\
@@ -1482,8 +1487,8 @@ DiverseVul & GGNN & 0.566 & 0.607 & 0.667 & 0.675 & $+0.101$ $[+0.070, +0.132]$ 
 DiverseVul & GAT & 0.558 & --- & 0.652 & 0.654 & $+0.094$ $[+0.060, +0.127]$ $<0.001$ & --- \\
 DiverseVul & GIN & 0.574 & --- & 0.679 & 0.687 & $+0.105$ $[+0.069, +0.136]$ $<0.001$ & --- \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \begin{figure}[t]
 \centering
@@ -1553,7 +1558,7 @@ refinement was not re-run for this version because of its cost, so we make no
 statement about it.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Ablations on BigVul (GGNN). First block: removing edge types from the
 graph under the $\kappa$ view. Second block: refining the operation alphabet
@@ -1561,7 +1566,7 @@ under the $\kappa{+}\phi$ view, compared against the same view at
 $|\mathcal{T}|=8$ on the same folds. $\Delta$AUC is paired, with 95\%
 cluster-bootstrap interval and bootstrap $p$.}
 \label{tab:ablation}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lrrl}
 \toprule
 Variant & Folds & AUC & $\Delta$AUC vs reference [95\% CI] $p$ \\
@@ -1571,8 +1576,8 @@ All edges (AST+SIB+DU), $\kappa$ & 10 & 0.691 & --- \\
 \quad AST edges only & 10 & 0.699 & $+0.008$ $[-0.009, +0.027]$ 0.330\,n.s. / 0.375 \\
 $\kappa{+}\phi$ with $|\mathcal{T}|=16$ vs $8$ & 10 & 0.691 & $+0.004$ $[-0.022, +0.019]$ 0.920\,n.s. / 0.625 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 
 \subsection{RQ5: reference points}
@@ -1585,7 +1590,7 @@ They are not reproductions of the published systems or their published numbers,
 which use different data splits and often within-project evaluation.
 
 
-\begin{table}[t]
+\begin{tableorg}[t]
 \centering
 \caption{Comparison with existing approaches re-implemented under the same
 sample, folds and metrics (mean $\pm$ std over 10 project-level folds). These
@@ -1594,7 +1599,7 @@ inside one training protocol, not reproductions of the published systems or
 their published numbers. The UniXcoder row uses a frozen encoder and a linear
 probe (no fine-tuning).}
 \label{tab:baselines}
-\begingroup\scriptsize\setlength{\tabcolsep}{2.5pt}%
+\adjustbox{max width=\textwidth}{%
 \begin{tabular}{lcccc}
 \toprule
  & \multicolumn{2}{c}{BigVul} & \multicolumn{2}{c}{DiverseVul} \\
@@ -1609,8 +1614,8 @@ Pretrained UniXcoder, frozen, linear probe (raw source) & 0.705 $\pm$ 0.061 & 0.
 GGNN, grammar kind $\kappa$ (ours) & 0.691 $\pm$ 0.037 & 0.149 $\pm$ 0.027 & 0.667 $\pm$ 0.021 & 0.105 $\pm$ 0.026 \\
 GGNN, $\kappa{+}\phi$ (ours) & 0.687 $\pm$ 0.060 & 0.158 $\pm$ 0.042 & 0.675 $\pm$ 0.021 & 0.114 $\pm$ 0.030 \\
 \bottomrule
-\end{tabular}\endgroup
-\end{table}
+\end{tabular}}
+\end{tableorg}
 
 \paragraph{Devign/ReVeal-style input} Text together with the node type
 (\texttt{lex+$\kappa$} with a GGNN) reaches AUC \mBvGgnnLexKindAuc{} on BigVul

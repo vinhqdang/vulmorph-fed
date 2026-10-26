@@ -84,10 +84,9 @@ def main():
     body = algorithmic(body)
     body = citations(body)
     body = figure_captions(body)
-    body = re.sub(r"\\resizebox\{\\linewidth\}\{!\}\{%?\s*",
-                  r"\\begingroup\\scriptsize\\setlength{\\tabcolsep}{2.5pt}%\n", body)
-    body = body.replace("\\end{tabular}}", "\\end{tabular}\\endgroup")
-    body = body.replace("\\begin{table*}[t]", "\\begin{table}[t]").replace("\\end{table*}", "\\end{table}")
+    body = body.replace("\\resizebox{\\linewidth}{!}{%", "\\adjustbox{max width=\\textwidth}{%")
+    body = body.replace("\\begin{table*}[t]", "\\begin{tableorg}[t]").replace("\\end{table*}", "\\end{tableorg}")
+    body = body.replace("\\begin{table}[t]", "\\begin{tableorg}[t]").replace("\\end{table}", "\\end{tableorg}")
     macros, missing = used_macros(body, (SRC / "numbers.tex").read_text())
     if missing:
         print("UNDEFINED macros:", missing)
