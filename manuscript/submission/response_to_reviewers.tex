@@ -27,7 +27,7 @@ own grammar node kinds'' were not understandable.
 sentence, no unexplained terms) and the introduction. The introduction now
 defines the four ways of describing a node with one running example
 (\texttt{av\_malloc(n)}), before any result is stated, and the same example is
-used in \sect{3.1}; Table~3 defines every node description precisely. The
+used in \sect{3.1}; Table~2 defines every node description precisely. The
 introduction states what changed in our conclusion after review and ends with a
 paragraph on the organisation of the paper. Sections were reorganised around
 five numbered research questions, each opening with a one-sentence plain
@@ -47,7 +47,7 @@ this mechanically against the \texttt{\textbackslash label}s. Table numbering
 also changed with the revision.
 
 \item \textbf{No statistical analysis/testing.}
-\sect{4.1.6} (statistical treatment): every paired comparison now reports the
+\sect{4.5} (statistical treatment): every paired comparison now reports the
 mean per-fold difference, an exact two-sided Wilcoxon signed-rank test over the
 ten folds, and a cluster bootstrap over held-out projects (95\% interval,
 $p$, and stability across ten bootstrap seeds), with Holm-adjusted $p$-values
@@ -57,23 +57,22 @@ truncation depends on the label, we use Fisher's exact test.
 
 \item \textbf{Are the datasets balanced? How handled?}
 No: prevalence is \numbigvulPrev{} (BigVul) and \numdiversevulPrev{}
-(DiverseVul). \sect{4.1.1} describes the handling: class-weighted training loss,
+(DiverseVul). \sect{4.2} describes the handling: class-weighted training loss,
 untouched test sets, threshold-free metrics (AUC, AUPRC) and the trivial
 all-positive floor.
 
 \item \textbf{Block diagram.} Figure~1 (\sect{3.1}).
 
 \item \textbf{Algorithm/pseudocode.} Algorithms~1 (graph and node views) and 2
-(cross-project evaluation), \sect{3.4}.
+(cross-project evaluation), \sect{3.6}.
 
-\item \textbf{Ablation study.} \sect{4.5} (RQ4) and Table~\ref{tab:ablation}
-in the manuscript: edge-type removal and, in \sect{4.3}, removal of text,
+\item \textbf{Ablation study.} \sect{4.11} (RQ4) and Table~13: edge-type removal and, in \sect{4.8}, removal of text,
 anonymisation, kind and operation type individually, plus capacity-matched
 controls. The thirty-two-type granularity run was not repeated and the claim
 based on it was withdrawn.
 
 \item \textbf{Comparison with related work.}
-\sect{4.6} (RQ5): re-implementations of the input representation of
+\sect{4.12} (RQ5): re-implementations of the input representation of
 Devign/ReVeal (text plus node type), anonymised sequences, a Transformer over
 the node sequence, and a pretrained UniXcoder encoder (frozen, linear probe), on
 the same samples and folds; plus a function-size rule. These are comparisons of
@@ -86,11 +85,11 @@ Fixed. Every condition of every table now runs on the same ten folds, and the
 analysis script refuses to merge result files with differing fold assignments.
 The thirty-two-type condition was not re-run and the claim is dropped; the
 sixteen-type comparison uses \numgranTOneSixFolds{} matched folds
-(\sect{4.5}).
+(\sect{4.11}).
 
 \item \textbf{Lexical baseline underspecified; add lexical+kind and
 anonymised+kind.}
-\sect{3.3} and Table~3 specify what leaves and internal nodes carry in each
+\sect{3.5} and Table~2 specify what leaves and internal nodes carry in each
 view. The lexical view gives every internal node one \texttt{<INTERNAL>} token,
 so it contains no node-type information; unseen tokens map to \texttt{<UNK>},
 and the dictionary is built from the training projects of each fold only (the
@@ -98,17 +97,17 @@ earlier draft built it from all projects, contrary to what the text said; that
 is fixed). We added lexical$+\kappa$ (the Devign-style input) and
 anonymised$+\kappa$ and anonymised-only views, and positioned the work against
 prior node-type features (\sect{2.1}). This changed a conclusion: renaming
-identifiers is about as good as using grammar kinds (\sect{4.3}).
+identifiers is about as good as using grammar kinds (\sect{4.8}).
 
 \item \textbf{$\kappa{+}\phi$ never compared directly with $\kappa$.}
-Table~\ref{tab:direct} reports the paired contrast on both corpora:
+Table~10 reports the paired contrast on both corpora:
 BigVul \cBvGgnnOpKindVKindD{} [\cBvGgnnOpKindVKindLo{}, \cBvGgnnOpKindVKindHi{}],
 DiverseVul \cDvGgnnOpKindVKindD{} [\cDvGgnnOpKindVKindLo{},
 \cDvGgnnOpKindVKindHi{}] AUC (GGNN). The DiverseVul point estimate the reviewer
 noticed was an artefact of comparing two separate gaps.
 
 \item \textbf{Architecture claim too broad.}
-Narrowed (\sect{4.4}): the manuscript now states that the evidence covers small
+Narrowed (\sect{4.10}): the manuscript now states that the evidence covers small
 networks trained from scratch. We added a Transformer over the node sequence
 (BigVul) and a frozen pretrained UniXcoder probe on both corpora. We did
 \emph{not} fine-tune LineVul or UniXcoder, because the machine used for the
@@ -120,16 +119,16 @@ competitive with the graph views, which is also reported.
 Samples are now uniform random (fixed seed) draws of 10{,}000 functions per
 corpus from the whole training split of the public mirrors, giving
 \numbigvulVuln{} and \numdiversevulVuln{} vulnerable functions
-(\sect{4.1.1}); we did not go larger because the grid already costs about two
-days of CPU time. Results are repeated without the dominant test project
+(\sect{4.2}); we did not go larger because the grid already costs more than a
+day of CPU time. Results are repeated without the dominant test project
 (\texttt{\numbigvulTopTestProject}, up to \numbigvulTopTestShareMax\% of a test
-fold) and per project (Table~\ref{tab:perproject}). The difference between
-overall and test prevalence is explained in \sect{4.1.1}: the two largest
+fold) and per project (Table~9). The difference between
+overall and test prevalence is explained in \sect{4.2}: the two largest
 repositories, which have lower prevalence, are held train-only.
 
 \item \textbf{Validation corpora differ from experimental corpora; who
 annotated; second annotator; thin classes.}
-\sect{4.2} (RQ1) was redone. Callee names are now drawn from the experimental
+\sect{4.7} (RQ1) was redone. Callee names are now drawn from the experimental
 samples of BigVul and DiverseVul as well as Devign
 (\numdevignNNames{}, \numbigvulNNames{} and \numdiversevulNNames{} names). Two
 independent blind annotators labelled every name; agreement is Cohen's
@@ -144,7 +143,7 @@ Macro precision against the consensus is \numpooledMacroP{}, lower than the
 $0.976$ of the first submission, which we now regard as optimistic.
 
 \item \textbf{Missing hyper-parameters; effect of the 200-node cap.}
-Table~\ref{tab:hparams} gives hidden size, learning rate, epochs, batch size,
+Table~5 gives hidden size, learning rate, epochs, batch size,
 loss weighting, dictionary size, node cap and seeds; there is no early stopping
 and no validation split, and the seed is $1000+$fold. The cap truncates
 \numbigvulTruncPct\% of BigVul and \numdiversevulTruncPct\% of DiverseVul
@@ -152,7 +151,7 @@ functions, and it affects the vulnerable class much more:
 \numbigvulTruncVulnPct\% of vulnerable against \numbigvulTruncBenignPct\% of
 benign functions in BigVul (Fisher $p$~\numbigvulTruncP{}). Vulnerable functions
 are simply longer, which led us to add a function-size baseline that, notably,
-outperforms every network (\sect{4.3}, \sect{4.6}).
+outperforms every network (\sect{4.8}, \sect{4.12}).
 \end{enumerate}
 
 \section*{Changes that go beyond the reviewers' requests}

@@ -2,15 +2,17 @@
 \label{sec:discussion}
 
 \subsection{What the evidence supports}
-Three statements survive every control we ran. First, a graph network that
+Four statements survive every control we ran. First, a graph network that
 learns embeddings of project-specific text from scratch transfers to new
 projects barely better than chance. Second, any description of nodes that does
-not contain that vocabulary does substantially better, by roughly 0.06 to 0.17
+not contain that vocabulary does substantially better, by roughly 0.06 to 0.18
 AUC, on both corpora and under four architectures. Third, among the
 vocabulary-free descriptions the differences are small: renaming identifiers is
 about as good as the grammar kind, and an engineered operation taxonomy adds
-nothing to the grammar kind. The first two are consistent with a simple
-account: a lexical model's input at test time is largely out-of-vocabulary, and
+nothing to the grammar kind. Fourth, most of the gap between text and the
+vocabulary-free views is a gap in representing function size: within size bins
+the grammar kind is not distinguishable from text, and on DiverseVul no GGNN view is.
+The first two statements are consistent with a simple account: a lexical model's input at test time is largely out-of-vocabulary, and
 the part that is in vocabulary correlates with project identity rather than with
 the weakness. We have not isolated the mechanism experimentally (for instance
 by varying the out-of-vocabulary rate while holding everything else fixed), so
@@ -20,8 +22,8 @@ this remains an interpretation.
 The results do not show that grammar kinds, or any node description, make
 vulnerability detection work across projects. A rule that ranks functions by
 their node count beats every network in the study (Section~\ref{sec:rq_reference}),
-and the gains of the vocabulary-free views over text are only partly
-independent of function size (Section~\ref{sec:rq_representation}). Nor do they
+and the gains of the vocabulary-free views over text largely vanish within
+bins of function size (Section~\ref{sec:rq_representation}). Nor do they
 show that text is harmful in general: a frozen pretrained code model reading raw
 source is competitive with the best graph views. The honest reading is that the
 standard from-scratch lexical baseline of graph-based detectors is weak under

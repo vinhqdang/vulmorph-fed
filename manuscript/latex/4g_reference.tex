@@ -11,15 +11,15 @@ which use different data splits and often within-project evaluation.
 
 \paragraph{Devign/ReVeal-style input.} Text together with the node type
 (\texttt{lex+$\kappa$} with a GGNN) reaches AUC \mBvGgnnLexKindAuc{} on BigVul
-and \mDvGgnnLexKindAuc{} on DiverseVul, which is below every vocabulary-free
-view in Table~\ref{tab:rq2_representation}.
+and \mDvGgnnLexKindAuc{} on DiverseVul, which is below the grammar-kind and anonymised views in
+Table~\ref{tab:rq2_representation}.
 
 \paragraph{A pretrained code model.} UniXcoder~\cite{guo2022unixcoder} with a frozen
 encoder and a linear probe on the raw source (identifiers included) reaches AUC
-\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul that is
-above the GNNs with grammar kinds (the paired difference of $\kappa$ against it
-is \cBvGgnnKindVUnixD{}, \cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}); on
-DiverseVul it is below (\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to
+\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul the
+probe is higher than the GNN with grammar kinds, but not significantly (the
+paired difference of $\kappa$ against it is \cBvGgnnKindVUnixD{},
+\cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}); on DiverseVul it is below (\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to
 \cDvGgnnKindVUnixHi{}). Two lessons follow. First, ``text hurts cross-project
 transfer'' is a statement about token embeddings learned from scratch on a few
 thousand functions, not about text in general: a model that has seen billions

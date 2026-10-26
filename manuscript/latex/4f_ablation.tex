@@ -8,19 +8,21 @@ which already ablate the contribution of text, anonymisation, kind and
 operation type, two structural components are examined.
 
 \paragraph{Edge types.} Removing the def-use edges changes AUC by
-\numedgeNoDuDiff{} (\numedgeNoDuLo{} to \numedgeNoDuHi{}); removing the
-sibling-order edges by \numedgeNoSibDiff{} (\numedgeNoSibLo{} to
-\numedgeNoSibHi{}); keeping only the syntax-tree edges by
-\numedgeAstOnlyDiff{} (\numedgeAstOnlyLo{} to \numedgeAstOnlyHi{}). We read
-these as the contribution of the data-flow approximation and of source order on
-top of the tree.
+\numedgeNoDuDiff{} (\numedgeNoDuLo{} to \numedgeNoDuHi{}); keeping only the
+syntax-tree edges changes it by \numedgeAstOnlyDiff{} (\numedgeAstOnlyLo{} to
+\numedgeAstOnlyHi{}). These measure the contribution of the data-flow
+approximation, and of source order together with it, on top of the tree.
+Neither changes AUC measurably under the grammar-kind view: the network gets
+little from the approximate def-use and ordering edges beyond the tree itself. (A
+variant that removes only the sibling-order edges was dropped from the grid
+for cost.)
 
 \paragraph{Operation-alphabet granularity.} Refining $\phi$ from eight to
 sixteen operation types changes AUC by \numgranTOneSixDiff{}
 (\numgranTOneSixLo{} to \numgranTOneSixHi{}) over \numgranTOneSixFolds{} matched
 folds. The first submission reported a thirty-two-type run that rested on a
 single fold; the claim that granularity does not matter was not supported by
-that run and we do not repeat it. Both measurements we do have are consistent
+that run and we do not repeat it. The one measurement we do have is consistent
 with a null, as expected from Section~\ref{sec:rq_why}, since the classes that a
 finer alphabet separates are rare: the memory-operation class fires on only
 \numbvMemoryPct\% of nodes (Table~\ref{tab:node_dist}). The thirty-two-type

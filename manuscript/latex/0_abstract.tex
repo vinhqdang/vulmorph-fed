@@ -10,13 +10,15 @@ and DiverseVul, about 10{,}000 functions each) and tested on whole projects
 that were held out, over ten matched folds, with paired statistical tests.
 Text read from scratch ranks functions almost at random (AUC
 \mBvGgnnLexAuc{} and \mDvGgnnLexAuc{}). Renaming identifiers or using grammar
-kinds raises AUC by roughly 0.06 to 0.17 on both corpora and under four
-architectures, and the two work about equally well. The hand-built operation
+kinds raises AUC by roughly 0.06 to 0.18 on both corpora and under four
+architectures, and the two work about equally well. Most of that gain,
+however, disappears once function size is held fixed. The hand-built operation
 labels add nothing to the grammar kind, which we explain exactly: they are
 \numbigvulDeterminism\% predictable from it. Against reference points the
 picture is modest. Every graph model scores below a rule that ranks functions
 only by their length (AUC \numbvSizeAuc{} and \numdvSizeAuc{}), and a frozen
-pretrained code model is competitive with the best graph views. We therefore
+pretrained code model is competitive with the best graph views, so the
+result is best read as a warning about baselines. We therefore
 report a controlled result about project vocabulary in learned detectors, not a
 stronger detector, and we release code, annotations and scripts that regenerate
 every number.

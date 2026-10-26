@@ -4,7 +4,7 @@
 \emph{In short:} on projects never seen in training, a network that reads
 identifier text from scratch performs close to chance; removing the project
 vocabulary (by renaming identifiers or by using grammar kinds) lifts AUC by
-roughly 0.1 to 0.17; and the choice among the vocabulary-free views matters
+roughly 0.06 to 0.18; and the choice among the vocabulary-free views matters
 much less than the choice to leave the vocabulary out.
 
 Everything except the node view is held fixed: graph, backbone (GGNN), depth,
@@ -76,23 +76,37 @@ one might suspect that $\kappa$ wins by capacity. We therefore also trained
 $\kappa$ squeezed through a nine-dimensional bottleneck, the width of the
 taxonomy table (\texttt{kind\_low}). Its AUC is \mBvGgnnKindLowAuc{}, and the
 difference from the unconstrained kind embedding is \cBvGgnnKindLowVKindD{}
-(\cBvGgnnKindLowVKindLo{} to \cBvGgnnKindLowVKindHi{}), consistent with no
-capacity effect. (An earlier version of this paper reported a similar check
-without any code or data behind it; it has been replaced by this experiment.)
+(\cBvGgnnKindLowVKindLo{} to \cBvGgnnKindLowVKindHi{}), so the bottleneck is,
+if anything, better. A capacity advantage therefore does not explain the
+result. (An earlier version of this paper reported a similar check without any
+code or data behind it; it has been replaced by this experiment.)
 
-\paragraph{Controlling for function size.} Vulnerable functions are longer
-(Section~\ref{sec:corpora}), so a detector can gain AUC from length alone. A
-rule that scores each function by its node count reaches AUC \numbvSizeAuc{} on
-BigVul and \numdvSizeAuc{} on DiverseVul (second row of
-Table~\ref{tab:rq2_representation}), higher than every GNN here. To ask what
-the networks learn beyond length we also compute the AUC \emph{within} five
+\paragraph{Controlling for function size: most of the gain disappears.}
+Vulnerable functions are longer (Section~\ref{sec:corpora}), so a detector can
+gain AUC from length alone. A rule that scores each function by its node count
+reaches AUC \numbvSizeAuc{} on BigVul and \numdvSizeAuc{} on DiverseVul (second
+row of Table~\ref{tab:rq2_representation}), higher than every GNN here. To ask
+what the networks learn beyond length we also compute the AUC \emph{within} five
 bins of function size (pooled held-out predictions, bin edges from the
-held-out size quantiles); a score that carries no information beyond length
-has within-bin AUC $0.5$. On BigVul the grammar kind's within-bin AUC is
-\mBvGgnnKindSs{} against \mBvGgnnLexSs{} for text, a paired difference of
-\cBvGgnnKindVLexSsD{} (\cBvGgnnKindVLexSsLo{} to \cBvGgnnKindVLexSsHi{}). The
-gain over text is therefore only partly independent of length, and the
-within-bin skill of every view is modest.
+held-out size quantiles); a score that carries no information beyond length has
+within-bin AUC $0.5$. The picture changes substantially. On BigVul the
+within-bin AUC is \mBvGgnnLexSs{} for text and \mBvGgnnKindSs{} for the grammar
+kind, a paired difference of \cBvGgnnKindVLexSsD{}
+(\cBvGgnnKindVLexSsLo{} to \cBvGgnnKindVLexSsHi{}) that is not distinguishable
+from zero; the anonymised view keeps a modest gain of \cBvGgnnAnonVLexSsD{}
+(\cBvGgnnAnonVLexSsLo{} to \cBvGgnnAnonVLexSsHi{}). On DiverseVul the within-bin
+AUC of text and of the grammar kind are \mDvGgnnLexSs{} and \mDvGgnnKindSs{}
+(difference \cDvGgnnKindVLexSsD{}, \cDvGgnnKindVLexSsLo{} to
+\cDvGgnnKindVLexSsHi{}), and no GGNN view differs from text once size is held fixed. Across the
+corpus--architecture cells of Table~\ref{tab:rq3_generality} the grammar kind is
+never significantly better than text within size bins (for GAT on DiverseVul it
+is significantly worse). In other words, the large gap between
+vocabulary-free views and text in the overall AUC is mostly, and on DiverseVul
+entirely, a gap in the ability to represent how large or complex a function is;
+within a size bin every view ranks functions only slightly better than chance.
+The vocabulary-free views plausibly help because node-kind counts, unlike text
+from a mostly out-of-vocabulary dictionary, let the pooled representation
+reflect function size; we have not tested that mechanism directly.
 
 \paragraph{No single project drives the result.}
 Because one repository can dominate a fold, we repeat the BigVul contrast with
