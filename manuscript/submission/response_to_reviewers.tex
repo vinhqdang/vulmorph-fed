@@ -1,0 +1,170 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,hyperref,enumitem}
+\input{../latex/numbers}
+\newcommand{\sect}[1]{Section~#1}
+\setlength{\parindent}{0pt}\setlength{\parskip}{0.6em}
+\title{Point-by-point response to the reviews of COLA-D-26-00245}
+\author{}
+\date{}
+\begin{document}
+\maketitle
+
+This document answers each point of the two reports received on manuscript
+COLA-D-26-00245 (\emph{Journal of Computer Languages}, decision: reject). The
+paper was substantially revised and most experiments were re-run; every number
+below is generated from the stored result files, as in the manuscript. Section
+numbers refer to the revised manuscript. Where a point could not be fully
+addressed, we say so.
+
+\section*{Reviewer 1}
+\textbf{Comment.} The abstract is too long and hard to read; the English, style
+and organisation prevented the reviewer from understanding the message; terms
+such as ``lexical tokens'', ``engineered operation taxonomy'' and ``the parser's
+own grammar node kinds'' were not understandable.
+
+\textbf{Response.} We rewrote the abstract (about 200 words, one idea per
+sentence, no unexplained terms) and the introduction. The introduction now
+defines the four ways of describing a node with one running example
+(\texttt{av\_malloc(n)}), before any result is stated, and the same example is
+used in \sect{3.1}; Table~3 defines every node description precisely. The
+introduction states what changed in our conclusion after review and ends with a
+paragraph on the organisation of the paper. Sections were reorganised around
+five numbered research questions, each opening with a one-sentence plain
+summary. We also removed the claim that ``abandoning lexical features proved
+useful'' in the earlier framing, which the reviewer rightly found confusing: the
+revised paper says exactly what each comparison does and does not show.
+
+\section*{Reviewer 2}
+\begin{enumerate}[leftmargin=*, label=\textbf{\arabic*.}]
+
+\item \textbf{Paper organisation at the end of Section~1.}
+Done: the last paragraph of \sect{1} (``Organisation'').
+
+\item \textbf{Tables 1, 4 and 9 are not cited.}
+Every table, figure and algorithm is now referenced in the text; we verified
+this mechanically against the \texttt{\textbackslash label}s. Table numbering
+also changed with the revision.
+
+\item \textbf{No statistical analysis/testing.}
+\sect{4.1.6} (statistical treatment): every paired comparison now reports the
+mean per-fold difference, an exact two-sided Wilcoxon signed-rank test over the
+ten folds, and a cluster bootstrap over held-out projects (95\% interval,
+$p$, and stability across ten bootstrap seeds), with Holm-adjusted $p$-values
+stored for each family of contrasts. A chi-square test is not appropriate for
+our data (paired scores, not counts); for the one count-based question, whether
+truncation depends on the label, we use Fisher's exact test.
+
+\item \textbf{Are the datasets balanced? How handled?}
+No: prevalence is \numbigvulPrev{} (BigVul) and \numdiversevulPrev{}
+(DiverseVul). \sect{4.1.1} describes the handling: class-weighted training loss,
+untouched test sets, threshold-free metrics (AUC, AUPRC) and the trivial
+all-positive floor.
+
+\item \textbf{Block diagram.} Figure~1 (\sect{3.1}).
+
+\item \textbf{Algorithm/pseudocode.} Algorithms~1 (graph and node views) and 2
+(cross-project evaluation), \sect{3.4}.
+
+\item \textbf{Ablation study.} \sect{4.5} (RQ4) and Table~\ref{tab:ablation}
+in the manuscript: edge-type removal and, in \sect{4.3}, removal of text,
+anonymisation, kind and operation type individually, plus capacity-matched
+controls. The thirty-two-type granularity run was not repeated and the claim
+based on it was withdrawn.
+
+\item \textbf{Comparison with related work.}
+\sect{4.6} (RQ5): re-implementations of the input representation of
+Devign/ReVeal (text plus node type), anonymised sequences, a Transformer over
+the node sequence, and a pretrained UniXcoder encoder (frozen, linear probe), on
+the same samples and folds; plus a function-size rule. These are comparisons of
+input representations inside one protocol, not reproductions of the published
+systems, and the manuscript says so.
+
+\item \textbf{Fold counts do not match; headline rests on 5 folds; the 32-vs-8
+comparison used one fold and a 5-fold run.}
+Fixed. Every condition of every table now runs on the same ten folds, and the
+analysis script refuses to merge result files with differing fold assignments.
+The thirty-two-type condition was not re-run and the claim is dropped; the
+sixteen-type comparison uses \numgranTOneSixFolds{} matched folds
+(\sect{4.5}).
+
+\item \textbf{Lexical baseline underspecified; add lexical+kind and
+anonymised+kind.}
+\sect{3.3} and Table~3 specify what leaves and internal nodes carry in each
+view. The lexical view gives every internal node one \texttt{<INTERNAL>} token,
+so it contains no node-type information; unseen tokens map to \texttt{<UNK>},
+and the dictionary is built from the training projects of each fold only (the
+earlier draft built it from all projects, contrary to what the text said; that
+is fixed). We added lexical$+\kappa$ (the Devign-style input) and
+anonymised$+\kappa$ and anonymised-only views, and positioned the work against
+prior node-type features (\sect{2.1}). This changed a conclusion: renaming
+identifiers is about as good as using grammar kinds (\sect{4.3}).
+
+\item \textbf{$\kappa{+}\phi$ never compared directly with $\kappa$.}
+Table~\ref{tab:direct} reports the paired contrast on both corpora:
+BigVul \cBvGgnnOpKindVKindD{} [\cBvGgnnOpKindVKindLo{}, \cBvGgnnOpKindVKindHi{}],
+DiverseVul \cDvGgnnOpKindVKindD{} [\cDvGgnnOpKindVKindLo{},
+\cDvGgnnOpKindVKindHi{}] AUC (GGNN). The DiverseVul point estimate the reviewer
+noticed was an artefact of comparing two separate gaps.
+
+\item \textbf{Architecture claim too broad.}
+Narrowed (\sect{4.4}): the manuscript now states that the evidence covers small
+networks trained from scratch. We added a Transformer over the node sequence
+(BigVul) and a frozen pretrained UniXcoder probe on both corpora. We did
+\emph{not} fine-tune LineVul or UniXcoder, because the machine used for the
+experiments has no GPU; this is stated as a limitation. The pretrained probe is
+competitive with the graph views, which is also reported.
+
+\item \textbf{Small, non-random samples; Android dominates; prevalence 0.054 vs
+8.8\%.}
+Samples are now uniform random (fixed seed) draws of 10{,}000 functions per
+corpus from the whole training split of the public mirrors, giving
+\numbigvulVuln{} and \numdiversevulVuln{} vulnerable functions
+(\sect{4.1.1}); we did not go larger because the grid already costs about two
+days of CPU time. Results are repeated without the dominant test project
+(\texttt{\numbigvulTopTestProject}, up to \numbigvulTopTestShareMax\% of a test
+fold) and per project (Table~\ref{tab:perproject}). The difference between
+overall and test prevalence is explained in \sect{4.1.1}: the two largest
+repositories, which have lower prevalence, are held train-only.
+
+\item \textbf{Validation corpora differ from experimental corpora; who
+annotated; second annotator; thin classes.}
+\sect{4.2} (RQ1) was redone. Callee names are now drawn from the experimental
+samples of BigVul and DiverseVul as well as Devign
+(\numdevignNNames{}, \numbigvulNNames{} and \numdiversevulNNames{} names). Two
+independent blind annotators labelled every name; agreement is Cohen's
+$\kappa=\numpooledKappa{}$ and disagreements were resolved by a third blind
+pass. \textbf{Important caveat:} all three annotators are language models; no
+human annotator was available for this revision. The original 212 Devign labels
+were assigned by a single, non-blind annotator and agree with the new consensus
+at $\kappa=\numdevignOrigKappa{}$. Per-class counts and Wilson intervals are
+reported, and the smallest class has \numminClassPositives{} positives, so thin
+classes remain thin. A human second annotator would strengthen this further.
+Macro precision against the consensus is \numpooledMacroP{}, lower than the
+$0.976$ of the first submission, which we now regard as optimistic.
+
+\item \textbf{Missing hyper-parameters; effect of the 200-node cap.}
+Table~\ref{tab:hparams} gives hidden size, learning rate, epochs, batch size,
+loss weighting, dictionary size, node cap and seeds; there is no early stopping
+and no validation split, and the seed is $1000+$fold. The cap truncates
+\numbigvulTruncPct\% of BigVul and \numdiversevulTruncPct\% of DiverseVul
+functions, and it affects the vulnerable class much more:
+\numbigvulTruncVulnPct\% of vulnerable against \numbigvulTruncBenignPct\% of
+benign functions in BigVul (Fisher $p$~\numbigvulTruncP{}). Vulnerable functions
+are simply longer, which led us to add a function-size baseline that, notably,
+outperforms every network (\sect{4.3}, \sect{4.6}).
+\end{enumerate}
+
+\section*{Changes that go beyond the reviewers' requests}
+\begin{itemize}[leftmargin=*]
+\item The dictionary leakage noted under point~10 was found while specifying
+the lexical baseline and corrected.
+\item The ``capacity control'' reported in the first submission had no code or
+data behind it; it was replaced by an actual experiment.
+\item The first submission's RQ1 labels were produced non-blind; they were
+replaced as described under point~14.
+\item The central claim was reframed. Grammar kinds are no longer presented as
+better than anonymised text, and the manuscript states plainly that all learned
+models trail a function-size rule.
+\end{itemize}
+\end{document}
