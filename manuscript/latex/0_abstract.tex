@@ -11,15 +11,17 @@ that were held out, over ten matched folds, with paired statistical tests.
 Performance is measured by AUC, the chance that a vulnerable function is ranked
 above a benign one (0.5 is random). Text read from scratch ranks functions
 close to random (AUC \mBvGgnnLexAuc{} and \mDvGgnnLexAuc{} with the first network). Renaming identifiers or using grammar
-kinds raises AUC by roughly 0.06 to 0.18 on both corpora and under four
-architectures, and the two work about equally well. Most of that gain,
+kinds raises AUC by roughly \numdeltaMin{} to \numdeltaMax{} on both corpora and under every
+architecture tried (three graph networks and a Transformer), and the two work
+about equally well. Much of that gain,
 however, disappears once function size is held fixed. The hand-built operation
 labels add nothing to the grammar kind, which we explain exactly: they are
-\numbigvulDeterminism\% predictable from it. Against reference points the
+\numdeterminismMin{}--\numdeterminismMax{}\% predictable from it. Against reference points the
 picture is modest. Every graph model scores below a rule that ranks functions
 only by their length (AUC \numbvSizeAuc{} and \numdvSizeAuc{}), and a frozen
-pretrained code model (UniXcoder with a linear probe) is competitive with the best graph views, so the
-result is best read as a warning about baselines. We therefore
+pretrained code model (UniXcoder with a linear probe) is comparable with the
+best graph views on one corpus, so the result is best read as a warning about
+baselines. We therefore
 report a controlled result about project vocabulary in learned detectors, not a
 stronger detector, and we release code, annotations (two language-model annotators) and scripts that regenerate
 every number.

@@ -6,14 +6,14 @@ detectors depends on what a node is told about the code. Under a controlled,
 project-disjoint protocol with ten matched folds, node descriptions that contain
 a project's vocabulary performed close to chance, while descriptions that do
 not (renamed identifiers, or the parser's grammar kinds) performed better by
-roughly 0.06 to 0.18 AUC on two corpora and four architectures. They performed
+roughly \numdeltaMin{} to \numdeltaMax{} AUC on two corpora and every architecture we ran. They performed
 about equally well, and the hand-built operation taxonomy that we expected to
 help added nothing to the grammar kind. We explained that null exactly: the
-taxonomy is \numbigvulDeterminism\% determined by the kind on BigVul.
+taxonomy is \numdeterminismMin{}--\numdeterminismMax{}\% determined by the kind, depending on the corpus.
 
 The same controls also limit the result. A rule that scores a function by its
-length outperforms every network we trained, the gain over text largely
-disappears within bins of function size, a frozen pretrained model is competitive with the best
+length has a higher mean AUC than every network we trained, the gain over text largely
+disappears within bins of function size, a frozen pretrained model is comparable with the best
 graph views, and the labelling function is less accurate class by class than
 our first, non-blind validation suggested. We therefore recommend that studies
 of learned vulnerability detectors report a function-size baseline and a

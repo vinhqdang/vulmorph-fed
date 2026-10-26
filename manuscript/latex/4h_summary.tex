@@ -5,8 +5,9 @@
     \item \textbf{Text read from scratch fails across projects.} AUC is
           \mBvGgnnLexAuc{} (BigVul) and \mDvGgnnLexAuc{} (DiverseVul), close to
           random.
-    \item \textbf{Removing project vocabulary helps by about 0.06 to 0.18 AUC,}
-          on both corpora and under four architectures, whether it is removed
+    \item \textbf{Removing project vocabulary helps by about \numdeltaMin{} to \numdeltaMax{} AUC,}
+          on both corpora and under every architecture we ran (the Transformer on
+          BigVul only), whether it is removed
           by anonymising identifiers or by using the grammar kind.
     \item \textbf{The grammar kind does not beat anonymised text;} its advantage
           is that it needs no preprocessing decision.
@@ -16,11 +17,12 @@
           question it answers (memory operation or not: precision
           \numpooledMemopP{}, recall \numpooledMemopR{}) but less accurate than
           first reported at the level of individual classes.
-    \item \textbf{Most of that gain is about function size.} Within bins of
+    \item \textbf{Much of that gain is about function size.} Within bins of
           function size the gain over text is not distinguishable from zero for
           the grammar kind in every corpus--architecture cell we ran, and within-bin AUC is \mBvGgnnKindSs{} (BigVul) and
           \mDvGgnnKindSs{} (DiverseVul).
-    \item \textbf{No view approaches a one-line size rule}, and a frozen
-          pretrained code model is competitive with the best from-scratch
-          graph views. Absolute performance is weak.
+    \item \textbf{A one-line size rule has the highest mean AUC}, and a frozen
+          pretrained code model is comparable with the vocabulary-free graph
+          views on BigVul and below them on DiverseVul. Absolute
+          performance is weak.
 \end{enumerate}

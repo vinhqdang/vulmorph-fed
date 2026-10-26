@@ -754,6 +754,9 @@ def generic_macros(a):
             macro(f"{tag}Hi", sf(st["hi"]))
             macro(f"{tag}P", pfmt(st["p_two_sided"]))
             macro(f"{tag}W", pfmt(st["wilcoxon_p"]))
+            macro(f"{tag}H", pfmt(st["p_holm"]))
+            macro(f"{tag}WH", pfmt(st["wilcoxon_p_holm"]))
+            macro(f"{tag}Wblk", pfmt(st["wilcoxon_p_blocks"]))
             macro(f"{tag}Wins", f"{st['wins']}/{st['n_folds']}")
             if "without_android" in st:
                 w = st["without_android"]
@@ -768,6 +771,40 @@ def generic_macros(a):
                 macro(f"{tag}SsD", sf(st["diff"]))
                 macro(f"{tag}SsLo", sf(st["lo"]))
                 macro(f"{tag}SsHi", sf(st["hi"]))
+
+
+def range_macros(a):
+    """Ranges quoted in the abstract, introduction and conclusion."""
+    deltas, lex = [], []
+    for corpus in ("bigvul", "diversevul"):
+        cells, _, _ = merged(corpus)
+        for key, c in cells.items():
+            if key.startswith("lexical|") and "@" not in key:
+                lex.append(float(np.mean(c["auc"])))
+        for mkey, st in (a.get(corpus, {}).get("auc", {}) or {}).items():
+            bb, rest = mkey.split("|")
+            if "@" in rest or not rest.endswith("~lexical"):
+                continue
+            if rest.split("~")[0] in ("kind", "op_kind", "anon", "anon_kind"):
+                deltas.append(st["diff"])
+    if deltas:
+        macro("deltaMin", f"{min(deltas):.2f}")
+        macro("deltaMax", f"{max(deltas):.2f}")
+    ss = []
+    for corpus in ("bigvul", "diversevul"):
+        cells, _, _ = merged(corpus)
+        for key, c in cells.items():
+            if "@" in key or key.split("|")[1] in ("rule", "probe"):
+                continue
+            v = [x for x in c.get("auc_ss", []) if x == x]
+            if v:
+                ss.append(float(np.mean(v)))
+    if ss:
+        macro("ssMin", f"{min(ss):.2f}")
+        macro("ssMax", f"{max(ss):.2f}")
+    if lex:
+        macro("lexAucMin", f"{min(lex):.2f}")
+        macro("lexAucMax", f"{max(lex):.2f}")
 
 
 def architecture_macros(a):
@@ -787,6 +824,7 @@ def main():
     a = load_analysis()
     architecture_macros(a)
     generic_macros(a)
+    range_macros(a)
     tables = {
         "tab_corpora": table_corpora,
         "tab_node_dist": table_node_dist,

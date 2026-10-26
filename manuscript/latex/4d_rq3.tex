@@ -2,7 +2,8 @@
 \label{sec:rq_generality}
 
 \emph{In short:} the benefit of dropping project vocabulary holds on both
-corpora and under all four architectures we tried; the choice of architecture
+corpora and under every architecture we tried (the Transformer on BigVul
+only); the choice of architecture
 moves AUC by much less than the choice of node view, but only within the
 family of small models we can train from scratch.
 
@@ -36,14 +37,15 @@ that representation matters more than architecture on the strength of three
 message-passing networks whose AUCs differed by $0.027$. That evidence cannot
 support a claim about architecture in general, and we now state what it does
 support. Under a fixed vocabulary-free view the three message-passing
-networks span \numbvSpreadKind{} AUC (BigVul, grammar kind) and
-\numdvSpreadKind{} (DiverseVul); under the text view they span
-\numbvSpreadLex{} and \numdvSpreadLex{}. Those ranges are not larger than the
-representation effect in the same corpus, so within this family the node view is
-at least as consequential as the backbone. The Transformer adds a different
-inductive bias (no edges); its AUC is \mBvTfLexAuc{} with text and \mBvTfKindAuc{}
-with the grammar kind, so the benefit of the vocabulary-free view is not
-specific to message passing. What our evidence cannot show is that no
-\emph{pretrained} or very large architecture would close the gap by itself,
-and Section~\ref{sec:rq_reference} shows that a frozen pretrained code model
-reading raw source is competitive with our vocabulary-free graphs.
+networks (GGNN, GAT, GIN) span \numbvSpreadKind{} AUC on BigVul with the
+grammar kind and \numdvSpreadKind{} on DiverseVul; under the text view they
+span \numbvSpreadLex{} and \numdvSpreadLex{}. The widest of these ranges is
+smaller than the smallest gain of any vocabulary-free view over text
+(\numdeltaMin{}), so within this family the node view is a larger lever than
+the backbone. The Transformer adds a different inductive bias (no edges); its
+AUC is \mBvTfLexAuc{} with text and \mBvTfKindAuc{} with the grammar kind, so
+the benefit of the vocabulary-free view is not specific to message passing.
+What our evidence cannot show is that no \emph{pretrained} or much larger
+architecture would close the gap by itself, and Section~\ref{sec:rq_reference}
+shows that a frozen pretrained code model reading raw source is comparable with
+the vocabulary-free graph views on BigVul.

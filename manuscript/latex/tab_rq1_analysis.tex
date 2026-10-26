@@ -6,8 +6,8 @@
 \caption{RQ1: $\phi$ as a static analysis, scored against the consensus of two
 blind annotators and a third pass on disagreements, pooled over the three
 corpora. Brackets are 95\% Wilson intervals; tp/fp/fn are counts of distinct
-callee names. The final column group reports the question $\phi_8$ actually
-answers (memory or string operation vs. not).}
+callee names. The last row scores the question $\phi_8$ actually answers
+(memory or string operation vs. not).}
 \label{tab:rq1_analysis}
 \begin{tabular}{lrrr}
 \toprule
@@ -33,14 +33,14 @@ Memory operation (any of the 9) & 0.94 & 0.94 & 293/19/19 \\
 \begin{table}[t]
 \centering
 \caption{RQ1: annotation agreement and per-corpus scores. Agreement and
-Cohen's $\kappa$ are between the two blind annotators before adjudication;
+Cohen's $\kappa_{C}$ are between the two blind annotators before adjudication;
 precision and recall are macro-averaged over classes against the consensus; the
 last column is precision / recall for ``memory or string operation''.}
 \label{tab:rq1_agreement}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Corpus & Names & Agreement & $\kappa$ & Macro P & Macro R & Memory-op P / R \\
+Corpus & Names & Agreement & $\kappa_{C}$ & Macro P & Macro R & Memory-op P / R \\
 \midrule
 Devign & 212 & 0.92 & 0.89 & 0.90 & 0.87 & 0.90 / 0.93 \\
 BigVul & 227 & 0.94 & 0.93 & 0.90 & 0.87 & 0.95 / 0.95 \\

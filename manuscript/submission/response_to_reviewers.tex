@@ -48,10 +48,14 @@ also changed with the revision.
 
 \item \textbf{No statistical analysis/testing.}
 \sect{4.5} (statistical treatment): every paired comparison now reports the
-mean per-fold difference, an exact two-sided Wilcoxon signed-rank test over the
-ten folds, and a cluster bootstrap over held-out projects (95\% interval,
-$p$, and stability across ten bootstrap seeds), with Holm-adjusted $p$-values
-stored for each family of contrasts. A chi-square test is not appropriate for
+mean per-fold difference, a cluster bootstrap over held-out projects (95\%
+interval and $p$; a project is one cluster however many folds it appears in),
+an exact two-sided Wilcoxon signed-rank test over the ten folds and a second one
+over five repeat-averaged blocks (the two repeats of the split are not
+independent, see point~9), and Holm-adjusted $p$-values for each family of
+contrasts. The bootstrap is the primary inference; the fold-level Wilcoxon tests
+do not survive Holm adjustment over a family of this size, which the manuscript
+states. A chi-square test is not appropriate for
 our data (paired scores, not counts); for the one count-based question, whether
 truncation depends on the label, we use Fisher's exact test.
 
@@ -81,8 +85,14 @@ systems, and the manuscript says so.
 
 \item \textbf{Fold counts do not match; headline rests on 5 folds; the 32-vs-8
 comparison used one fold and a 5-fold run.}
-Fixed. Every condition of every table now runs on the same ten folds, and the
-analysis script refuses to merge result files with differing fold assignments.
+Fixed, with a disclosed limitation. Every condition of every table now runs on
+the same ten folds, and the analysis script refuses to merge result files with
+differing fold assignments. The ten folds are two repeats of a five-way
+project-level split; because projects are dealt out largest first, the largest
+projects fall into the same fold index in both repeats, so the folds are better
+described as five folds with partial replication. The manuscript says so (\sect{4.4}),
+the bootstrap treats each project as one cluster, and a Wilcoxon test over the
+five repeat-averaged blocks is reported.
 The thirty-two-type condition was not re-run and the claim is dropped; the
 sixteen-type comparison uses \numgranTOneSixFolds{} matched folds
 (\sect{4.11}).

@@ -16,25 +16,29 @@ Table~\ref{tab:rq2_representation}.
 
 \paragraph{A pretrained code model.} UniXcoder~\cite{guo2022unixcoder} with a frozen
 encoder and a linear probe on the raw source (identifiers included) reaches AUC
-\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul the
-probe is higher than the GNN with grammar kinds, but not significantly (the
-paired difference of $\kappa$ against it is \cBvGgnnKindVUnixD{},
-\cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}); on DiverseVul it is below (\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to
-\cDvGgnnKindVUnixHi{}). Two lessons follow. First, ``text hurts cross-project
-transfer'' is a statement about token embeddings learned from scratch on a few
-thousand functions, not about text in general: a model that has seen billions
-of code tokens before can use identifiers and still transfer. Second, a
-vocabulary-free GNN trained from scratch is competitive with, not clearly
-better than, a frozen pretrained model. The probe is frozen and untuned; a
-fine-tuned LineVul-style model~\cite{fu2022linevul} would probably be stronger,
-and we have not run one because this machine has no GPU.
+\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul it is
+statistically indistinguishable from the vocabulary-free graph views (the paired
+difference of $\kappa$ against it is \cBvGgnnKindVUnixD{} with the GGNN,
+\cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}, and similar for the other
+backbones); on DiverseVul the grammar-kind GNNs are better (GGNN
+\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to \cDvGgnnKindVUnixHi{}; GIN
+\cDvGinKindVUnixD{}; GAT \cDvGatKindVUnixD{}, not significant). Two lessons
+follow. First, ``text hurts cross-project transfer'' is a statement about token
+embeddings learned from scratch on a few thousand functions, not about text in
+general: a model that has seen billions of code tokens before can use
+identifiers and still transfer about as well. Second, a vocabulary-free GNN
+trained from scratch is comparable with, not clearly better than, a frozen
+pretrained model. The probe is frozen and untuned; a fine-tuned LineVul-style
+model~\cite{fu2022linevul} would probably be stronger, and we have not run one
+because this machine has no GPU.
 
-\paragraph{The size rule beats everything.} Scoring a function by its node count
-alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),
-above every network in this study including the pretrained probe on BigVul.
-The paired differences are in the last rows of the analysis files
-(e.g.\ $\kappa$ against size: \cBvGgnnKindVSizeD{}, \cBvGgnnKindVSizeLo{} to
-\cBvGgnnKindVSizeHi{} on BigVul). We read this as a caution about the whole
+\paragraph{A size rule has the highest mean AUC.} Scoring a function by its node
+count alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),
+the highest mean AUC in this study. The paired differences are significant under
+the project-cluster bootstrap for most networks (e.g.\ $\kappa$ with the GGNN
+against size: \cBvGgnnKindVSizeD{}, \cBvGgnnKindVSizeLo{} to
+\cBvGgnnKindVSizeHi{} on BigVul) but not for all (for example the GIN with
+$\kappa{+}\phi$ on BigVul). We read this as a caution about the whole
 benchmark family: under project-disjoint evaluation, much of what these
 corpora reward is a length prior, and absolute AUCs of $0.6$ to $0.7$ should not
 be read as evidence of vulnerability understanding.

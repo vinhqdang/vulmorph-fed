@@ -6,7 +6,7 @@
 \caption{Hyper-parameters. All values are fixed in advance and shared by every
 compared system; none is tuned on any fold.}
 \label{tab:hparams}
-\begin{tabular}{ll}
+\begin{tabular}{lp{0.62\linewidth}}
 \toprule
 Item & Value \\
 \midrule
@@ -19,7 +19,7 @@ Batch size & 64 \\
 Epochs & 10 (fixed; no early stopping, no validation split) \\
 Loss & binary cross-entropy, positive weight $=\min(n_{\text{neg}}/n_{\text{pos}}, 20)$ \\
 Seeds & initialisation and shuffling seed $1000+k$ for fold $k$, shared by all systems \\
-Lexical dictionary & 10{,}000 most frequent training-fold tokens with count $\ge 2$ \\
+Lexical dictionary & up to 9{,}999 most frequent training-fold tokens with count $\ge 2$, plus \texttt{<UNK>} \\
 Node cap & 200 named AST nodes (pre-order) \\
 Sample & 10,000 functions per corpus, uniform at random, seed 0 \\
 Folds & 5$\times$2 = 10 project-level folds \\

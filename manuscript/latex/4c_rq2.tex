@@ -4,7 +4,7 @@
 \emph{In short:} on projects never seen in training, a network that reads
 identifier text from scratch performs close to chance; removing the project
 vocabulary (by renaming identifiers or by using grammar kinds) lifts AUC by
-roughly 0.06 to 0.18; and the choice among the vocabulary-free views matters
+roughly \numdeltaMin{} to \numdeltaMax{}; and the choice among the vocabulary-free views matters
 much less than the choice to leave the vocabulary out.
 
 Everything except the node view is held fixed: graph, backbone (GGNN), depth,
@@ -16,7 +16,7 @@ folds, and Table~\ref{tab:direct} the direct paired contrasts between views.
 
 \paragraph{Text read from scratch does not transfer.} With the lexical view
 the GGNN reaches AUC \mBvGgnnLexAuc{} on BigVul and \mDvGgnnLexAuc{} on
-DiverseVul, close to the $0.5$ of a random ranking. The cause is visible in the
+DiverseVul, close to the $0.5$ of a random ranking (across all lexical cells, \numlexAucMin{} to \numlexAucMax{}). The cause is visible in the
 mechanism: after the per-fold cut, tokens that occur only in held-out projects
 map to \texttt{<UNK>}, and what remains of the vocabulary correlates with
 project identity rather than with the weakness.
@@ -31,6 +31,12 @@ DiverseVul. Renaming identifiers while keeping all other token text
 (\cBvGgnnAnonVLexLo{} to \cBvGgnnAnonVLexHi{}) on BigVul. The effect is large
 relative to the fold-to-fold spread of the lexical view
 (standard deviation \numbvGgnnLexicalAucStd{} AUC; Table~\ref{tab:rq2_representation}).
+After Holm adjustment over the whole family of contrasts on BigVul the
+bootstrap $p$ of the $\kappa$-versus-text contrast remains
+\cBvGgnnKindVLexH{}; the fold-level Wilcoxon test, whose smallest possible $p$
+is $0.002$ before adjustment, reaches \cBvGgnnKindVLexWH{} after it, and
+\cBvGgnnKindVLexWblk{} on the five repeat-averaged differences, so that test
+alone cannot carry the claim; the cluster bootstrap does.
 
 \paragraph{The grammar kind is not better than anonymised text.} This is the
 conclusion that changed most since the first version of this work. Reviewing it
@@ -41,9 +47,11 @@ anonymised$+\kappa$ is \cBvGgnnKindVAnonKindD{}
 (\cBvGgnnKindVAnonKindLo{} to \cBvGgnnKindVAnonKindHi{}) on BigVul and
 \cDvGgnnKindVAnonKindD{} (\cDvGgnnKindVAnonKindLo{} to
 \cDvGgnnKindVAnonKindHi{}) on DiverseVul
-(Table~\ref{tab:direct}). Identifier renaming, which is what sequence-based
+(Table~\ref{tab:direct}). The same contrast against anonymised text alone (run on BigVul only) is
+\cBvGgnnKindVAnonD{} (\cBvGgnnKindVAnonLo{} to \cBvGgnnKindVAnonHi{}). All
+intervals include zero. Identifier renaming, which is what sequence-based
 detectors have long done as preprocessing, therefore recovers essentially the
-whole benefit. What the grammar kind offers is the same effect without any
+whole benefit, to within the precision of this study. What the grammar kind offers is the same effect without any
 preprocessing choice, not a better effect.
 
 \paragraph{Adding node type to text helps, but less than removing the text.}
@@ -65,7 +73,12 @@ Wilcoxon $p$ \cBvGgnnOpKindVKindW{}) on BigVul and \cDvGgnnOpKindVKindD{}
 (\cDvGgnnOpKindVKindLo{} to \cDvGgnnOpKindVKindHi{}) on DiverseVul. The
 earlier submission inferred ``no benefit'' from the two views' separate gaps
 to the lexical baseline, which is not a test; here it is tested directly, and
-the interval contains zero in both corpora. $\phi$ alone ($\phi_8$) is
+the interval contains zero in both corpora. On DiverseVul the fold-level
+Wilcoxon test gives $p=\cDvGgnnOpKindVKindW{}$ (\cDvGgnnOpKindVKindWins{} folds
+favour $\kappa{+}\phi$), but the project-level interval contains zero and the
+repeat-averaged test cannot reach 5\%, so we claim no effect; with the GIN the
+differences are \cBvGinOpKindVKindD{} (BigVul) and \cDvGinOpKindVKindD{}
+(DiverseVul), also without a supported effect. $\phi$ alone ($\phi_8$) is
 \cBvGgnnOpVLexD{} above text and \cBvGgnnKindVOpD{} below $\kappa$
 (\cBvGgnnKindVOpLo{} to \cBvGgnnKindVOpHi{}); the second difference is
 estimated imprecisely and we do not claim it. Section~\ref{sec:rq_why}
@@ -81,7 +94,7 @@ if anything, better. A capacity advantage therefore does not explain the
 result. (An earlier version of this paper reported a similar check without any
 code or data behind it; it has been replaced by this experiment.)
 
-\paragraph{Controlling for function size: most of the gain disappears.}
+\paragraph{Controlling for function size: much of the gain disappears.}
 Vulnerable functions are longer (Section~\ref{sec:corpora}), so a detector can
 gain AUC from length alone. A rule that scores each function by its node count
 reaches AUC \numbvSizeAuc{} on BigVul and \numdvSizeAuc{} on DiverseVul (second
@@ -97,13 +110,18 @@ from zero; the anonymised view keeps a modest gain of \cBvGgnnAnonVLexSsD{}
 (\cBvGgnnAnonVLexSsLo{} to \cBvGgnnAnonVLexSsHi{}). On DiverseVul the within-bin
 AUC of text and of the grammar kind are \mDvGgnnLexSs{} and \mDvGgnnKindSs{}
 (difference \cDvGgnnKindVLexSsD{}, \cDvGgnnKindVLexSsLo{} to
-\cDvGgnnKindVLexSsHi{}), and no GGNN view differs from text once size is held fixed. Across the
+\cDvGgnnKindVLexSsHi{}), and no within-size difference between a GGNN view and text on DiverseVul
+exceeds 0.03 in absolute value or is significant. Across the
 corpus--architecture cells of Table~\ref{tab:rq3_generality} the grammar kind is
-never significantly better than text within size bins (for GAT on DiverseVul it
-is significantly worse). In other words, the large gap between
-vocabulary-free views and text in the overall AUC is mostly, and on DiverseVul
-entirely, a gap in the ability to represent how large or complex a function is;
-within a size bin every view ranks functions only slightly better than chance.
+never significantly better than text within size bins (it is not significantly better
+under any architecture, and the estimates for GAT and GIN are small). In other words, much of the large gap between
+vocabulary-free views and text in the overall AUC, and on DiverseVul all of it
+that we can measure, is a gap in the ability to represent how large or complex a
+function is;
+within a size bin the AUC of every view in the main grid lies between
+\numssMin{} and \numssMax{}, that is, in a narrow band around chance. The
+intervals are wide, so a modest within-size gain cannot be excluded for the
+grammar kind, and we state only that it is not demonstrated.
 The vocabulary-free views plausibly help because node-kind counts, unlike text
 from a mostly out-of-vocabulary dictionary, let the pooled representation
 reflect function size; we have not tested that mechanism directly.

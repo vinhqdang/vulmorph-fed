@@ -33,11 +33,12 @@ Independent review, and the extra experiments it motivated, changed that
 conclusion. With graph, network and training held fixed and evaluation always
 on projects not seen in training, text read from scratch performs close to
 chance, and any of the three project-independent descriptions lifts AUC by
-roughly 0.06 to 0.18 on both corpora we use. But renaming identifiers works
+roughly \numdeltaMin{} to \numdeltaMax{} on both corpora we use. But renaming identifiers works
 about as well as using grammar kinds, the hand-built operation labels add
-nothing to the grammar kind, most of the gain disappears when function size is
+nothing to the grammar kind, much of the gain disappears when function size is
 held fixed, every network trails a rule that scores a function only by its
-length, and a frozen pretrained code model is competitive with them.
+length, and a frozen pretrained code model is comparable with them on one
+corpus.
 The contribution is therefore a careful, partly negative empirical result and
 the methodology behind it, not a new detector.
 
@@ -58,8 +59,8 @@ the methodology behind it, not a new detector.
           on the experimental corpora, against two blind language-model
           annotators with measured agreement (Section~\ref{sec:rq_analysis}).
     \item \textbf{Controls that temper the claims}: AUC within bins of function
-          size, a function-size rule, and a pretrained model that scores at or
-          above the graph models (Sections~\ref{sec:rq_representation}
+          size, a function-size rule, and a pretrained model that is comparable
+          with the graph models on one corpus (Sections~\ref{sec:rq_representation}
           and~\ref{sec:rq_reference}).
 \end{itemize}
 
