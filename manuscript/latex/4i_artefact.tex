@@ -7,11 +7,12 @@ reads source text can use this; our graph models cannot, because the parser
 discards formatting.
 
 \paragraph{How it was found.} We fine-tuned a LineVul-style detector
-(CodeBERT~\cite{fu2022linevul} on the raw function text, \numrBvLinevulFolds{} of
-ten folds completed at the time of writing for BigVul) as the stronger
+(CodeBERT~\cite{fu2022linevul} fine-tuned on the raw function text, on a GPU
+rented for the purpose, with the same ten project-level folds) as the stronger
 pretrained reference that reviewers of an earlier version asked for. It scored
-a mean AUC of \rBvLinevulAuc{} on BigVul, far above every graph model, which is
-implausible for cross-project detection and prompted a search for a shortcut.
+a mean AUC of \rBvLinevulAuc{} on BigVul (AUPRC \rBvLinevulAuprc{}), far above
+every graph model, which is implausible for cross-project detection and
+prompted a search for a shortcut.
 
 \paragraph{The artefact.} \numartBvTrailVuln\% of the vulnerable BigVul functions
 in our sample contain at least one line that ends in trailing whitespace,
@@ -36,10 +37,19 @@ dropped and every token separated by one space, so indentation, line breaks,
 trailing whitespace, tabs and comments are gone while identifiers, literals and
 operators are unchanged (\numartBvTrailNormAny\% of normalised functions contain
 trailing whitespace). Table~\ref{tab:baselines} shows that fine-tuned CodeBERT
-falls from \rBvLinevulAuc{} on raw source to \rBvLinevulNormAuc{} on normalised
-source (paired difference \xBvLinevulVLinevulNormD{}, \xBvLinevulVLinevulNormLo{}
-to \xBvLinevulVLinevulNormHi{}), and the frozen UniXcoder probe from
-\rBvUnixAuc{} to \rBvUnixNormAuc{} (\xBvUnixVUnixNormD{}).
+falls from \rBvLinevulAuc{} on raw BigVul source to \rBvLinevulNormAuc{} on
+normalised source (paired difference \xBvLinevulVLinevulNormD{}, 95\% interval
+\xBvLinevulVLinevulNormLo{} to \xBvLinevulVLinevulNormHi{}; AUPRC from
+\rBvLinevulAuprc{} to \rBvLinevulNormAuprc{}), and the frozen UniXcoder probe from
+\rBvUnixAuc{} to \rBvUnixNormAuc{} (\xBvUnixVUnixNormD{}). On DiverseVul, where the
+artefact is much weaker, the corresponding falls are from \rDvLinevulAuc{} to
+\rDvLinevulNormAuc{} and from \rDvUnixAuc{} to \rDvUnixNormAuc{}. Even after
+normalisation, fine-tuned CodeBERT reaches only \rBvLinevulNormAuc{} on BigVul
+and \rDvLinevulNormAuc{} on DiverseVul, against \numbvSizeAuc{} and
+\numdvSizeAuc{} for the function-size rule (BigVul paired difference
+\xBvLinevulNormVSizeD{}, \xBvLinevulNormVSizeLo{} to \xBvLinevulNormVSizeHi{}): a
+fine-tuned 125-million-parameter model reading the identifiers does not clearly
+beat a count of syntax-tree nodes.
 
 \paragraph{What this means for the rest of the paper.} First, the graph models
 are not affected: the grammar kind, the anonymised and the operation views are
