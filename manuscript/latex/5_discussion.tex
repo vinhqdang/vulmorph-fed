@@ -1,107 +1,90 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\subsection{Why the abstraction transfers}
-The result is consistent with a simple account. A lexical model's features are
-drawn from the vocabulary of the projects it trained on; at test time on an
-unseen repository, much of its input is out-of-vocabulary, and what remains
-correlates with project identity rather than with the weakness. The abstracted
-model's alphabet is fixed by the C grammar and the operation taxonomy, so its
-input distribution is, by construction, the same on every project. The
-stability we observe supports this: fold-to-fold AUC deviation is roughly half
-that of the lexical model, which is what one expects if lexical variance is
-driven by accidental vocabulary overlap between train and test.
+\subsection{What the evidence supports}
+Three statements survive every control we ran. First, a graph network that
+learns embeddings of project-specific text from scratch transfers to new
+projects barely better than chance. Second, any description of nodes that does
+not contain that vocabulary does substantially better, by roughly 0.06 to 0.17
+AUC, on both corpora and under four architectures. Third, among the
+vocabulary-free descriptions the differences are small: renaming identifiers is
+about as good as the grammar kind, and an engineered operation taxonomy adds
+nothing to the grammar kind. The first two are consistent with a simple
+account: a lexical model's input at test time is largely out-of-vocabulary, and
+the part that is in vocabulary correlates with project identity rather than with
+the weakness. We have not isolated the mechanism experimentally (for instance
+by varying the out-of-vocabulary rate while holding everything else fixed), so
+this remains an interpretation.
 
-This also explains why the effect is larger on ranking (AUC) than at the top
-of the ranking (AUPRC). The abstraction supplies a consistent notion of
-\emph{what kind of operation} a node performs, which is enough to order
-functions by risk; it discards the specific API, which is often what
-distinguishes a genuinely dangerous call from a benign one of the same type.
+\subsection{What it does not show}
+The results do not show that grammar kinds, or any node description, make
+vulnerability detection work across projects. A rule that ranks functions by
+their node count beats every network in the study (Section~\ref{sec:rq_reference}),
+and the gains of the vocabulary-free views over text are only partly
+independent of function size (Section~\ref{sec:rq_representation}). Nor do they
+show that text is harmful in general: a frozen pretrained code model reading raw
+source is competitive with the best graph views. The honest reading is that the
+standard from-scratch lexical baseline of graph-based detectors is weak under
+project-disjoint evaluation, so improvements over it are cheap and should be
+compared with the stronger baselines listed above.
 
-\subsection{Embedding capacity control}
-An important potential confound is embedding capacity: the grammar kind alphabet $\kappa$
-has $|K| = 364$ rows, whereas the coarsest operation taxonomy $\phi_8$ has only $9$ rows
-(including \texttt{UNKNOWN}). One might ask whether $\kappa$ outperforms $\phi$ simply
-because its embedding table contains more parameters. We tested this explicitly by
-linearly projecting the $364$-dimensional kind embeddings down to $9$ dimensions before
-feeding them to the GNN, and separately by expanding the taxonomy embedding dimension
-to match parameter counts. In both cases, the performance gap between $\kappa$ and $\phi$
-remains unchanged ($\pm 0.003$ AUC). The advantage of $\kappa$ is semantic --- its total
-coverage of the programming language grammar --- not parameter capacity.
+\subsection{Evaluating an abstraction before crediting it}
+For a languages audience the methodological point is the more portable one. A
+proposed abstraction over a parse tree should be examined on two fronts that
+are rarely both reported. As a program analysis, it should be scored against
+annotated ground truth with agreement and uncertainty reported, as in
+Section~\ref{sec:rq_analysis}; the first version of this work did that with a
+single, non-blind annotator and reported an accuracy higher than the blind
+protocol supports. As a representation, it should be compared with the parser's
+own alphabet through the two conditional entropies of Section~\ref{sec:rq_why},
+which cost minutes and would have predicted our null from the definition of the
+abstraction. A third check is cheap and is the one we most nearly omitted: ask
+whether a function-length rule does as well.
 
-\subsection{Fit for programming languages and compilers}
-For a programming languages venue, the study offers a clear lesson regarding program
-abstractions. A proposed abstraction function over a parse tree should be evaluated on two
-fronts: as a static analysis (measuring precision/recall against documented semantics)
- and as a representation (measuring information loss against the parser's own grammar).
-Our information-theoretic diagnostic $H(\phi \mid \kappa)$ is cheap to compute and
-provides immediate feedback on whether an engineered taxonomy adds novel signal or merely
-coarsens what the language grammar already supplies.
-
-\subsection{Validating an abstraction is not optional}
-The most transferable methodological point concerns RQ1. Program abstractions
-are routinely introduced as preprocessing and never evaluated: a taxonomy is
-listed, a mapping asserted, and downstream accuracy is reported. Our
-experience argues this is unsafe. Two defects in our own mapping --- substring
-matching that classified writes and predicates as memory operations, and a
-formatter class that absorbed 655 stream-I/O call sites --- were invisible to
-every downstream metric and were caught only by annotating call sites and
-computing per-class precision. Both would have inflated the very statistic we
-use to motivate the taxonomy.
-
-The cost is modest: a few hundred annotated names. We would encourage the
-practice as a default for work that introduces a code abstraction, in the same
-way that a static analysis is expected to report precision and recall.
-
-\subsection{Negative results}
-The two nulls this paper does report --- the operation taxonomy as a
-representation, and its granularity --- are measured under the protocol of
-Section~\ref{sec:protocol} and are the substance of
-Sections~\ref{sec:rq_representation} and~\ref{sec:rq_negative}. We report them
-because the alternative, keeping a component a paper names but its data does
-not support, is how unreproducible results enter the literature, and because
-each null is informative: together they locate the effect in the grammar
-alphabet rather than in the abstraction built on top of it.
-
-We separately implemented a learned edge-weighting module and an
-affinity-weighted federated aggregation. We make \emph{no} empirical claim
-about either. Their numbers came from a pipeline in which the analysis
-validation of Section~\ref{sec:rq_analysis} later exposed defects, and we
-withdrew rather than re-ran them; neither is part of the system evaluated here.
-Stating that they ``did not help'' would assert a measurement we no longer
-stand behind, which is why this paper does not say it.
-
-The taxonomy-refinement result has a concrete explanation worth recording. The
-memory-operation class fires on under $1\%$ of AST nodes, so subdividing it
-into allocation, release, copy and set cannot shift an aggregate metric
-however well-motivated the distinction is semantically. A finer taxonomy would
-need to be paired with an evaluation that weights the nodes it refines.
-
-\subsection{Limitations}
+\subsection{Threats to validity and limitations}
 \label{sec:limitations}
 
-\textbf{Graph fidelity.} Our graphs are tree-sitter syntax trees with sibling
-and def-use approximation edges, not Code Property Graphs: interprocedural
-control flow and points-to-precise dependence are absent. Every system we
-compare consumes the same graphs, so the comparison is internally fair, but
-the absolute ceiling is bounded by this choice.
+\textbf{Graph fidelity.} Our graphs are tree-sitter syntax trees with sibling and
+approximate def-use edges, not Code Property Graphs. Every compared system
+consumes the same graph, so the comparison is internally fair, but absolute
+performance is bounded by this choice and conclusions may differ with richer
+graphs.
 
-\textbf{Scale and language.} Experiments use 8{,}000 functions per corpus,
-compact models, and C only. The abstraction is specified over a tree-sitter
-grammar and is therefore instantiable for other languages, but we have not
-demonstrated that, and a taxonomy validated on C should not be assumed to
-transfer to, say, Rust's ownership discipline.
+\textbf{Sample, truncation and length.} Each corpus is a uniform random sample
+of about 10{,}000 functions (roughly \numbigvulVuln{} and \numdiversevulVuln{}
+vulnerable functions). The 200-node cap truncates a quarter or fewer of
+functions overall but far more of the vulnerable ones (Table~\ref{tab:corpora}),
+so what lies beyond the cap is invisible to every system. Because vulnerable
+functions are longer, any detector may partly learn length; we measured this
+rather than removing it.
 
-\textbf{Sampling and concentration.} Corpus samples are taken in file order
-rather than at random, and project mass is concentrated (Chrome and
-\texttt{linux} supply about two thirds of BigVul). We hold those projects
-train-only and report it, but a differently constructed sample could yield
-different absolute numbers.
+\textbf{Training budget and tuning.} Every system trains for the same fixed
+number of epochs with hyper-parameters chosen in advance and not tuned on any
+fold (Table~\ref{tab:hparams}). A longer or tuned schedule could change absolute
+numbers, in particular for the lexical view, although fixing the budget across
+views is what makes the comparison controlled. Each fold uses a single
+initialisation seed shared across systems, so run-to-run variance within a fold
+is not estimated; the paired tests treat folds, not seeds, as the unit.
 
-\textbf{Label noise.} We inherit the labels of the underlying corpora, whose
-accuracy is itself contested in the literature that produced them.
+\textbf{Dependence between folds.} Folds from the second repeat reuse some test
+projects of the first, so the ten folds are not independent. The cluster
+bootstrap resamples projects and the Wilcoxon test is reported alongside it, but
+the effective sample size is smaller than ten.
 
-\textbf{Effect size.} The AUPRC improvement is small and its interval's lower
-bound is at zero. The claim we defend is that the representation matters more
-than the architecture choices it is usually compared against --- not that
-cross-project detection is solved.
+\textbf{Annotation.} The callee validation uses two blind annotators and a
+third pass on disagreements, but all three are language models; no human
+labelled the sheets. The original, single-annotator labels agree with the new
+consensus at Cohen's $\kappa$ of \numdevignOrigKappa{}. A human second
+annotator remains desirable, and the released sheets allow one to be added.
+Several classes have few positive names, so their intervals are wide.
+
+\textbf{Label noise and language.} We inherit the labels of the corpora, whose
+accuracy is contested in the literature that produced them, and we study C only.
+
+\textbf{Pretrained reference.} The UniXcoder result is a frozen encoder with a
+linear probe on 256 tokens. It is a reference point rather than a tuned,
+fine-tuned detector.
+
+\textbf{Earlier claims withdrawn.} The first submission also reported federated
+and privacy experiments and a learned edge mask. They are not part of this
+work, and nothing here supports or refutes them.

@@ -1,86 +1,70 @@
 \section{Introduction}
 
-Automated vulnerability detection has become a proving ground for graph
-learning: a function is parsed into a graph, a network is trained over it, and
-detection accuracy is reported. Progress is usually claimed architecturally ---
-a different message-passing scheme, an attention variant, a language-model
-hybrid. Yet replication studies keep reaching the same conclusion: whatever the
-architecture, performance collapses on projects the model has not
-seen~\cite{chakraborty2022deep, chakraborty2024realvul, ding2025primevul}.
+A learned vulnerability detector reads a function and outputs a score for how
+likely it is to contain a vulnerability. Many such detectors turn the function
+into a graph (its syntax tree plus a few extra links) and train a neural
+network over that graph. They report good accuracy when the test functions come
+from the same software projects as the training functions, and much worse
+accuracy on projects they have not seen~\cite{chakraborty2022deep,
+chakraborty2024realvul, ding2025primevul}. Progress is usually claimed through
+new network architectures. This paper looks at a simpler factor that most
+papers hold fixed: \emph{what each node of the graph tells the network about the
+code.}
 
-This paper examines a factor that most of that work holds constant: what a
-node in the graph actually \emph{carries}. Nearly all graph-based detectors
-embed the node's lexical content --- an identifier, an API name, a literal.
-That vocabulary is a property of a codebase, not of a language. FFmpeg
-allocates with \texttt{av\_malloc}, GLib with \texttt{g\_malloc}, the Linux
-kernel with \texttt{kmalloc}. A model whose features come from one project's
-vocabulary faces largely out-of-vocabulary input on another. The mechanism it
-must learn --- an allocation whose size is computed, an indexed write, a
-missing bound --- is shared; the tokens denoting it are not.
+\paragraph{Four ways to describe a node.} Take the node for a call such as
+\texttt{av\_malloc(n)}. Most detectors describe it by its \textbf{lexical
+token}, the text as written, here \texttt{av\_malloc}. That text belongs to one
+project (FFmpeg allocates with \texttt{av\_malloc}, the Linux kernel with
+\texttt{kmalloc}), so a network that learns from it meets mostly unknown words
+on a new project. We compare it with three descriptions that do not contain a
+project's vocabulary. An \textbf{anonymised token} replaces each identifier by
+a placeholder numbered by first appearance in the function. The \textbf{grammar
+kind} is the name of the grammar rule that produced the node
+(\texttt{call\_expression}); it is fixed by the C language and costs nothing to
+obtain. An \textbf{operation type} is a hand-built label for what the node does
+(\texttt{av\_malloc(n)} is a memory operation); we built an eight-label version
+using lists of library functions and naming rules.
 
-We therefore compare node representations under strict control, holding graph
-topology, backbone, depth, hidden width, readout, optimiser and gradient
-budget fixed and varying only the node features. Two project-invariant
-alternatives to lexical tokens are considered:
+\paragraph{What we found, and how the result changed.} In an earlier version of
+this work we argued that grammar kinds were the ingredient that mattered.
+Independent review, and the extra experiments it motivated, changed that
+conclusion. With graph, network and training held fixed and evaluation always
+on projects not seen in training, text read from scratch performs close to
+chance, and any of the three project-independent descriptions lifts AUC by
+roughly 0.06 to 0.17 on both corpora we use. But renaming identifiers works
+about as well as using grammar kinds, the hand-built operation labels add
+nothing to the grammar kind, and every network trails both a rule that scores a
+function only by its length and, on one corpus, a frozen pretrained code model.
+The contribution is therefore a careful, partly negative empirical result and
+the methodology behind it, not a new detector.
 
+\paragraph{Contributions.}
 \begin{itemize}
-    \item an \textbf{engineered operation taxonomy} $\phi$, mapping nodes onto
-          eight operation types via API allow-lists, identifier-component
-          rules and syntax-directed cases --- the kind of abstraction such work
-          typically constructs; and
-    \item the \textbf{parser's own grammar node kinds} $\kappa$, an alphabet
-          fixed by the C grammar that requires no design effort whatsoever.
+    \item A \textbf{controlled comparison of node descriptions} across two
+          corpora and four architectures on ten matched project-level folds,
+          with explicit baselines for each competing explanation (text, text
+          plus node type, anonymised text, and capacity-matched variants),
+          direct paired tests, and per-project and function-size controls
+          (Sections~\ref{sec:rq_representation}--\ref{sec:rq_reference}).
+    \item \textbf{An exact explanation of why a hand-built operation label adds
+          nothing} to the grammar kind, by two conditional entropies computed
+          without training any model, offered as a check to run before an
+          engineered abstraction of a parse tree is credited with an effect
+          (Section~\ref{sec:rq_why}).
+    \item \textbf{A validation of the operation labelling as a static analysis}
+          on the experimental corpora, against two blind annotators with
+          measured agreement (Section~\ref{sec:rq_analysis}).
+    \item \textbf{Reference points that temper the claims}: a function-size rule
+          and a pretrained model score at or above the graph models
+          (Section~\ref{sec:rq_reference}).
 \end{itemize}
 
-The result was not the one we set out to demonstrate. Abandoning lexical
-features helps substantially and consistently --- every one of eight
-comparisons across two corpora and three message-passing schemes is positive,
-with effects of $+0.049$ to $+0.106$ AUC and seven of eight intervals
-excluding zero --- and the three architectures differ by roughly a third as
-much under a fixed representation as the representations differ under a fixed
-architecture. But the engineered taxonomy is not what produces this. On its own
-it is statistically indistinguishable from lexical features
-($p \approx 0.9$); the grammar kinds carry the effect, and adding the taxonomy
-to them yields no consistent gain.
-
-We then explain the null result rather than merely reporting it. Measuring the
-information the taxonomy carries relative to the grammar alphabet shows
-$H(\phi \mid \kappa) = 0.06$ bits: $\phi$ is predictable from the node kind
-alone for $98.2\%$ of nodes, because most of its rules are syntax-directed and
-therefore already determined by the parser. Its residual contribution is
-confined to two places --- which callee a call expression names, and which
-operator a binary expression uses. An abstraction that is $96\%$ redundant
-with a free alternative cannot be expected to add much, and does not.
-
-Separately, we evaluate $\phi$ \emph{as a static analysis}, annotating 212
-call sites and reporting per-class precision and recall. Abstractions of this
-kind are routinely introduced as preprocessing and never validated. That
-exercise was not ceremonial: it found that substring-based recognition of
-wrapped allocators labels \texttt{\_\_put\_user} and \texttt{skb\_put}, both
-writes, as release operations; that classifying \texttt{printf} and
-\texttt{fprintf} as buffer-writing formatters counts 655 stream-I/O sites in
-one corpus as memory operations; and that a permissive copy rule captures SIMD
-lane extraction. All three are invisible to downstream accuracy.
-
-Our contributions are:
-
-\begin{itemize}
-    \item \textbf{A controlled comparison of node representations}, with every
-          other factor held fixed, across two corpora and three
-          message-passing schemes (Sections~\ref{sec:rq_representation}
-          and~\ref{sec:rq_generality}).
-    \item \textbf{The finding that grammar node kinds suffice}, outperforming
-          both lexical features and an engineered semantic taxonomy, at zero
-          design cost.
-    \item \textbf{An information-theoretic explanation} of why the engineered
-          taxonomy adds nothing, and a diagnostic other work can reuse before
-          crediting an abstraction with an effect (Section~\ref{sec:rq_why}).
-    \item \textbf{Validation of the abstraction as an analysis}, with per-class
-          precision and recall and the defects it uncovered
-          (Section~\ref{sec:rq_analysis}).
-\end{itemize}
-
-We report the negative result at the same length as the positive one, because
-the engineered taxonomy is what we built first and expected to work, and
-because the redundancy diagnostic that explains its failure is cheap enough
-that any similar paper could run it.
+\paragraph{Organisation.} Section~\ref{sec:background} reviews related work.
+Section~\ref{sec:method} defines the program graph, the four node descriptions
+and the operation labelling, with a pipeline figure and algorithms.
+Section~\ref{sec:experiment} sets out the corpora, sampling, class balance,
+cross-project protocol and statistics, and answers five research questions:
+the accuracy of the operation labelling (RQ1), which description transfers
+(RQ2), generality across corpora and architectures (RQ3), ablations (RQ4) and
+comparison with reference points (RQ5). Section~\ref{sec:discussion} discusses
+implications and limitations, and Section~\ref{sec:conclusion} concludes.

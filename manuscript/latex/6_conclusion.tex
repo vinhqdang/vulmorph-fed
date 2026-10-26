@@ -1,43 +1,23 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We asked how much of the cross-project gap in vulnerability detection is
-attributable to the node representation rather than the model, and answered it
-by comparing representations under strict control.
+We asked how much of the cross-project failure of graph-based vulnerability
+detectors depends on what a node is told about the code. Under a controlled,
+project-disjoint protocol with ten matched folds, node descriptions that contain
+a project's vocabulary performed close to chance, while descriptions that do
+not (renamed identifiers, or the parser's grammar kinds) performed better by
+roughly 0.06 to 0.17 AUC on two corpora and four architectures. They performed
+about equally well, and the hand-built operation taxonomy that we expected to
+help added nothing to the grammar kind. We explained that null exactly: the
+taxonomy is \numbigvulDeterminism\% determined by the kind on BigVul.
 
-The answer has two parts, and the second is the one we did not anticipate.
-Replacing project-specific lexical tokens with a project-invariant alphabet
-improves cross-project ranking substantially --- more than the differences
-between the message-passing schemes we compare, under a fixed representation.
-The gain holds in every one of eight comparisons spanning two corpora and
-three message-passing schemes ($+0.049$ to $+0.106$ AUC), and is roughly three
-times the spread between those architectures under a fixed representation. But
-the ingredient that carries it is the parser's own grammar node kinds, which
-cost nothing to obtain. The engineered operation taxonomy we built for the
-purpose --- API allow-lists, identifier-component rules, syntax-directed cases,
-validated as a static analysis at $0.976$ accuracy --- is on its own
-statistically indistinguishable from lexical features, and adding it to grammar
-kinds produces no consistent improvement.
-
-We explain that null result rather than leaving it as an anomaly. The taxonomy
-is predictable from the grammar kind alone for $98.2\%$ of nodes, and $96\%$ of
-its information is already present in the kind alphabet, because most of its
-rules are syntax-directed and therefore decided by the parser before the
-taxonomy is consulted. Its residual contribution is confined to callee names
-and operator tokens.
-
-Two recommendations follow, both cheap. When a paper introduces an abstraction
-over a parse tree, measure $H(\text{abstraction} \mid \text{grammar kind})$
-before attributing an effect to it; a few lines of counting would have told us
-in advance what a substantial experimental campaign eventually showed. And when
-an abstraction is introduced at all, evaluate it as an analysis: annotating 212
-call sites exposed three defects --- writes classified as deallocations, stream
-I/O counted as buffer formatting, SIMD lane extraction counted as copying ---
-that no downstream accuracy metric revealed.
-
-For practitioners the implication is a one-line change: feed the graph neural
-network the parser's node kinds instead of the source tokens. Absolute
-performance remains modest --- an AUPRC lift of roughly $2.5\times$ over base
-rate --- and cross-project detection remains open. But the cheapest available
-change to the representation outperformed both the status quo and the
-engineered alternative we expected to beat them.
+The same controls also limit the result. A rule that scores a function by its
+length outperforms every network we trained, the gain over text is only partly
+independent of length, a frozen pretrained model is competitive with the best
+graph views, and the labelling function is less accurate class by class than
+our first, non-blind validation suggested. We therefore recommend that studies
+of learned vulnerability detectors report a function-size baseline and a
+vocabulary-free baseline next to any new architecture or representation, and
+that proposed abstractions over a parse tree be checked against the grammar
+alphabet before they are credited with an effect. Cross-project vulnerability
+detection from small, from-scratch models remains an open problem.

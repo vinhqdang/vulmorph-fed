@@ -1,0 +1,30 @@
+\subsection{RQ4: ablations}
+\label{sec:rq_ablation}
+
+We remove one component at a time under the grammar-kind view on BigVul (GGNN,
+the same 10 folds as before) and report the paired change in AUC
+(Table~\ref{tab:ablation}). Beyond the node views of Table~\ref{tab:direct},
+which already ablate the contribution of text, anonymisation, kind and
+operation type, two structural components are examined.
+
+\paragraph{Edge types.} Removing the def-use edges changes AUC by
+\numedgeNoDuDiff{} (\numedgeNoDuLo{} to \numedgeNoDuHi{}); removing the
+sibling-order edges by \numedgeNoSibDiff{} (\numedgeNoSibLo{} to
+\numedgeNoSibHi{}); keeping only the syntax-tree edges by
+\numedgeAstOnlyDiff{} (\numedgeAstOnlyLo{} to \numedgeAstOnlyHi{}). We read
+these as the contribution of the data-flow approximation and of source order on
+top of the tree.
+
+\paragraph{Operation-alphabet granularity.} Refining $\phi$ from eight to
+sixteen operation types changes AUC by \numgranTOneSixDiff{}
+(\numgranTOneSixLo{} to \numgranTOneSixHi{}) over \numgranTOneSixFolds{} matched
+folds. The first submission reported a thirty-two-type run that rested on a
+single fold; the claim that granularity does not matter was not supported by
+that run and we do not repeat it. Both measurements we do have are consistent
+with a null, as expected from Section~\ref{sec:rq_why}, since the classes that a
+finer alphabet separates are rare: the memory-operation class fires on only
+\numbvMemoryPct\% of nodes (Table~\ref{tab:node_dist}). The thirty-two-type
+refinement was not re-run for this version because of its cost, so we make no
+statement about it.
+
+\input{tab_ablation}

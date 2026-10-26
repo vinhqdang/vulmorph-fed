@@ -1,0 +1,22 @@
+\subsection{Summary of findings}
+\label{sec:summary}
+
+\begin{enumerate}
+    \item \textbf{Text read from scratch fails across projects.} AUC is
+          \mBvGgnnLexAuc{} (BigVul) and \mDvGgnnLexAuc{} (DiverseVul), close to
+          random.
+    \item \textbf{Removing project vocabulary helps by about 0.1 to 0.17 AUC,}
+          on both corpora and under four architectures, whether it is removed
+          by anonymising identifiers or by using the grammar kind.
+    \item \textbf{The grammar kind does not beat anonymised text;} its advantage
+          is that it needs no preprocessing decision.
+    \item \textbf{The engineered operation taxonomy adds nothing} to the grammar
+          kind, and the reason is measurable: it is almost a function of it
+          (Section~\ref{sec:rq_why}). As a static analysis it is accurate for the
+          question it answers (memory operation or not: precision
+          \numpooledMemopP{}, recall \numpooledMemopR{}) but less accurate than
+          first reported at the level of individual classes.
+    \item \textbf{No view approaches a one-line size rule}, and a frozen
+          pretrained code model is competitive with the best from-scratch
+          graph views. Absolute performance is weak.
+\end{enumerate}

@@ -1,32 +1,23 @@
 \begin{abstract}
-Learned vulnerability detectors generalise poorly across projects, and the
-field has largely responded with new architectures. We ask instead how much of
-the gap is attributable to the node representation, and find that the answer is
-both larger than the architecture effect and simpler than expected. Holding
-graph topology, backbone, depth, readout and training budget fixed, and varying
-only what a node carries, we compare project-specific lexical tokens against
-three alternatives: a hand-designed taxonomy of operation types built from API
-allow-lists and identifier rules, the parser's own grammar node kinds, which
-are free, and their combination. Under project-level GroupKFold with
-deduplication, mega-projects held train-only, and cluster-bootstrap intervals
-over held-out projects, the two representations that contain grammar kinds beat
-lexical tokens in all eight comparisons across two corpora and three
-message-passing schemes ($+0.049$ to $+0.106$ AUC, seven of eight intervals
-excluding zero), while the same architectures under a fixed representation
-differ by roughly a third as much. The engineered taxonomy is not what produces
-this. On its own it is indistinguishable from lexical features
-($p \approx 0.9$); adding it to grammar kinds gives no consistent gain; and
-refining it from eight to thirty-two operation types, on matched folds, changes
-nothing. We explain these null results rather than merely reporting them. An
-exact information-theoretic analysis shows the taxonomy is $98.2\%$ predictable
-from the grammar kind ($H(\phi \mid \kappa) = 0.06$ bits), so it adds almost
-nothing the parser has not already supplied, while discarding $69\%$ of the
-kind's information ($H(\kappa \mid \phi) = 3.12$ bits), which is why it is weak
-alone. We also validate the taxonomy as a static analysis against annotated
-ground truth ($0.976$ call-site-weighted accuracy), which exposed three defects
-invisible to downstream accuracy. The practical implication is a one-line
-change --- substitute grammar kinds for lexical tokens --- and a methodological
-one: an engineered abstraction over a parse tree should be checked for
-redundancy against the grammar alphabet, in both directions, before it is
-credited with an effect.
+Learned vulnerability detectors often fail on software projects that were not
+in their training data. We ask how much of that failure depends on what each
+node of the program graph is told about the code. In a controlled comparison
+we change only this description: the identifier text itself; the same text with
+identifiers renamed; the name of the grammar rule that produced the node (the
+\emph{grammar kind}); and a hand-built label for the operation a node performs.
+Detectors are trained on uniform random samples of two public corpora (BigVul
+and DiverseVul, about 10{,}000 functions each) and tested on whole projects
+that were held out, over ten matched folds, with paired statistical tests.
+Text read from scratch ranks functions almost at random (AUC
+\mBvGgnnLexAuc{} and \mDvGgnnLexAuc{}). Renaming identifiers or using grammar
+kinds raises AUC by roughly 0.06 to 0.17 on both corpora and under four
+architectures, and the two work about equally well. The hand-built operation
+labels add nothing to the grammar kind, which we explain exactly: they are
+\numbigvulDeterminism\% predictable from it. Against reference points the
+picture is modest. Every graph model scores below a rule that ranks functions
+only by their length (AUC \numbvSizeAuc{} and \numdvSizeAuc{}), and a frozen
+pretrained code model is competitive with the best graph views. We therefore
+report a controlled result about project vocabulary in learned detectors, not a
+stronger detector, and we release code, annotations and scripts that regenerate
+every number.
 \end{abstract}

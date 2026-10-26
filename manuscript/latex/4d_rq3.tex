@@ -1,0 +1,49 @@
+\subsection{RQ3: generality across corpora and architectures}
+\label{sec:rq_generality}
+
+\emph{In short:} the benefit of dropping project vocabulary holds on both
+corpora and under all four architectures we tried; the choice of architecture
+moves AUC by much less than the choice of node view, but only within the
+family of small models we can train from scratch.
+
+Table~\ref{tab:rq3_generality} repeats the main comparison on DiverseVul and
+under three further architectures: GAT and GIN (two other message-passing
+schemes) and a Transformer encoder over the pre-order node sequence, which uses
+no graph edges at all (BigVul only, for cost). Figure~\ref{fig:forest} plots
+the gains against the text-only view.
+
+\input{tab_rq3_generality}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_representation_forest.pdf}
+\caption{Change in AUC against text-only node features for each corpus and
+architecture, with 95\% cluster-bootstrap intervals over held-out projects.
+Intervals that include zero are marked n.s.}
+\label{fig:forest}
+\end{figure}
+
+\paragraph{Corpora and message-passing schemes.} Under GAT and GIN, and on
+DiverseVul, the grammar kind improves on text in every comparison
+(Table~\ref{tab:rq3_generality}; for example
+\cDvGgnnKindVLexD{} on DiverseVul with the GGNN, \cDvGatKindVLexD{} with the
+GAT and \cDvGinKindVLexD{} with the GIN). The gain varies by corpus
+(\cBvGgnnKindVLexD{} on BigVul with the GGNN, against \cDvGgnnKindVLexD{} on
+DiverseVul).
+
+\paragraph{The architecture claim, narrowed.} The earlier submission asserted
+that representation matters more than architecture on the strength of three
+message-passing networks whose AUCs differed by $0.027$. That evidence cannot
+support a claim about architecture in general, and we now state what it does
+support. Under a fixed vocabulary-free view the three message-passing
+networks span \numbvSpreadKind{} AUC (BigVul, grammar kind) and
+\numdvSpreadKind{} (DiverseVul); under the text view they span
+\numbvSpreadLex{} and \numdvSpreadLex{}. Those ranges are not larger than the
+representation effect in the same corpus, so within this family the node view is
+at least as consequential as the backbone. The Transformer adds a different
+inductive bias (no edges); its AUC is \mBvTfLexAuc{} with text and \mBvTfKindAuc{}
+with the grammar kind, so the benefit of the vocabulary-free view is not
+specific to message passing. What our evidence cannot show is that no
+\emph{pretrained} or very large architecture would close the gap by itself,
+and Section~\ref{sec:rq_reference} shows that a frozen pretrained code model
+reading raw source is competitive with our vocabulary-free graphs.
