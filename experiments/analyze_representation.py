@@ -33,7 +33,7 @@ import json
 from collections import defaultdict
 
 import numpy as np
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon, rankdata
 from sklearn.metrics import roc_auc_score, average_precision_score
 
 from utils.protocol import cluster_bootstrap_ci
@@ -51,7 +51,15 @@ VARIANTS = ["ast", "ast_sib", "ast_du", "t16", "t32"]
 
 
 def _auc(y, s):
-    return roc_auc_score(y, s) if len(np.unique(y)) > 1 else 0.5
+    """Rank-based AUC (average ranks for ties); much faster than sklearn for
+    the thousands of bootstrap replicates this script needs."""
+    y = np.asarray(y)
+    n1 = int((y == 1).sum())
+    n0 = len(y) - n1
+    if n1 == 0 or n0 == 0:
+        return 0.5
+    r = rankdata(np.asarray(s))
+    return float((r[y == 1].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
 
 
 def _ap(y, s):
@@ -201,6 +209,9 @@ def holm(pvals):
     return adj
 
 
+BUDGET = {"auc": None, "auprc": (500, 1), "auc_ss": (500, 1)}
+
+
 def analyse_corpus(corpus, n_boot, n_seeds):
     cells, folds, cfgs = merge_corpus(corpus)
     if not cells:
@@ -222,12 +233,13 @@ def analyse_corpus(corpus, n_boot, n_seeds):
                 ref = f"{base}|{bb}"
                 pairs.append((f"{base}|{bb}{suffix}", ref, f"{base}{suffix}~{base}"))
             for ka, kb, name in pairs:
-                r = contrast(cells, ka, kb, metric, n_boot, n_seeds)
+                nb, ns = BUDGET[metric] or (n_boot, n_seeds)
+                r = contrast(cells, ka, kb, metric, nb, ns)
                 if r:
                     res[f"{bb}|{name}"] = r
-                    r_x = (contrast(cells, ka, kb, metric, n_boot, 3,
+                    r_x = (contrast(cells, ka, kb, metric, 500, 1,
                                     drop_project="Android")
-                           if metric != "auc_ss" else None)
+                           if metric == "auc" and corpus == "bigvul" else None)
                     if r_x and corpus == "bigvul" and metric != "auc_ss":
                         res[f"{bb}|{name}"]["without_android"] = {
                             k: r_x[k] for k in ("diff", "lo", "hi",
@@ -237,7 +249,8 @@ def analyse_corpus(corpus, n_boot, n_seeds):
                 for bb in backbones:
                     if bb in ("rule", "probe"):
                         continue
-                    r = contrast(cells, f"{m}|{bb}", ref, metric, n_boot, n_seeds)
+                    nb, ns = BUDGET[metric] or (n_boot, n_seeds)
+                    r = contrast(cells, f"{m}|{bb}", ref, metric, nb, ns)
                     if r:
                         res[f"{bb}|{m}~{rname}"] = r
         keys = list(res)
