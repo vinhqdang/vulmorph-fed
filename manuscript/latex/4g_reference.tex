@@ -14,24 +14,33 @@ which use different data splits and often within-project evaluation.
 and \mDvGgnnLexKindAuc{} on DiverseVul, which is below the grammar-kind and anonymised views in
 Table~\ref{tab:rq2_representation}.
 
-\paragraph{A pretrained code model} UniXcoder~\cite{guo2022unixcoder} with a frozen
+\paragraph{Pretrained code models: read the format-normalised rows} Table~\ref{tab:baselines}
+holds two pretrained references: UniXcoder~\cite{guo2022unixcoder} with a frozen
 encoder (its weights are not updated; it turns each function into one vector) and
-a linear probe (a logistic regression trained on that vector) on the raw source (identifiers included) reaches AUC
-\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul it is
-statistically indistinguishable from the vocabulary-free graph views (the paired
-difference of $\kappa$ against it is \cBvGgnnKindVUnixD{} with the GGNN,
-\cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}, and similar for the other
-backbones); on DiverseVul the grammar-kind GNNs are better (GGNN
-\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to \cDvGgnnKindVUnixHi{}; GIN
-\cDvGinKindVUnixD{}; GAT \cDvGatKindVUnixD{}, not significant). Two lessons
-follow. First, ``text hurts cross-project transfer'' is a statement about token
-embeddings learned from scratch on a few thousand functions, not about text in
-general: a model that has seen billions of code tokens before can use
-identifiers and still transfer about as well. Second, a vocabulary-free GNN
-trained from scratch is comparable with, not clearly better than, a frozen
-pretrained model. The probe is frozen and untuned; a fine-tuned LineVul-style
-model~\cite{fu2022linevul} would probably be stronger, and we have not run one
-because this machine has no GPU.
+a linear probe (a logistic regression trained on that vector), and a
+LineVul-style detector~\cite{fu2022linevul}, that is, CodeBERT fine-tuned
+end to end on the function text (function-level classifier only; three epochs,
+the same class-weighted loss and folds as every other system, run on a rented
+GPU). On raw source they reach AUC \numbvUnixAuc{} and \rBvLinevulAuc{} on BigVul,
+\numdvUnixAuc{} and \rDvLinevulAuc{} on DiverseVul. On BigVul those figures partly
+measure the formatting artefact of Section~\ref{sec:artefact}, so the fair
+comparison uses format-normalised source, where the same two systems reach
+\rBvUnixNormAuc{} and \rBvLinevulNormAuc{} (BigVul) and \rDvUnixNormAuc{} and
+\rDvLinevulNormAuc{} (DiverseVul). Against these normalised references the
+vocabulary-free graph networks are better than the frozen probe (GGNN with
+$\kappa$: \cBvGgnnKindVUnixNormD{} on BigVul, \cBvGgnnKindVUnixNormLo{} to
+\cBvGgnnKindVUnixNormHi{}; \cDvGgnnKindVUnixNormD{} on DiverseVul) and below the
+fine-tuned model by a small margin (\cBvGgnnKindVLinevulNormD{},
+\cBvGgnnKindVLinevulNormLo{} to \cBvGgnnKindVLinevulNormHi{} on BigVul;
+\cDvGgnnKindVLinevulNormD{}, \cDvGgnnKindVLinevulNormLo{} to
+\cDvGgnnKindVLinevulNormHi{} on DiverseVul). Two lessons follow. First, ``text
+hurts cross-project transfer'' is a statement about token embeddings learned
+from scratch on a few thousand functions, not about text in general: a model that
+has seen billions of code tokens before, and is fine-tuned, uses identifiers and
+beats our graph models by about 0.04 AUC. Second, that margin is small in
+absolute terms: the fine-tuned model is not distinguishable from the
+function-size rule (BigVul \xBvLinevulNormVSizeD{}, \xBvLinevulNormVSizeLo{} to
+\xBvLinevulNormVSizeHi{}; DiverseVul \xDvLinevulNormVSizeD{}).
 
 \paragraph{A size rule beats every network} Scoring a function by its node
 count alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),

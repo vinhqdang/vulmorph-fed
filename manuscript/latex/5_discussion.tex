@@ -26,8 +26,9 @@ and on BigVul a classifier that sees only formatting beats all of them
 (Section~\ref{sec:artefact}),
 and the gains of the vocabulary-free views over text largely vanish within
 bins of function size (Section~\ref{sec:rq_representation}). Nor do they
-show that text is harmful in general: a frozen pretrained code model reading raw
-source is comparable with the best graph views on one corpus. The honest reading is that the
+show that text is harmful in general: a fine-tuned pretrained code model reading
+format-normalised source beats the graph models by a small margin
+(Section~\ref{sec:rq_reference}). The honest reading is that the
 standard from-scratch lexical baseline of graph-based detectors is weak under
 project-disjoint evaluation, so improvements over it are cheap and should be
 compared with the stronger baselines listed above.
@@ -85,9 +86,10 @@ Several classes have few positive names, so their intervals are wide.
 \textbf{Label noise and language.} We inherit the labels of the corpora, whose
 accuracy is contested in the literature that produced them, and we study C only.
 
-\textbf{Pretrained reference.} The UniXcoder result is a frozen encoder with a
-linear probe on 256 tokens. It is a reference point rather than a tuned,
-fine-tuned detector.
+\textbf{Pretrained references.} The fine-tuned model reproduces only the
+function-level classifier of LineVul, for three epochs, without checkpoint
+selection; the UniXcoder result is a frozen encoder with a linear probe on 256
+tokens. Longer or tuned schedules, or larger models, could score higher.
 
 \textbf{Earlier claims withdrawn.} The first submission also reported federated
 and privacy experiments and a learned edge mask. They are not part of this

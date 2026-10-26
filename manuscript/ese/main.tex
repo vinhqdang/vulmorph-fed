@@ -56,18 +56,21 @@
 \newcommand{\cBvGgnnKindVLexSsHi}{+0.112}
 \newcommand{\cBvGgnnKindVLexSsLo}{-0.014}
 \newcommand{\cBvGgnnKindVLexW}{0.002}
-\newcommand{\cBvGgnnKindVLexWH}{0.098}
+\newcommand{\cBvGgnnKindVLexWH}{0.225}
 \newcommand{\cBvGgnnKindVLexWblk}{0.062}
 \newcommand{\cBvGgnnKindVLexWins}{10/10}
+\newcommand{\cBvGgnnKindVLinevulNormD}{-0.037}
+\newcommand{\cBvGgnnKindVLinevulNormHi}{-0.018}
+\newcommand{\cBvGgnnKindVLinevulNormLo}{-0.068}
 \newcommand{\cBvGgnnKindVOpD}{+0.042}
 \newcommand{\cBvGgnnKindVOpHi}{+0.067}
 \newcommand{\cBvGgnnKindVOpLo}{-0.004}
 \newcommand{\cBvGgnnKindVSizeD}{-0.045}
 \newcommand{\cBvGgnnKindVSizeHi}{-0.022}
 \newcommand{\cBvGgnnKindVSizeLo}{-0.086}
-\newcommand{\cBvGgnnKindVUnixD}{-0.014}
-\newcommand{\cBvGgnnKindVUnixHi}{+0.045}
-\newcommand{\cBvGgnnKindVUnixLo}{-0.062}
+\newcommand{\cBvGgnnKindVUnixNormD}{+0.047}
+\newcommand{\cBvGgnnKindVUnixNormHi}{+0.091}
+\newcommand{\cBvGgnnKindVUnixNormLo}{+0.003}
 \newcommand{\cBvGgnnLexKindVLexD}{+0.086}
 \newcommand{\cBvGgnnLexKindVLexHi}{+0.111}
 \newcommand{\cBvGgnnLexKindVLexLo}{+0.038}
@@ -78,7 +81,6 @@
 \newcommand{\cBvGgnnOpVLexD}{+0.143}
 \newcommand{\cBvGinOpKindVKindD}{+0.015}
 \newcommand{\cDvGatKindVLexD}{+0.094}
-\newcommand{\cDvGatKindVUnixD}{+0.029}
 \newcommand{\cDvGgnnKindVAnonKindD}{-0.012}
 \newcommand{\cDvGgnnKindVAnonKindHi}{+0.002}
 \newcommand{\cDvGgnnKindVAnonKindLo}{-0.030}
@@ -88,16 +90,16 @@
 \newcommand{\cDvGgnnKindVLexSsD}{+0.001}
 \newcommand{\cDvGgnnKindVLexSsHi}{+0.039}
 \newcommand{\cDvGgnnKindVLexSsLo}{-0.040}
-\newcommand{\cDvGgnnKindVUnixD}{+0.044}
-\newcommand{\cDvGgnnKindVUnixHi}{+0.070}
-\newcommand{\cDvGgnnKindVUnixLo}{+0.014}
+\newcommand{\cDvGgnnKindVLinevulNormD}{-0.038}
+\newcommand{\cDvGgnnKindVLinevulNormHi}{-0.023}
+\newcommand{\cDvGgnnKindVLinevulNormLo}{-0.056}
+\newcommand{\cDvGgnnKindVUnixNormD}{+0.063}
 \newcommand{\cDvGgnnOpKindVKindD}{+0.008}
 \newcommand{\cDvGgnnOpKindVKindHi}{+0.022}
 \newcommand{\cDvGgnnOpKindVKindLo}{-0.005}
 \newcommand{\cDvGgnnOpKindVKindW}{0.027}
 \newcommand{\cDvGgnnOpKindVKindWins}{8/10}
 \newcommand{\cDvGinKindVLexD}{+0.105}
-\newcommand{\cDvGinKindVUnixD}{+0.056}
 \newcommand{\cDvGinOpKindVKindD}{+0.008}
 \newcommand{\mBvGgnnKindLowAuc}{0.708}
 \newcommand{\mBvGgnnKindSs}{0.535}
@@ -110,6 +112,11 @@
 \newcommand{\mDvGgnnLexAuc}{0.566}
 \newcommand{\mDvGgnnLexKindAuc}{0.607}
 \newcommand{\mDvGgnnLexSs}{0.523}
+\newcommand{\numartBvTrailBenign}{2}
+\newcommand{\numartBvTrailNormAny}{0}
+\newcommand{\numartBvTrailVuln}{61}
+\newcommand{\numartDvTrailBenign}{4}
+\newcommand{\numartDvTrailVuln}{11}
 \newcommand{\numbigvulAdjudicated}{13}
 \newcommand{\numbigvulAgree}{0.94}
 \newcommand{\numbigvulDeterminism}{98.4}
@@ -187,8 +194,30 @@
 \newcommand{\numpooledMemopP}{0.94}
 \newcommand{\numpooledMemopR}{0.94}
 \newcommand{\numpooledNNames}{675}
-\newcommand{\numssMax}{0.58}
+\newcommand{\numssMax}{0.88}
 \newcommand{\numssMin}{0.47}
+\newcommand{\rBvFormatAuc}{0.896}
+\newcommand{\rBvLinevulAuc}{0.922}
+\newcommand{\rBvLinevulAuprc}{0.748}
+\newcommand{\rBvLinevulNormAuc}{0.728}
+\newcommand{\rBvLinevulNormAuprc}{0.189}
+\newcommand{\rBvTrailAuc}{0.830}
+\newcommand{\rBvUnixAuc}{0.705}
+\newcommand{\rBvUnixNormAuc}{0.645}
+\newcommand{\rDvFormatAuc}{0.634}
+\newcommand{\rDvLinevulAuc}{0.693}
+\newcommand{\rDvLinevulNormAuc}{0.705}
+\newcommand{\rDvTrailAuc}{0.542}
+\newcommand{\rDvUnixAuc}{0.623}
+\newcommand{\rDvUnixNormAuc}{0.604}
+\newcommand{\xBvLinevulNormVSizeD}{-0.008}
+\newcommand{\xBvLinevulNormVSizeHi}{+0.006}
+\newcommand{\xBvLinevulNormVSizeLo}{-0.026}
+\newcommand{\xBvLinevulVLinevulNormD}{+0.194}
+\newcommand{\xBvLinevulVLinevulNormHi}{+0.224}
+\newcommand{\xBvLinevulVLinevulNormLo}{+0.141}
+\newcommand{\xBvUnixVUnixNormD}{+0.060}
+\newcommand{\xDvLinevulNormVSizeD}{-0.010}
 
 \begin{document}
 
@@ -198,7 +227,7 @@
 
 \affil*[1]{\orgname{British University Vietnam}, \orgaddress{\city{Hung Yen}, \country{Vietnam}}}
 
-\abstract{\textbf{Context:} Learned vulnerability detectors often fail on software projects that were not in their training data. \textbf{Objective:} We ask how much of that failure depends on what each node of the program graph is told about the code. \textbf{Method:} We change only the node description: identifier text, the same text with identifiers renamed, the name of the grammar rule that produced the node (the grammar kind), and a hand-built label for the operation a node performs. Detectors are trained on uniform random samples of two public corpora (BigVul and DiverseVul, about 10{,}000 functions each) and tested on held-out whole projects, over ten matched folds, with a cluster bootstrap over projects as the primary inference. Performance is measured by AUC, the chance that a vulnerable function is ranked above a benign one (0.5 is random). \textbf{Results:} Text read from scratch ranks functions close to random (AUC \mBvGgnnLexAuc{} and \mDvGgnnLexAuc{} with a gated graph network). Renaming identifiers or using grammar kinds raises AUC by roughly \numdeltaMin{} to \numdeltaMax{} on both corpora and under every architecture tried, and the two work about equally well. The hand-built labels add nothing to the grammar kind; they are \numdeterminismMin{}--\numdeterminismMax{}\% predictable from it. Much of the gain disappears once function size is held fixed, and a rule that ranks functions only by length reaches AUC \numbvSizeAuc{} and \numdvSizeAuc{}, above every model. \textbf{Conclusions:} Studies of cross-project detectors should report function-size and vocabulary-free baselines; we release code, annotations and scripts.}
+\abstract{\textbf{Context:} Learned vulnerability detectors often fail on software projects that were not in their training data. \textbf{Objective:} We ask how much of that failure depends on what each node of the program graph is told about the code. \textbf{Method:} We change only the node description: identifier text, the same text with identifiers renamed, the name of the grammar rule that produced the node (the grammar kind), and a hand-built label for the operation a node performs. Detectors are trained on uniform random samples of two public corpora (BigVul and DiverseVul, about 10{,}000 functions each) and tested on held-out whole projects, over ten matched folds, with a cluster bootstrap over projects as the primary inference. Performance is measured by AUC, the chance that a vulnerable function is ranked above a benign one (0.5 is random). \textbf{Results:} Text read from scratch ranks functions close to random (AUC \mBvGgnnLexAuc{} and \mDvGgnnLexAuc{} with a gated graph network). Renaming identifiers or using grammar kinds raises AUC by roughly \numdeltaMin{} to \numdeltaMax{} on both corpora and under every architecture tried, and the two work about equally well. The hand-built labels add nothing to the grammar kind; they are \numdeterminismMin{}--\numdeterminismMax{}\% predictable from it. Much of the gain disappears once function size is held fixed, and a rule that ranks functions only by length reaches AUC \numbvSizeAuc{} and \numdvSizeAuc{}, above every graph model. On BigVul, a classifier that sees only formatting reaches \rBvFormatAuc{}: vulnerable functions carry trailing whitespace far more often than benign ones, an artefact that models reading raw source partly exploit. \textbf{Conclusions:} Studies of cross-project detectors should report function-size, formatting-only and vocabulary-free baselines; we release code and scripts.}
 
 \keywords{Vulnerability detection, Cross-project evaluation, Program representation, Abstract syntax trees, Graph neural networks}
 
@@ -243,8 +272,9 @@ roughly \numdeltaMin{} to \numdeltaMax{} on both corpora we use. But renaming id
 about as well as using grammar kinds, the hand-built operation labels add
 nothing to the grammar kind, much of the gain disappears when function size is
 held fixed, every network trails a rule that scores a function only by its
-length, and a frozen pretrained code model is comparable with them on one
-corpus.
+length, and on BigVul a classifier that reads only formatting beats every
+network. We trace the last result to an artefact of the corpus that
+text-reading models, including a fine-tuned CodeBERT, partly exploit.
 The contribution is therefore a careful, partly negative empirical result and
 the methodology behind it, not a new detector.
 
@@ -265,8 +295,9 @@ the methodology behind it, not a new detector.
           on the experimental corpora, against two blind language-model
           annotators with measured agreement (Section~\ref{sec:rq_analysis}).
     \item \textbf{Controls that temper the claims}: AUC within bins of function
-          size, a function-size rule, and a pretrained model that is comparable
-          with the graph models on one corpus (Sections~\ref{sec:rq_representation}
+          size, a function-size rule, a formatting-only classifier and its effect
+          on pretrained text models, which exposes a shortcut in BigVul
+          (Sections~\ref{sec:rq_representation}
           and~\ref{sec:rq_reference}).
 \end{itemize}
 
@@ -1522,8 +1553,8 @@ AUC is \mBvTfLexAuc{} with text and \mBvTfKindAuc{} with the grammar kind, so
 the benefit of the vocabulary-free view is not specific to message passing.
 What our evidence cannot show is that no \emph{pretrained} or much larger
 architecture would close the gap by itself, and Section~\ref{sec:rq_reference}
-shows that a frozen pretrained code model reading raw source is comparable with
-the vocabulary-free graph views on BigVul.
+shows that a fine-tuned pretrained code model, reading format-normalised source,
+beats the vocabulary-free graph views by a small margin.
 
 
 \subsection{RQ4: ablations}
@@ -1596,8 +1627,10 @@ which use different data splits and often within-project evaluation.
 sample, folds and metrics (mean $\pm$ std over 10 project-level folds). These
 are re-implementations of the \emph{input representation} of each approach
 inside one training protocol, not reproductions of the published systems or
-their published numbers. The UniXcoder row uses a frozen encoder and a linear
-probe (no fine-tuning).}
+their published numbers. UniXcoder rows use a frozen encoder and a linear
+probe. \emph{Format-normalised} source is the parser's token stream with
+whitespace and comments removed (Section~\ref{sec:artefact}). The last three
+rows score functions without reading what the code says.}
 \label{tab:baselines}
 \adjustbox{max width=\textwidth}{%
 \begin{tabular}{lcccc}
@@ -1611,6 +1644,12 @@ GGNN, anonymised tokens $+$ node type & 0.701 $\pm$ 0.059 & 0.180 $\pm$ 0.059 & 
 Transformer over node sequence, text & 0.582 $\pm$ 0.074 & 0.106 $\pm$ 0.042 & --- & --- \\
 Transformer over node sequence, $\kappa$ & 0.706 $\pm$ 0.039 & 0.155 $\pm$ 0.041 & --- & --- \\
 Pretrained UniXcoder, frozen, linear probe (raw source) & 0.705 $\pm$ 0.061 & 0.163 $\pm$ 0.035 & 0.623 $\pm$ 0.027 & 0.095 $\pm$ 0.022 \\
+Pretrained UniXcoder, frozen, linear probe (format-normalised) & 0.645 $\pm$ 0.069 & 0.109 $\pm$ 0.022 & 0.604 $\pm$ 0.015 & 0.088 $\pm$ 0.019 \\
+LineVul-style: fine-tuned CodeBERT (raw source) & 0.922 $\pm$ 0.026 & 0.748 $\pm$ 0.063 & 0.693 $\pm$ 0.028 & 0.123 $\pm$ 0.026 \\
+LineVul-style: fine-tuned CodeBERT (format-normalised) & 0.728 $\pm$ 0.058 & 0.189 $\pm$ 0.058 & 0.705 $\pm$ 0.028 & 0.131 $\pm$ 0.023 \\
+No code read: function size (node count) & 0.736 $\pm$ 0.065 & 0.232 $\pm$ 0.087 & 0.715 $\pm$ 0.028 & 0.152 $\pm$ 0.028 \\
+No code read: trailing-whitespace rule & 0.830 $\pm$ 0.050 & 0.392 $\pm$ 0.109 & 0.542 $\pm$ 0.024 & 0.069 $\pm$ 0.018 \\
+No code read: gradient boosting on formatting statistics & 0.896 $\pm$ 0.026 & 0.601 $\pm$ 0.065 & 0.634 $\pm$ 0.033 & 0.111 $\pm$ 0.034 \\
 GGNN, grammar kind $\kappa$ (ours) & 0.691 $\pm$ 0.037 & 0.149 $\pm$ 0.027 & 0.667 $\pm$ 0.021 & 0.105 $\pm$ 0.026 \\
 GGNN, $\kappa{+}\phi$ (ours) & 0.687 $\pm$ 0.060 & 0.158 $\pm$ 0.042 & 0.675 $\pm$ 0.021 & 0.114 $\pm$ 0.030 \\
 \bottomrule
@@ -1622,28 +1661,38 @@ GGNN, $\kappa{+}\phi$ (ours) & 0.687 $\pm$ 0.060 & 0.158 $\pm$ 0.042 & 0.675 $\p
 and \mDvGgnnLexKindAuc{} on DiverseVul, which is below the grammar-kind and anonymised views in
 Table~\ref{tab:rq2_representation}.
 
-\paragraph{A pretrained code model} UniXcoder~\citep{guo2022unixcoder} with a frozen
+\paragraph{Pretrained code models: read the format-normalised rows} Table~\ref{tab:baselines}
+holds two pretrained references: UniXcoder~\citep{guo2022unixcoder} with a frozen
 encoder (its weights are not updated; it turns each function into one vector) and
-a linear probe (a logistic regression trained on that vector) on the raw source (identifiers included) reaches AUC
-\numbvUnixAuc{} on BigVul and \numdvUnixAuc{} on DiverseVul. On BigVul it is
-statistically indistinguishable from the vocabulary-free graph views (the paired
-difference of $\kappa$ against it is \cBvGgnnKindVUnixD{} with the GGNN,
-\cBvGgnnKindVUnixLo{} to \cBvGgnnKindVUnixHi{}, and similar for the other
-backbones); on DiverseVul the grammar-kind GNNs are better (GGNN
-\cDvGgnnKindVUnixD{}, \cDvGgnnKindVUnixLo{} to \cDvGgnnKindVUnixHi{}; GIN
-\cDvGinKindVUnixD{}; GAT \cDvGatKindVUnixD{}, not significant). Two lessons
-follow. First, ``text hurts cross-project transfer'' is a statement about token
-embeddings learned from scratch on a few thousand functions, not about text in
-general: a model that has seen billions of code tokens before can use
-identifiers and still transfer about as well. Second, a vocabulary-free GNN
-trained from scratch is comparable with, not clearly better than, a frozen
-pretrained model. The probe is frozen and untuned; a fine-tuned LineVul-style
-model~\citep{fu2022linevul} would probably be stronger, and we have not run one
-because this machine has no GPU.
+a linear probe (a logistic regression trained on that vector), and a
+LineVul-style detector~\citep{fu2022linevul}, that is, CodeBERT fine-tuned
+end to end on the function text (function-level classifier only; three epochs,
+the same class-weighted loss and folds as every other system, run on a rented
+GPU). On raw source they reach AUC \numbvUnixAuc{} and \rBvLinevulAuc{} on BigVul,
+\numdvUnixAuc{} and \rDvLinevulAuc{} on DiverseVul. On BigVul those figures partly
+measure the formatting artefact of Section~\ref{sec:artefact}, so the fair
+comparison uses format-normalised source, where the same two systems reach
+\rBvUnixNormAuc{} and \rBvLinevulNormAuc{} (BigVul) and \rDvUnixNormAuc{} and
+\rDvLinevulNormAuc{} (DiverseVul). Against these normalised references the
+vocabulary-free graph networks are better than the frozen probe (GGNN with
+$\kappa$: \cBvGgnnKindVUnixNormD{} on BigVul, \cBvGgnnKindVUnixNormLo{} to
+\cBvGgnnKindVUnixNormHi{}; \cDvGgnnKindVUnixNormD{} on DiverseVul) and below the
+fine-tuned model by a small margin (\cBvGgnnKindVLinevulNormD{},
+\cBvGgnnKindVLinevulNormLo{} to \cBvGgnnKindVLinevulNormHi{} on BigVul;
+\cDvGgnnKindVLinevulNormD{}, \cDvGgnnKindVLinevulNormLo{} to
+\cDvGgnnKindVLinevulNormHi{} on DiverseVul). Two lessons follow. First, ``text
+hurts cross-project transfer'' is a statement about token embeddings learned
+from scratch on a few thousand functions, not about text in general: a model that
+has seen billions of code tokens before, and is fine-tuned, uses identifiers and
+beats our graph models by about 0.04 AUC. Second, that margin is small in
+absolute terms: the fine-tuned model is not distinguishable from the
+function-size rule (BigVul \xBvLinevulNormVSizeD{}, \xBvLinevulNormVSizeLo{} to
+\xBvLinevulNormVSizeHi{}; DiverseVul \xDvLinevulNormVSizeD{}).
 
-\paragraph{A size rule has the highest mean AUC} Scoring a function by its node
+\paragraph{A size rule beats every network} Scoring a function by its node
 count alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),
-the highest mean AUC in this study. The paired differences are significant under
+a higher mean AUC than any network in this study. (On BigVul a formatting-only
+classifier is higher still; Section~\ref{sec:artefact}.) The paired differences are significant under
 the project-cluster bootstrap for most networks (e.g.\ $\kappa$ with the GGNN
 against size: \cBvGgnnKindVSizeD{}, \cBvGgnnKindVSizeLo{} to
 \cBvGgnnKindVSizeHi{} on BigVul) but not for all (for example the GIN with
@@ -1651,6 +1700,74 @@ $\kappa{+}\phi$ on BigVul). We read this as a caution about the whole
 benchmark family: under project-disjoint evaluation, much of what these
 corpora reward is a length prior, and absolute AUCs of $0.6$ to $0.7$ should not
 be read as evidence of vulnerability understanding.
+
+
+\subsection{A formatting artefact in BigVul, and what it does to models that read text}
+\label{sec:artefact}
+
+\emph{In short:} in BigVul, the raw formatting of a function tells whether it is
+labelled vulnerable, almost independently of what the code does. A model that
+reads source text can use this; our graph models cannot, because the parser
+discards formatting.
+
+\paragraph{How it was found.} We fine-tuned a LineVul-style detector
+(CodeBERT~\citep{fu2022linevul} fine-tuned on the raw function text, on a GPU
+rented for the purpose, with the same ten project-level folds) as the stronger
+pretrained reference that reviewers of an earlier version asked for. It scored
+a mean AUC of \rBvLinevulAuc{} on BigVul (AUPRC \rBvLinevulAuprc{}), far above
+every graph model, which is implausible for cross-project detection and
+prompted a search for a shortcut.
+
+\paragraph{The artefact.} \numartBvTrailVuln\% of the vulnerable BigVul functions
+in our sample contain at least one line that ends in trailing whitespace,
+against \numartBvTrailBenign\% of the benign functions. In DiverseVul the
+corresponding figures are \numartDvTrailVuln\% and \numartDvTrailBenign\%.
+Two baselines that never read what the code says expose the consequence
+(Table~\ref{tab:baselines}, last rows). A single rule that scores a function by
+the fraction of its lines with trailing whitespace reaches AUC \rBvTrailAuc{}
+on BigVul (\rDvTrailAuc{} on DiverseVul); gradient boosting over sixteen
+formatting and size statistics (length, number of lines, tabs, carriage
+returns, trailing whitespace, blank lines, comment markers, indentation, and so
+on) reaches \rBvFormatAuc{} (\rDvFormatAuc{} on DiverseVul), on the same
+project-disjoint folds. The first is above every graph model in this study; the
+second is above all of them by a wide margin. We do not know why the corpus
+carries this signal (a plausible cause is that benign functions pass through a
+different extraction or formatting step than vulnerable ones), only that it is
+present, strong, and project-independent.
+
+\paragraph{Removing it.} We re-run the text-reading systems on
+\emph{format-normalised} source: the parser's token stream with comments
+dropped and every token separated by one space, so indentation, line breaks,
+trailing whitespace, tabs and comments are gone while identifiers, literals and
+operators are unchanged (\numartBvTrailNormAny\% of normalised functions contain
+trailing whitespace). Table~\ref{tab:baselines} shows that fine-tuned CodeBERT
+falls from \rBvLinevulAuc{} on raw BigVul source to \rBvLinevulNormAuc{} on
+normalised source (paired difference \xBvLinevulVLinevulNormD{}, 95\% interval
+\xBvLinevulVLinevulNormLo{} to \xBvLinevulVLinevulNormHi{}; AUPRC from
+\rBvLinevulAuprc{} to \rBvLinevulNormAuprc{}), and the frozen UniXcoder probe from
+\rBvUnixAuc{} to \rBvUnixNormAuc{} (\xBvUnixVUnixNormD{}). On DiverseVul, where the
+artefact is much weaker, the corresponding falls are from \rDvLinevulAuc{} to
+\rDvLinevulNormAuc{} and from \rDvUnixAuc{} to \rDvUnixNormAuc{}. Even after
+normalisation, fine-tuned CodeBERT reaches only \rBvLinevulNormAuc{} on BigVul
+and \rDvLinevulNormAuc{} on DiverseVul, against \numbvSizeAuc{} and
+\numdvSizeAuc{} for the function-size rule (BigVul paired difference
+\xBvLinevulNormVSizeD{}, \xBvLinevulNormVSizeLo{} to \xBvLinevulNormVSizeHi{}): a
+fine-tuned 125-million-parameter model reading the identifiers does not clearly
+beat a count of syntax-tree nodes.
+
+\paragraph{What this means for the rest of the paper.} First, the graph models
+are not affected: the grammar kind, the anonymised and the operation views are
+computed from the parse tree, which contains no formatting, so the comparisons of
+Sections~\ref{sec:rq_representation}--\ref{sec:rq_ablation} stand. The
+function-size rule and the size-binned AUC are likewise unaffected, since node
+count does not depend on formatting. Second, the pretrained references of
+Section~\ref{sec:rq_reference} must be read on normalised source, not raw: on
+raw BigVul source they partly measure formatting. Third, for the field, any
+result on BigVul from a model that reads raw text, including the large
+pretrained models, should be checked against a formatting-only baseline before it
+is attributed to an understanding of the code. We have not audited published
+results and make no claim about them; the check costs one line of code per
+corpus.
 
 
 \subsection{Summary of findings}
@@ -1676,10 +1793,12 @@ be read as evidence of vulnerability understanding.
           function size the gain over text is not distinguishable from zero for
           the grammar kind in every corpus--architecture cell we ran, and within-bin AUC is \mBvGgnnKindSs{} (BigVul) and
           \mDvGgnnKindSs{} (DiverseVul).
-    \item \textbf{A one-line size rule has the highest mean AUC}, and a frozen
-          pretrained code model is comparable with the vocabulary-free graph
-          views on BigVul and below them on DiverseVul. Absolute
-          performance is weak.
+    \item \textbf{Classifiers that read no code beat every network:} a
+          one-line size rule on both corpora and, on BigVul, a classifier on
+          formatting statistics alone (AUC \rBvFormatAuc{}), because the corpus
+          has a formatting artefact. Models that read raw text partly exploit
+          it (Section~\ref{sec:artefact}). Absolute performance of the graph
+          models is weak.
 \end{enumerate}
 
 
@@ -1707,10 +1826,13 @@ this remains an interpretation.
 The results do not show that grammar kinds, or any node description, make
 vulnerability detection work across projects. A rule that ranks functions by
 their node count beats every network in the study (Section~\ref{sec:rq_reference}),
+and on BigVul a classifier that sees only formatting beats all of them
+(Section~\ref{sec:artefact}),
 and the gains of the vocabulary-free views over text largely vanish within
 bins of function size (Section~\ref{sec:rq_representation}). Nor do they
-show that text is harmful in general: a frozen pretrained code model reading raw
-source is comparable with the best graph views on one corpus. The honest reading is that the
+show that text is harmful in general: a fine-tuned pretrained code model reading
+format-normalised source beats the graph models by a small margin
+(Section~\ref{sec:rq_reference}). The honest reading is that the
 standard from-scratch lexical baseline of graph-based detectors is weak under
 project-disjoint evaluation, so improvements over it are cheap and should be
 compared with the stronger baselines listed above.
@@ -1768,9 +1890,10 @@ Several classes have few positive names, so their intervals are wide.
 \textbf{Label noise and language.} We inherit the labels of the corpora, whose
 accuracy is contested in the literature that produced them, and we study C only.
 
-\textbf{Pretrained reference.} The UniXcoder result is a frozen encoder with a
-linear probe on 256 tokens. It is a reference point rather than a tuned,
-fine-tuned detector.
+\textbf{Pretrained references.} The fine-tuned model reproduces only the
+function-level classifier of LineVul, for three epochs, without checkpoint
+selection; the UniXcoder result is a frozen encoder with a linear probe on 256
+tokens. Longer or tuned schedules, or larger models, could score higher.
 
 \textbf{Earlier claims withdrawn.} The first submission also reported federated
 and privacy experiments and a learned edge mask. They are not part of this
@@ -1791,9 +1914,10 @@ help added nothing to the grammar kind. We explained that null exactly: the
 taxonomy is \numdeterminismMin{}--\numdeterminismMax{}\% determined by the kind, depending on the corpus.
 
 The same controls also limit the result. A rule that scores a function by its
-length has a higher mean AUC than every network we trained, the gain over text largely
-disappears within bins of function size, a frozen pretrained model is comparable with the best
-graph views, and the labelling function is less accurate class by class than
+length has a higher mean AUC than every network we trained, on BigVul a
+classifier that reads only formatting does better still, the gain over text largely
+disappears within bins of function size, a fine-tuned pretrained model beats the graph views by only a small margin
+once formatting is removed, and the labelling function is less accurate class by class than
 our first, non-blind validation suggested. We therefore recommend that studies
 of learned vulnerability detectors report a function-size baseline and a
 vocabulary-free baseline next to any new architecture or representation, and

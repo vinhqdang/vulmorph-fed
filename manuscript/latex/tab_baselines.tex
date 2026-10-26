@@ -7,8 +7,10 @@
 sample, folds and metrics (mean $\pm$ std over 10 project-level folds). These
 are re-implementations of the \emph{input representation} of each approach
 inside one training protocol, not reproductions of the published systems or
-their published numbers. The UniXcoder row uses a frozen encoder and a linear
-probe (no fine-tuning).}
+their published numbers. UniXcoder rows use a frozen encoder and a linear
+probe. \emph{Format-normalised} source is the parser's token stream with
+whitespace and comments removed (Section~\ref{sec:artefact}). The last three
+rows score functions without reading what the code says.}
 \label{tab:baselines}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{lcccc}
@@ -22,6 +24,12 @@ GGNN, anonymised tokens $+$ node type & 0.701 $\pm$ 0.059 & 0.180 $\pm$ 0.059 & 
 Transformer over node sequence, text & 0.582 $\pm$ 0.074 & 0.106 $\pm$ 0.042 & --- & --- \\
 Transformer over node sequence, $\kappa$ & 0.706 $\pm$ 0.039 & 0.155 $\pm$ 0.041 & --- & --- \\
 Pretrained UniXcoder, frozen, linear probe (raw source) & 0.705 $\pm$ 0.061 & 0.163 $\pm$ 0.035 & 0.623 $\pm$ 0.027 & 0.095 $\pm$ 0.022 \\
+Pretrained UniXcoder, frozen, linear probe (format-normalised) & 0.645 $\pm$ 0.069 & 0.109 $\pm$ 0.022 & 0.604 $\pm$ 0.015 & 0.088 $\pm$ 0.019 \\
+LineVul-style: fine-tuned CodeBERT (raw source) & 0.922 $\pm$ 0.026 & 0.748 $\pm$ 0.063 & 0.693 $\pm$ 0.028 & 0.123 $\pm$ 0.026 \\
+LineVul-style: fine-tuned CodeBERT (format-normalised) & 0.728 $\pm$ 0.058 & 0.189 $\pm$ 0.058 & 0.705 $\pm$ 0.028 & 0.131 $\pm$ 0.023 \\
+No code read: function size (node count) & 0.736 $\pm$ 0.065 & 0.232 $\pm$ 0.087 & 0.715 $\pm$ 0.028 & 0.152 $\pm$ 0.028 \\
+No code read: trailing-whitespace rule & 0.830 $\pm$ 0.050 & 0.392 $\pm$ 0.109 & 0.542 $\pm$ 0.024 & 0.069 $\pm$ 0.018 \\
+No code read: gradient boosting on formatting statistics & 0.896 $\pm$ 0.026 & 0.601 $\pm$ 0.065 & 0.634 $\pm$ 0.033 & 0.111 $\pm$ 0.034 \\
 GGNN, grammar kind $\kappa$ (ours) & 0.691 $\pm$ 0.037 & 0.149 $\pm$ 0.027 & 0.667 $\pm$ 0.021 & 0.105 $\pm$ 0.026 \\
 GGNN, $\kappa{+}\phi$ (ours) & 0.687 $\pm$ 0.060 & 0.158 $\pm$ 0.042 & 0.675 $\pm$ 0.021 & 0.114 $\pm$ 0.030 \\
 \bottomrule

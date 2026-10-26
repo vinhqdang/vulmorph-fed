@@ -14,8 +14,8 @@ taxonomy is \numdeterminismMin{}--\numdeterminismMax{}\% determined by the kind,
 The same controls also limit the result. A rule that scores a function by its
 length has a higher mean AUC than every network we trained, on BigVul a
 classifier that reads only formatting does better still, the gain over text largely
-disappears within bins of function size, a frozen pretrained model is comparable with the best
-graph views, and the labelling function is less accurate class by class than
+disappears within bins of function size, a fine-tuned pretrained model beats the graph views by only a small margin
+once formatting is removed, and the labelling function is less accurate class by class than
 our first, non-blind validation suggested. We therefore recommend that studies
 of learned vulnerability detectors report a function-size baseline and a
 vocabulary-free baseline next to any new architecture or representation, and

@@ -23,8 +23,9 @@ that never read what the code says do better still: gradient boosting over
 formatting statistics reaches AUC \rBvFormatAuc{}, because vulnerable functions
 carry trailing whitespace far more often than benign ones. Models that read raw
 source (a fine-tuned CodeBERT, a frozen UniXcoder probe) partly exploit this
-artefact, and their scores fall when formatting is removed. The result is best
-read as a warning about baselines. We therefore
+artefact, and their scores fall when formatting is removed. With formatting
+removed, a fine-tuned CodeBERT beats the graph models by a small margin but not
+the length rule. The result is best read as a warning about baselines. We therefore
 report a controlled result about project vocabulary in learned detectors, not a
 stronger detector, and we release code, annotations (two language-model annotators) and scripts that regenerate
 every number.
