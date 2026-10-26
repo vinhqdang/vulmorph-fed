@@ -18,10 +18,13 @@ however, disappears once function size is held fixed. The hand-built operation
 labels add nothing to the grammar kind, which we explain exactly: they are
 \numdeterminismMin{}--\numdeterminismMax{}\% predictable from it. Against reference points the
 picture is modest. Every graph model scores below a rule that ranks functions
-only by their length (AUC \numbvSizeAuc{} and \numdvSizeAuc{}), and a frozen
-pretrained code model (UniXcoder with a linear probe) is comparable with the
-best graph views on one corpus, so the result is best read as a warning about
-baselines. We therefore
+only by their length (AUC \numbvSizeAuc{} and \numdvSizeAuc{}). On BigVul, models
+that never read what the code says do better still: gradient boosting over
+formatting statistics reaches AUC \rBvFormatAuc{}, because vulnerable functions
+carry trailing whitespace far more often than benign ones. Models that read raw
+source (a fine-tuned CodeBERT, a frozen UniXcoder probe) partly exploit this
+artefact, and their scores fall when formatting is removed. The result is best
+read as a warning about baselines. We therefore
 report a controlled result about project vocabulary in learned detectors, not a
 stronger detector, and we release code, annotations (two language-model annotators) and scripts that regenerate
 every number.

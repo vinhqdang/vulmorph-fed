@@ -339,6 +339,14 @@ def analyse_corpus(corpus, n_boot_scale=1.0):
                     r = contrast(cells, bins, f"{m}|{bb}", ref, metric, nb, ns)
                     if r:
                         res[f"{bb}|{m}~{rname}"] = r
+        for ka, kb, name in (("linevul|ft", "linevulnorm|ft", "linevul~linevulnorm"),
+                             ("unixcoder|probe", "unixnorm|probe", "unixcoder~unixnorm"),
+                             ("format|gbm", "size|rule", "format~size"),
+                             ("trail|rule", "size|rule", "trail~size"),
+                             ("linevulnorm|ft", "size|rule", "linevulnorm~size")):
+            r = contrast(cells, bins, ka, kb, metric, nb, ns)
+            if r:
+                res[f"ref|{name}"] = r
         keys = list(res)
         for fld, src in (("p_holm", "p_two_sided"), ("wilcoxon_p_holm", "wilcoxon_p")):
             adj = holm([res[k][src] for k in keys])

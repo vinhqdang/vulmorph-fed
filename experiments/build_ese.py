@@ -23,7 +23,7 @@ OUT = ROOT / "manuscript" / "ese"
 
 ORDER = ["1_intro", "2_background", "3_method", "4a_setup", "4b_rq1",
          "4c_rq2", "4e_info", "4d_rq3", "4f_ablation", "4g_reference",
-         "4h_summary", "5_discussion", "6_conclusion"]
+         "4i_artefact", "4h_summary", "5_discussion", "6_conclusion"]
 
 
 def inline_inputs(text):
@@ -65,7 +65,7 @@ def figure_captions(text):
 
 def used_macros(body, numbers):
     defs = dict(re.findall(r"\\newcommand\{\\(\w+)\}\{(.*)\}", numbers))
-    used = set(re.findall(r"\\((?:num|m[BD]v|c[BD]v)\w*)", body + ABSTRACT))
+    used = set(re.findall(r"\\((?:num|[mcxr][BD]v)\w*)", body + ABSTRACT))
     # a macro can also be used inside another macro's value (none are)
     lines = [f"\\newcommand{{\\{k}}}{{{defs[k]}}}" for k in sorted(used) if k in defs]
     missing = sorted(u for u in used if u not in defs)

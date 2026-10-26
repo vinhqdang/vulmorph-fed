@@ -33,7 +33,7 @@ def main():
     text = "\n".join(p.read_text() for p in SOURCES)
     defined = set(re.findall(r"\\newcommand\{\\(\w+)\}",
                              (LATEX / "numbers.tex").read_text()))
-    used = set(re.findall(r"\\((?:num|[mc](?:Bv|Dv))\w+)", text))
+    used = set(re.findall(r"\\((?:num|[mcxr](?:Bv|Dv))\w+)", text))
     missing = sorted(used - defined)
     unused = sorted(d for d in defined if d not in used)
     bad = []

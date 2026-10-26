@@ -771,6 +771,19 @@ def generic_macros(a):
             if "without_android" in st:
                 w = st["without_android"]
                 macro(f"{tag}NoAnd", f"{sf(w['diff'])} [{sf(w['lo'])}, {sf(w['hi'])}]")
+        for mkey, st in (a.get(corpus, {}).get("auc", {}) or {}).items():
+            if not mkey.startswith("ref|"):
+                continue
+            lhs, rhs = mkey[4:].split("~")
+            nm = {"linevul": "Linevul", "linevulnorm": "LinevulNorm", "unixcoder": "Unix",
+                  "unixnorm": "UnixNorm", "format": "Format", "trail": "Trail", "size": "Size"}
+            tag = f"x{C}{nm[lhs]}V{nm[rhs]}"
+            macro(f"{tag}D", sf(st["diff"]))
+            macro(f"{tag}Lo", sf(st["lo"]))
+            macro(f"{tag}Hi", sf(st["hi"]))
+            macro(f"{tag}P", pfmt(st["p_two_sided"]))
+            macro(f"{tag}W", pfmt(st["wilcoxon_p"]))
+            macro(f"{tag}Wins", f"{st['wins']}/{st['n_folds']}")
         for mkey, st in (a.get(corpus, {}).get("auc_ss", {}) or {}).items():
             if "~" not in mkey or "@" in mkey:
                 continue
@@ -895,7 +908,7 @@ def main():
                                          "Five", "Six", "Seven", "Eight", "Nine"]))
         base = "".join(digits.get(ch, ch) for ch in k if ch.isalnum())
         # generic per-cell macros (m/c + Bv|Dv ...) are used without prefix
-        name = base if (base[:3] in ("mBv", "mDv", "cBv", "cDv")) else "num" + base
+        name = base if (base[:3] in ("mBv", "mDv", "cBv", "cDv", "xBv", "xDv", "rBv", "rDv")) else "num" + base
         lines.append(f"\\newcommand{{\\{name}}}{{{v}}}")
     (LATEX_DIR / "numbers.tex").write_text("\n".join(lines) + "\n")
     print(f"  wrote numbers.tex ({len(NUMS)} macros)")

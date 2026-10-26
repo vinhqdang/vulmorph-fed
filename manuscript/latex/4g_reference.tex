@@ -33,9 +33,10 @@ pretrained model. The probe is frozen and untuned; a fine-tuned LineVul-style
 model~\cite{fu2022linevul} would probably be stronger, and we have not run one
 because this machine has no GPU.
 
-\paragraph{A size rule has the highest mean AUC} Scoring a function by its node
+\paragraph{A size rule beats every network} Scoring a function by its node
 count alone gives AUC \numbvSizeAuc{} (BigVul) and \numdvSizeAuc{} (DiverseVul),
-the highest mean AUC in this study. The paired differences are significant under
+a higher mean AUC than any network in this study. (On BigVul a formatting-only
+classifier is higher still; Section~\ref{sec:artefact}.) The paired differences are significant under
 the project-cluster bootstrap for most networks (e.g.\ $\kappa$ with the GGNN
 against size: \cBvGgnnKindVSizeD{}, \cBvGgnnKindVSizeLo{} to
 \cBvGgnnKindVSizeHi{} on BigVul) but not for all (for example the GIN with

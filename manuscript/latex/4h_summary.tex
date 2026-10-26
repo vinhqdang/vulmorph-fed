@@ -21,8 +21,10 @@
           function size the gain over text is not distinguishable from zero for
           the grammar kind in every corpus--architecture cell we ran, and within-bin AUC is \mBvGgnnKindSs{} (BigVul) and
           \mDvGgnnKindSs{} (DiverseVul).
-    \item \textbf{A one-line size rule has the highest mean AUC}, and a frozen
-          pretrained code model is comparable with the vocabulary-free graph
-          views on BigVul and below them on DiverseVul. Absolute
-          performance is weak.
+    \item \textbf{Classifiers that read no code beat every network:} a
+          one-line size rule on both corpora and, on BigVul, a classifier on
+          formatting statistics alone (AUC \rBvFormatAuc{}), because the corpus
+          has a formatting artefact. Models that read raw text partly exploit
+          it (Section~\ref{sec:artefact}). Absolute performance of the graph
+          models is weak.
 \end{enumerate}
