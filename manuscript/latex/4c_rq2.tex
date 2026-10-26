@@ -14,6 +14,8 @@ folds, and Table~\ref{tab:direct} the direct paired contrasts between views.
 
 \input{tab_rq2_representation}
 
+\input{tab_direct}
+
 \paragraph{Text read from scratch does not transfer} With the lexical view
 the GGNN reaches AUC \mBvGgnnLexAuc{} on BigVul and \mDvGgnnLexAuc{} on
 DiverseVul, close to the $0.5$ of a random ranking (across all lexical cells, \numlexAucMin{} to \numlexAucMax{}). The cause is visible in the
@@ -112,7 +114,7 @@ AUC of text and of the grammar kind are \mDvGgnnLexSs{} and \mDvGgnnKindSs{}
 (difference \cDvGgnnKindVLexSsD{}, \cDvGgnnKindVLexSsLo{} to
 \cDvGgnnKindVLexSsHi{}), and no within-size difference between a GGNN view and text on DiverseVul
 exceeds 0.03 in absolute value or is significant. Across the
-corpus--architecture cells of Table~\ref{tab:rq3_generality} the grammar kind is
+corpus--architecture cells of Section~\ref{sec:rq_generality} the grammar kind is
 never significantly better than text within size bins (it is not significantly better
 under any architecture, and the estimates for GAT and GIN are small). In other words, much of the large gap between
 vocabulary-free views and text in the overall AUC, and on DiverseVul all of it
@@ -136,4 +138,3 @@ the pattern of $\kappa$ over text is present in most of them, although each
 single-project figure rests on few positives and is noisy.
 
 \input{tab_perproject}
-\input{tab_direct}

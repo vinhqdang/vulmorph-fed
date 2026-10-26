@@ -78,4 +78,11 @@ elsewhere; the point-by-point record is in
 
 | # | Venue | Status |
 |---|-------|--------|
-| 3 | to be chosen by the author | revised manuscript prepared (this repository). Elsevier transfer offers listed for COLA-D-26-00245: Machine Learning with Applications, Array, Natural Language Processing Journal, Science of Computer Programming, Knowledge-Based Systems. Note that Science of Computer Programming already rejected submission 1. |
+| 3 | *Empirical Software Engineering* (Springer Nature) | package prepared in `manuscript/ese/` (Springer `sn-jnl` template, single `.tex`, flat folder, cover letter, title page with declarations); not yet submitted. Single-blind review, no submission fee, optional open access after acceptance. |
+
+Venues ruled out: *Science of Computer Programming* (rejected submission 1, not
+resubmitted), *Journal of Computer Languages* (rejected submission 2),
+*Computers & Security* (does not consider submissions with AI/ML as a significant
+component). The Elsevier-format cover letter and title page, which describe the
+earlier claims, are kept in `submission/archive_cola/` and must not be reused.
+`submission/response_to_reviewers.tex` answers the COLA reviews only.
