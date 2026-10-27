@@ -78,7 +78,7 @@ elsewhere; the point-by-point record is in
 
 | # | Venue | Status |
 |---|-------|--------|
-| 3 | *Empirical Software Engineering* (Springer Nature) | package prepared in `manuscript/ese/` (Springer `sn-jnl` template, single `.tex`, flat folder, cover letter, title page with declarations); not yet submitted. Single-blind review, no submission fee, optional open access after acceptance. |
+| 3 | *Empirical Software Engineering* (Springer Nature) | **submitted 27 Oct 2026** (manuscript ID not yet recorded); files as submitted are in `manuscript/submission/ese_package/` (built from `manuscript/ese/`: Springer `sn-jnl` template, cover letter, title page with declarations). Status: under review. Decision pending. Single-blind review, no submission fee, optional open access after acceptance. |
 
 Venues ruled out: *Science of Computer Programming* (rejected submission 1, not
 resubmitted), *Journal of Computer Languages* (rejected submission 2),
